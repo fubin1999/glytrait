@@ -324,6 +324,53 @@ LIN
 20:1d(2+1)21n
 """
 
+# H4N4F3S1
+r"""
+                 Fuc
+                  |
+Neu5Ac - Gal - Glc2NAc - Man                   Fuc
+                            \                   |
+                 Fuc         Man - Glc2NAc - Glc2NAc
+                  |         /
+               Glc2NAc - Man
+"""
+test_glycoct_9 = """RES
+1b:x-dglc-HEX-1:5
+2b:x-lgal-HEX-1:5|6:d
+3b:x-dglc-HEX-1:5
+4b:x-dman-HEX-1:5
+5b:x-dman-HEX-1:5
+6b:x-dglc-HEX-1:5
+7b:x-lgal-HEX-1:5|6:d
+8s:n-acetyl
+9b:x-dman-HEX-1:5
+10b:x-dglc-HEX-1:5
+11b:x-lgal-HEX-1:5|6:d
+12b:x-dgal-HEX-1:5
+13b:x-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+14s:n-acetyl
+15s:n-acetyl
+16s:n-acetyl
+17s:n-acetyl
+LIN
+1:1o(-1+1)2d
+2:1o(-1+1)3d
+3:3o(-1+1)4d
+4:4o(-1+1)5d
+5:5o(-1+1)6d
+6:6o(-1+1)7d
+7:6d(2+1)8n
+8:4o(-1+1)9d
+9:9o(-1+1)10d
+10:10o(-1+1)11d
+11:10o(-1+1)12d
+12:12o(-1+2)13d
+13:13d(5+1)14n
+14:10d(2+1)15n
+15:3d(2+1)16n
+16:1d(2+1)17n
+"""
+
 
 class TestGlycan:
 
@@ -405,3 +452,16 @@ class TestGlycan:
         glycan = make_glycan(test_glycoct_3)
         with pytest.raises(glyc.BranchError):
             glycan.count_branches()
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, 0),
+            (test_glycoct_2, 1),
+            (test_glycoct_8, 1),
+            (test_glycoct_9, 1),
+        ]
+    )
+    def test_count_core_fuc(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        assert glycan.count_core_fuc() == expected

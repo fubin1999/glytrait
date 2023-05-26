@@ -21,6 +21,7 @@ Glc2NAc = MonosaccharideResidue.from_iupac_lite("Glc2NAc")
 Man = MonosaccharideResidue.from_iupac_lite("Man")
 Gal = MonosaccharideResidue.from_iupac_lite("Gal")
 Neu5Ac = MonosaccharideResidue.from_iupac_lite("Neu5Ac")
+Fuc = MonosaccharideResidue.from_iupac_lite("Fuc")
 
 
 class StructureParseError(Exception):
@@ -45,13 +46,42 @@ class NGlycan:
 
     _glypy_glycan: GlypyGlycan = field(repr=False)
     _composition: GlycanComposition = field(init=False)
+    _cores: list[int] = field(init=False)
 
     def __attrs_post_init__(self):
+        self._init_composition()
+        self._init_cores()
+
+    def _init_composition(self):
         object.__setattr__(
             self,
             "_composition",
             GlycanComposition.from_glycan(self._glypy_glycan),
         )
+
+    def _init_cores(self):
+        should_be = ['Glc2NAc', 'Glc2NAc', 'Man', 'Man', 'Man']
+        cores: list[int] = []
+        for node in self._breadth_first_traversal(skip=["Fuc"]):
+            # The first two monosaacharides could only be "Glc2NAc".
+            # However, when the glycan is bisecting, the rest of the three monosaccharides
+            # might not all be "Man". So we look for the monosaacharides in the order of
+            # `should_be`, and skip the ones that are not in the order.
+            if get_mono_comp(node) == should_be[len(cores)]:
+                cores.append(node.id)
+            if len(cores) == 5:
+                break
+        self._check_cores(cores)
+        object.__setattr__(self, "_cores", cores)
+
+    def _check_cores(self, cores):
+        """Check the validation of the cores."""
+        core_nodes = [self._glypy_glycan.get(i) for i in cores]
+        core_residues = [MonosaccharideResidue.from_monosaccharide(n) for n in core_nodes]
+        core_comps = [get_mono_comp(n) for n in core_residues]
+        N_glycan_core_comps = ['Glc2NAc', 'Glc2NAc', 'Man', 'Man', 'Man']
+        if sorted(core_comps) != N_glycan_core_comps:
+            raise ValueError(f"Invalid core: {core_comps}")
 
     @classmethod
     def from_string(cls, string: str, format: Literal["glycoct"] = "glycoct") -> NGlycan:
@@ -85,6 +115,15 @@ class NGlycan:
         """
         return cls.from_string(glycoct, format="glycoct")
 
+    def _breadth_first_traversal(
+        self, skip: Iterable[str] = None
+    ) -> Generator[MonosaccharideResidue, None, None]:
+        if skip is None:
+            skip = []
+        for node in self._glypy_glycan.breadth_first_traversal():
+            if get_mono_comp(node) not in skip:
+                yield node
+
     @property
     def type(self) -> GlycanType:
         """The type of the glycan. Either 'complex', 'high-mannose' and 'hybrid'."""
@@ -96,9 +135,11 @@ class NGlycan:
         if self.is_bisecting():
             return GlycanType.COMPLEX
 
+        # If the glycan is not core, and it only has 2 "GlcNAc", it is high-mannose.
         if self._composition[Glc2NAc] == 2:
             return GlycanType.HIGH_MANNOSE
 
+        # If the glycan is mono-antennary and not high-monnose, it is complex.
         bft_iter = self._breadth_first_traversal(skip=["Fuc"])
         for i in range(3):
             next(bft_iter)
@@ -107,9 +148,11 @@ class NGlycan:
         if any((len(node1.links) == 1, len(node2.links) == 1)):
             return GlycanType.COMPLEX
 
+        # Then, if it has 3 "Glc2NAc", it must be hybrid.
         if self._composition[Glc2NAc] == 3:
             return GlycanType.HYBRID
 
+        # All rest cases are complex.
         return GlycanType.COMPLEX
 
     def is_complex(self) -> bool:
@@ -132,21 +175,22 @@ class NGlycan:
         next_node = next(bft_iter)
         return len(next_node.links) == 4
 
-    def count_branches(self) -> int :
+    def count_branches(self) -> int:
         """The number of branches in the glycan."""
         if self.is_complex():
             return self._glypy_glycan.count_branches()
         else:
             raise BranchError("Cannot count branches on non-complex glycans.")
 
-    def _breadth_first_traversal(
-        self, skip: Iterable[str] = None
-    ) -> Generator[MonosaccharideResidue, None, None]:
-        if skip is None:
-            skip = []
-        for node in self._glypy_glycan.breadth_first_traversal():
-            if get_mono_comp(node) not in skip:
-                yield node
+    def count_core_fuc(self) -> int:
+        """The number of core fucoses."""
+        n = 0
+        for node in self._breadth_first_traversal():
+            # node.parents()[0] is the nearest parent, and is a tuple of (Link, Monosaccharide)
+            # node.parents()[0][1] is the Monosaccharide
+            if get_mono_comp(node) == "Fuc" and node.parents()[0][1].id in self._cores:
+                n = n + 1
+        return n
 
     def __repr__(self) -> str:
         return f"NGlycan({to_iupac_lite(self._composition)})"
