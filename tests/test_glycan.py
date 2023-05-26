@@ -107,11 +107,11 @@ LIN
 r"""
 Man
    \
-    Man - Man
-   /         \
-Man           Man - Glc2NAc - Glc2NAc
-             /
-          Man
+    Man
+   /   \
+Man     Man - Glc2NAc - Glc2NAc
+       /
+    Man
 """
 test_glycoct_3 = """RES
 1b:x-dglc-HEX-1:5
@@ -136,11 +136,11 @@ LIN
 
 # H6N3S1 (hybrid)
 r"""
-               Man
-                  \
-                   Man - Man
-                  /         \
-               Man           Man - Glc2NAc - Glc2NAc
+                     Man
+                        \
+                         Man
+                        /   \
+                     Man     Man - Glc2NAc - Glc2NAc
                             /
 Neu5Ac - Gal - Glc2NAc - Man
 """
@@ -237,13 +237,13 @@ LIN
 
 # H6N2 (high mannose)
 r"""
-Man
-   \
-    Man - Man
-   /         \
-Man           Man - Glc2NAc - Glc2NAc
-             /
-    Man - Man
+  Man
+     \
+      Man
+     /   \
+  Man     Man - Glc2NAc - Glc2NAc
+         /
+Man - Man
 """
 test_glycoct_7 = """RES
 1b:x-dglc-HEX-1:5
@@ -498,3 +498,46 @@ class TestGlycan:
     def test_count_antennary_fuc(self, glycoct, expected, make_glycan):
         glycan = make_glycan(glycoct)
         assert glycan.count_antennary_fuc() == expected
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, 2),
+            (test_glycoct_2, 1),
+            (test_glycoct_3, 0),
+            (test_glycoct_4, 1),
+            (test_glycoct_5, 0),
+            (test_glycoct_6, 1),
+            (test_glycoct_7, 0),
+            (test_glycoct_8, 1),
+            (test_glycoct_9, 1),
+        ]
+    )
+    def test_count_sia(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        assert glycan.count_sia() == expected
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, 3),
+            (test_glycoct_3, 5),
+            (test_glycoct_4, 5),
+        ]
+    )
+    def test_count_man(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        assert glycan.count_man() == expected
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, 2),
+            (test_glycoct_2, 2),
+            (test_glycoct_3, 0),
+            (test_glycoct_4, 1),
+        ]
+    )
+    def test_count_gal(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        assert glycan.count_gal() == expected

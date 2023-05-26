@@ -21,6 +21,7 @@ Glc2NAc = MonosaccharideResidue.from_iupac_lite("Glc2NAc")
 Man = MonosaccharideResidue.from_iupac_lite("Man")
 Gal = MonosaccharideResidue.from_iupac_lite("Gal")
 Neu5Ac = MonosaccharideResidue.from_iupac_lite("Neu5Ac")
+Neu5Gc = MonosaccharideResidue.from_iupac_lite("Neu5Gc")
 Fuc = MonosaccharideResidue.from_iupac_lite("Fuc")
 
 
@@ -220,6 +221,18 @@ class NGlycan:
     def count_antennary_fuc(self) -> int:
         """The number of antennary fucoses."""
         return self.count_fuc() - self.count_core_fuc()
+
+    def count_sia(self) -> int:
+        """The number of sialic acids."""
+        return self._composition[Neu5Ac] + self._composition[Neu5Gc]
+
+    def count_man(self) -> int:
+        """The number of mannoses."""
+        return self._composition[Man]
+
+    def count_gal(self) -> int:
+        """The number of galactoses."""
+        return self._composition[Gal]
 
     def __repr__(self) -> str:
         return f"NGlycan({to_iupac_lite(self._composition)})"
