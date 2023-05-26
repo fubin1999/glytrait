@@ -27,6 +27,10 @@ class StructureParseError(Exception):
     """Raised when a structure cannot be parsed."""
 
 
+class BranchError(Exception):
+    """Raised when `count_branch` is called on non-complex glycans."""
+
+
 class GlycanType(Enum):
     """The type of glycan."""
 
@@ -89,7 +93,7 @@ class NGlycan:
             return GlycanType.COMPLEX
 
         # Bisecting could only be found in complex type.
-        if self.is_bisecting:
+        if self.is_bisecting():
             return GlycanType.COMPLEX
 
         if self._composition[Glc2NAc] == 2:
@@ -120,7 +124,6 @@ class NGlycan:
         """Whether the glycan is hybrid."""
         return self.type == GlycanType.HYBRID
 
-    @property
     def is_bisecting(self) -> bool:
         """Whether the glycan has a bisection."""
         bft_iter = self._breadth_first_traversal(skip=["Fuc"])
@@ -128,6 +131,13 @@ class NGlycan:
             next(bft_iter)
         next_node = next(bft_iter)
         return len(next_node.links) == 4
+
+    def count_branches(self) -> int :
+        """The number of branches in the glycan."""
+        if self.is_complex():
+            return self._glypy_glycan.count_branches()
+        else:
+            raise BranchError("Cannot count branches on non-complex glycans.")
 
     def _breadth_first_traversal(
         self, skip: Iterable[str] = None

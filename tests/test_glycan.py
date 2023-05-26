@@ -267,6 +267,63 @@ LIN
 9:1d(2+1)10n
 """
 
+# H6N6F1S1
+r"""
+Neu5Ac - Gal - Glc2NAc
+                      \
+                       Man
+                      /   \
+         Gal - Glc2NAc     \                   Fuc
+                            \                   |
+                   Glc2NAc - Man - Glc2NAc - Glc2NAc
+                            /
+         Gal - Glc2NAc - Man
+"""
+test_glycoct_8 = """RES
+1b:x-dglc-HEX-1:5
+2b:x-lgal-HEX-1:5|6:d
+3b:x-dglc-HEX-1:5
+4b:x-dman-HEX-1:5
+5b:x-dglc-HEX-1:5
+6s:n-acetyl
+7b:x-dman-HEX-1:5
+8b:x-dglc-HEX-1:5
+9b:x-dgal-HEX-1:5
+10s:n-acetyl
+11b:x-dman-HEX-1:5
+12b:x-dglc-HEX-1:5
+13b:x-dgal-HEX-1:5
+14s:n-acetyl
+15b:x-dglc-HEX-1:5
+16b:x-dgal-HEX-1:5
+17b:x-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+18s:n-acetyl
+19s:n-acetyl
+20s:n-acetyl
+21s:n-acetyl
+LIN
+1:1o(-1+1)2d
+2:1o(-1+1)3d
+3:3o(-1+1)4d
+4:4o(-1+1)5d
+5:5d(2+1)6n
+6:4o(-1+1)7d
+7:7o(-1+1)8d
+8:8o(-1+1)9d
+9:8d(2+1)10n
+10:4o(-1+1)11d
+11:11o(-1+1)12d
+12:12o(-1+1)13d
+13:12d(2+1)14n
+14:11o(-1+1)15d
+15:15o(-1+1)16d
+16:16o(-1+2)17d
+17:17d(5+1)18n
+18:15d(2+1)19n
+19:3d(2+1)20n
+20:1d(2+1)21n
+"""
+
 
 class TestGlycan:
 
@@ -318,7 +375,7 @@ class TestGlycan:
     )
     def test_bisection(self, glycoct, expected, make_glycan):
         glycan = make_glycan(glycoct)
-        assert glycan.is_bisecting == expected
+        assert glycan.is_bisecting() == expected
 
     def test_is_complex(self, make_glycan):
         glycan = make_glycan(test_glycoct_1)
@@ -331,3 +388,20 @@ class TestGlycan:
     def test_is_high_mannose(self, make_glycan):
         glycan = make_glycan(test_glycoct_3)
         assert glycan.is_high_mannose() is True
+
+    @pytest.mark.parametrize(
+        """glycoct, expected""",
+        [
+            (test_glycoct_1, 2),
+            (test_glycoct_2, 2),
+            (test_glycoct_8, 3),
+        ]
+    )
+    def test_count_branches(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        assert glycan.count_branches() == expected
+
+    def test_count_branches_non_complex(self, make_glycan):
+        glycan = make_glycan(test_glycoct_3)
+        with pytest.raises(glyc.BranchError):
+            glycan.count_branches()
