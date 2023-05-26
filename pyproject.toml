@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "glytrait"
+version = "0.1.0"
+description = ""
+authors = ["fubin1999 <65430559+fubin1999@users.noreply.github.com>"]
+readme = "README.md"
+
+[[tool.poetry.source]]
+name = "aliyun"
+url = "http://mirrors.aliyun.com/pypi/simple"
+default = true
+
+[tool.poetry.dependencies]
+python = "^3.10"
+glypy = "^1.0.8"
+attrs = "^23.1.0"
+
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+pytest = "^7.3.1"
+coverage = "^7.2.6"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
