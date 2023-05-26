@@ -7,6 +7,7 @@ from typing import Literal
 from attrs import frozen, field
 from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError
 from glypy.structure.glycan import Glycan as GlypyGlycan
+from glypy.structure.monosaccharide import Monosaccharide
 from glypy.structure.glycan_composition import (
     GlycanComposition,
     to_iupac_lite,
@@ -124,6 +125,27 @@ class NGlycan:
             if get_mono_comp(node) not in skip:
                 yield node
 
+    def _get_branch_core_man(self) -> tuple[Monosaccharide, Monosaccharide]:
+        # Branch core mannose is defined as:
+        #
+        # X - Man  <- This one
+        #        \
+        #         Man - Glc2NAc - Glc2NAc
+        #        /
+        # X - Man  <- And this one
+        bft_iter = self._breadth_first_traversal(skip=["Fuc"])
+        for i in range(3):
+            next(bft_iter)
+        while True:
+            node1 = next(bft_iter)
+            if get_mono_comp(node1) == "Man":
+                break
+        while True:
+            node2 = next(bft_iter)
+            if get_mono_comp(node2) == "Man":
+                break
+        return node1, node2
+
     @property
     def type(self) -> GlycanType:
         """The type of the glycan. Either 'complex', 'high-mannose' and 'hybrid'."""
@@ -140,11 +162,7 @@ class NGlycan:
             return GlycanType.HIGH_MANNOSE
 
         # If the glycan is mono-antennary and not high-monnose, it is complex.
-        bft_iter = self._breadth_first_traversal(skip=["Fuc"])
-        for i in range(3):
-            next(bft_iter)
-        node1 = next(bft_iter)
-        node2 = next(bft_iter)
+        node1, node2 = self._get_branch_core_man()
         if any((len(node1.links) == 1, len(node2.links) == 1)):
             return GlycanType.COMPLEX
 
@@ -175,12 +193,12 @@ class NGlycan:
         next_node = next(bft_iter)
         return len(next_node.links) == 4
 
-    def count_branches(self) -> int:
+    def count_antenna(self) -> int:
         """The number of branches in the glycan."""
-        if self.is_complex():
-            return self._glypy_glycan.count_branches()
-        else:
+        if not self.is_complex():
             raise BranchError("Cannot count branches on non-complex glycans.")
+        node1, node2 = self._get_branch_core_man()
+        return len(node1.links) + len(node2.links) - 2
 
     def count_core_fuc(self) -> int:
         """The number of core fucoses."""

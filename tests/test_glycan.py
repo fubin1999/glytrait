@@ -441,17 +441,19 @@ class TestGlycan:
         [
             (test_glycoct_1, 2),
             (test_glycoct_2, 2),
+            (test_glycoct_5, 0),
+            (test_glycoct_6, 1),
             (test_glycoct_8, 3),
         ]
     )
     def test_count_branches(self, glycoct, expected, make_glycan):
         glycan = make_glycan(glycoct)
-        assert glycan.count_branches() == expected
+        assert glycan.count_antenna() == expected
 
     def test_count_branches_non_complex(self, make_glycan):
         glycan = make_glycan(test_glycoct_3)
         with pytest.raises(glyc.BranchError):
-            glycan.count_branches()
+            glycan.count_antenna()
 
     @pytest.mark.parametrize(
         "glycoct, expected",
