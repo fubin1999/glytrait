@@ -7,15 +7,14 @@ from typing import Literal
 from attrs import frozen, field
 from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError
 from glypy.structure.glycan import Glycan as GlypyGlycan
-from glypy.structure.monosaccharide import Monosaccharide
 from glypy.structure.glycan_composition import (
     GlycanComposition,
     to_iupac_lite,
     MonosaccharideResidue,
 )
+from glypy.structure.monosaccharide import Monosaccharide
 
 from .utils import get_mono_comp
-
 
 N_glycan_core = GlycanComposition.parse("{Man:3; Glc2NAc:2}")
 Glc2NAc = MonosaccharideResidue.from_iupac_lite("Glc2NAc")
@@ -61,7 +60,7 @@ class NGlycan:
         )
 
     def _init_cores(self):
-        should_be = ['Glc2NAc', 'Glc2NAc', 'Man', 'Man', 'Man']
+        should_be = ["Glc2NAc", "Glc2NAc", "Man", "Man", "Man"]
         cores: list[int] = []
         for node in self._breadth_first_traversal(skip=["Fuc"]):
             # The first two monosaacharides could only be "Glc2NAc".
@@ -78,14 +77,18 @@ class NGlycan:
     def _check_cores(self, cores):
         """Check the validation of the cores."""
         core_nodes = [self._glypy_glycan.get(i) for i in cores]
-        core_residues = [MonosaccharideResidue.from_monosaccharide(n) for n in core_nodes]
+        core_residues = [
+            MonosaccharideResidue.from_monosaccharide(n) for n in core_nodes
+        ]
         core_comps = [get_mono_comp(n) for n in core_residues]
-        N_glycan_core_comps = ['Glc2NAc', 'Glc2NAc', 'Man', 'Man', 'Man']
+        N_glycan_core_comps = ["Glc2NAc", "Glc2NAc", "Man", "Man", "Man"]
         if sorted(core_comps) != N_glycan_core_comps:
             raise ValueError(f"Invalid core: {core_comps}")
 
     @classmethod
-    def from_string(cls, string: str, format: Literal["glycoct"] = "glycoct") -> NGlycan:
+    def from_string(
+        cls, string: str, format: Literal["glycoct"] = "glycoct"
+    ) -> NGlycan:
         """Build a glycan from a string representation.
 
         Args:
@@ -200,6 +203,10 @@ class NGlycan:
         node1, node2 = self._get_branch_core_man()
         return len(node1.links) + len(node2.links) - 2
 
+    def count_fuc(self) -> int:
+        """The number of fucoses."""
+        return self._composition[Fuc]
+
     def count_core_fuc(self) -> int:
         """The number of core fucoses."""
         n = 0
@@ -209,6 +216,10 @@ class NGlycan:
             if get_mono_comp(node) == "Fuc" and node.parents()[0][1].id in self._cores:
                 n = n + 1
         return n
+
+    def count_antennary_fuc(self) -> int:
+        """The number of antennary fucoses."""
+        return self.count_fuc() - self.count_core_fuc()
 
     def __repr__(self) -> str:
         return f"NGlycan({to_iupac_lite(self._composition)})"

@@ -7,6 +7,7 @@ from glytrait import glycan as glyc
 def make_glycan():
     def _make_glycan(string, format="glycoct"):
         return glyc.NGlycan.from_string(string, format=format)
+
     return _make_glycan
 
 
@@ -373,7 +374,6 @@ LIN
 
 
 class TestGlycan:
-
     def test_from_string(self):
         glycan = glyc.NGlycan.from_string(test_glycoct_1, format="glycoct")
         assert repr(glycan) == "NGlycan({Gal:2; Man:3; Glc2NAc:4; Neu5Ac:2})"
@@ -407,7 +407,7 @@ class TestGlycan:
             (5, test_glycoct_5, glyc.GlycanType.COMPLEX),
             (6, test_glycoct_6, glyc.GlycanType.COMPLEX),
             (7, test_glycoct_7, glyc.GlycanType.HIGH_MANNOSE),
-        ]
+        ],
     )
     def test_type(self, glycoct, expected, id, make_glycan):
         glycan = make_glycan(glycoct)
@@ -418,7 +418,7 @@ class TestGlycan:
         [
             (test_glycoct_1, False),
             (test_glycoct_2, True),
-        ]
+        ],
     )
     def test_bisection(self, glycoct, expected, make_glycan):
         glycan = make_glycan(glycoct)
@@ -444,7 +444,7 @@ class TestGlycan:
             (test_glycoct_5, 0),
             (test_glycoct_6, 1),
             (test_glycoct_8, 3),
-        ]
+        ],
     )
     def test_count_branches(self, glycoct, expected, make_glycan):
         glycan = make_glycan(glycoct)
@@ -460,10 +460,41 @@ class TestGlycan:
         [
             (test_glycoct_1, 0),
             (test_glycoct_2, 1),
+            (test_glycoct_3, 0),
+            (test_glycoct_4, 0),
+            (test_glycoct_5, 0),
+            (test_glycoct_6, 0),
+            (test_glycoct_7, 0),
+            (test_glycoct_8, 1),
+            (test_glycoct_9, 3),
+        ],
+    )
+    def test_count_fuc(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        assert glycan.count_fuc() == expected
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, 0),
+            (test_glycoct_2, 1),
             (test_glycoct_8, 1),
             (test_glycoct_9, 1),
-        ]
+        ],
     )
     def test_count_core_fuc(self, glycoct, expected, make_glycan):
         glycan = make_glycan(glycoct)
         assert glycan.count_core_fuc() == expected
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, 0),
+            (test_glycoct_2, 0),
+            (test_glycoct_8, 0),
+            (test_glycoct_9, 2),
+        ],
+    )
+    def test_count_antennary_fuc(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        assert glycan.count_antennary_fuc() == expected
