@@ -14,6 +14,8 @@ default = true
 python = "^3.10"
 glypy = "^1.0.8"
 attrs = "^23.1.0"
+pandas = "^2.0.1"
+numpy = "^1.24.3"
 
 
 [tool.poetry.group.dev.dependencies]
