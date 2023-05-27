@@ -1,8 +1,30 @@
 from collections.abc import Iterable
 
+import numpy as np
 import pandas as pd
+from attrs import define, field
+from numpy.typing import NDArray
 
 from .glycan import NGlycan
+
+valid_meta_properties = [
+    ".",
+    "isComplex",
+    "isHighMannose",
+    "isHybrid",
+    "isBisecting",
+    "is1Antennary",
+    "is2Antennary",
+    "is3Antennary",
+    "is4Antennary",
+    "totalAntenna",
+    "coreFuc",
+    "antennaryFuc",
+    "totalFuc",
+    "totalSia",
+    "totalMan",
+    "totalGal",
+]
 
 
 def build_meta_property_table(
@@ -55,3 +77,91 @@ def build_meta_property_table(
     meta_property_table["totalGal"] = [g.count_gal() for g in glycans]
 
     return meta_property_table
+
+
+def _check_length(instance, attribute, value):
+    if len(value) == 0:
+        raise ValueError(f"`{attribute.name}` cannot be empty.")
+
+
+def _check_meta_properties(instance, attribute, value):
+    invalid_properties = set(value) - set(valid_meta_properties)
+    if len(invalid_properties) > 0:
+        raise ValueError(
+            f"`{attribute.name}` contains invalid meta properties: "
+            f"{', '.join(invalid_properties)}."
+        )
+
+
+_validators = [_check_length, _check_meta_properties]
+
+
+@define
+class TraitFormula:
+    """The trait formula.
+
+    Attributes:
+        description (str): The description of the trait.
+        name (str): The name of the trait.
+        numerator_properties (tuple[str]): The meta properties in the numerator.
+        denominator_properties (tuple[str]): The meta properties in the denominator.
+
+    Examples:
+        >>> formula = TraitFormula(
+        ...     description="The ratio of high-mannose to complex glycans",
+        ...     name="MHy",
+        ...     numerator_properties=["isHighMannose"],
+        ...     denominator_properties=["isComplex"],
+        ... )
+        >>> formula.initialize(meta_property_table)
+        >>> trait_df[formula.name] = formula.calcu_trait(abundance_table)
+    """
+
+    description: str = field()
+    name: str = field()
+    numerator_properties: list[str] = field(converter=list, validator=_validators)
+    denominator_properties: list[str] = field(converter=list, validator=_validators)
+    _initialized = field(init=False, default=False)
+    _numerator = field(init=False, default=None)
+    _denominator = field(init=False, default=None)
+
+    def initialize(self, meta_property_table: pd.DataFrame) -> None:
+        """Initialize the trait formula.
+
+        Args:
+            meta_property_table (pd.DataFrame): The table of meta properties generated
+                by `build_meta_property_table`.
+        """
+        self._numerator = self._initialize(
+            meta_property_table, self.numerator_properties
+        )
+        self._denominator = self._initialize(
+            meta_property_table, self.denominator_properties
+        )
+        self._initialized = True
+
+    @staticmethod
+    def _initialize(
+        meta_property_table: pd.DataFrame, properties: list[str]
+    ) -> NDArray:
+        if len(properties) == 1 and properties[0] == ".":
+            return np.ones_like(meta_property_table.index)
+        else:
+            return meta_property_table[properties].prod(axis=1)
+
+    def calcu_trait(self, abundance_table: pd.DataFrame) -> NDArray:
+        """Calculate the trait.
+
+        Args:
+            abundance_table (pd.DataFrame): The glycan abundance table, with samples as index,
+                and glycans as columns.
+
+        Returns:
+            NDArray: An array of trait values for each sample.
+        """
+        if not self._initialized:
+            raise RuntimeError("TraitFormula is not initialized.")
+
+        numerator = abundance_table.values @ self._numerator
+        denominator = abundance_table.values @ self._denominator
+        return numerator / denominator
