@@ -16,6 +16,7 @@ glypy = "^1.0.8"
 attrs = "^23.1.0"
 pandas = "^2.0.1"
 numpy = "^1.24.3"
+openpyxl = "^3.1.2"
 
 
 [tool.poetry.group.dev.dependencies]
