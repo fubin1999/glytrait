@@ -14,8 +14,6 @@ from glypy.structure.glycan_composition import (
 )
 from glypy.structure.monosaccharide import Monosaccharide
 
-from .utils import get_mono_comp
-
 N_glycan_core = GlycanComposition.parse("{Man:3; Glc2NAc:2}")
 Glc2NAc = MonosaccharideResidue.from_iupac_lite("Glc2NAc")
 Man = MonosaccharideResidue.from_iupac_lite("Man")
@@ -236,3 +234,15 @@ class NGlycan:
 
     def __repr__(self) -> str:
         return f"NGlycan({to_iupac_lite(self._composition)})"
+
+
+def get_mono_comp(mono: MonosaccharideResidue) -> str:
+    """Get the composition of a monosaccharide residue.
+
+    Args:
+        mono (MonosaccharideResidue): The monosaccharide residue.
+
+    Returns:
+        GlycanComposition: The composition.
+    """
+    return MonosaccharideResidue.from_monosaccharide(mono).name()
