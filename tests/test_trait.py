@@ -64,6 +64,29 @@ class TestTraitFormula:
             )
         assert "`numerator_properties` cannot be empty." in str(excinfo.value)
 
+    def test_init_dot_in_numerator(self):
+        with pytest.raises(ValueError) as excinfo:
+            trait.TraitFormula(
+                description="The ratio of high-mannose to hybrid glycans",
+                name="MHy",
+                numerator_properties=["."],
+                denominator_properties=["isHybrid"],
+            )
+        assert "'.' should not be used in the numerator." in str(excinfo.value)
+
+    def test_init_dot_with_others_in_denominator(self):
+        with pytest.raises(ValueError) as excinfo:
+            trait.TraitFormula(
+                description="The ratio of high-mannose to hybrid glycans",
+                name="MHy",
+                numerator_properties=["isHighMannose"],
+                denominator_properties=["isHybrid", "."],
+            )
+        assert (
+            "'.' should not be used with other meta properties in the denominator."
+            in str(excinfo.value)
+        )
+
     def test_calcu_trait_without_initialization(self, formula1):
         with pytest.raises(RuntimeError):
             formula1.calcu_trait(None)

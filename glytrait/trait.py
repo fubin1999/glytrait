@@ -99,7 +99,14 @@ def _check_meta_properties(instance, attribute, value):
         )
 
 
-_validators = [_check_length, _check_meta_properties]
+def _check_numerator(instance, attribute, value):
+    if "." in value:
+        raise ValueError("'.' should not be used in the numerator.")
+
+
+def _check_denominator(instance, attribute, value):
+    if "." in value and len(value) > 1:
+        raise ValueError("'.' should not be used with other meta properties in the denominator.")
 
 
 @define
@@ -125,8 +132,12 @@ class TraitFormula:
 
     description: str = field()
     name: str = field()
-    numerator_properties: list[str] = field(converter=list, validator=_validators)
-    denominator_properties: list[str] = field(converter=list, validator=_validators)
+    numerator_properties: list[str] = field(converter=list, validator=[
+        _check_length, _check_meta_properties, _check_numerator
+    ])
+    denominator_properties: list[str] = field(converter=list, validator=[
+        _check_length, _check_meta_properties, _check_denominator
+    ])
     _initialized = field(init=False, default=False)
     _numerator = field(init=False, default=None)
     _denominator = field(init=False, default=None)
