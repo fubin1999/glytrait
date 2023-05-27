@@ -1,4 +1,6 @@
-from collections.abc import Iterable
+import re
+from collections.abc import Iterable, Generator
+from importlib.resources import files
 
 import numpy as np
 import pandas as pd
@@ -25,6 +27,10 @@ valid_meta_properties = [
     "totalMan",
     "totalGal",
 ]
+
+
+class FormulaParseError(Exception):
+    """Raised if a formula could not be parsed."""
 
 
 def build_meta_property_table(
@@ -165,3 +171,82 @@ class TraitFormula:
         numerator = abundance_table.values @ self._numerator
         denominator = abundance_table.values @ self._denominator
         return numerator / denominator
+
+
+DEFAULT_FORMULA_FILE = "trait_forluma.txt"
+
+
+def load_formulas(
+    formula_file_reader: Iterable[str],
+) -> Generator[TraitFormula, None, None]:
+    """Load the formulas from a file.
+
+    Args:
+        formula_file_reader (Iterable[str]): The path of the formula file.
+
+    Returns:
+        Generator[TraitFormula, None, None]: The generator of the formulas.
+    """
+    description = None
+    expression = None
+    for line in formula_file_reader:
+        if line.startswith("@"):
+            if description is not None:
+                raise FormulaParseError(
+                    "One description line must follow a formula line."
+                )
+            description = line[1:].strip()
+
+        if line.startswith("$"):
+            if description is None:
+                raise FormulaParseError(
+                    "One formula line must follow a description line."
+                )
+            expression = line[1:].strip()
+            name, num_prop, den_prop = _parse_expression(expression)
+            yield TraitFormula(
+                description=description,
+                name=name,
+                numerator_properties=num_prop,
+                denominator_properties=den_prop,
+            )
+            description = None
+            expression = None
+
+    if description is not None and expression is None:
+        raise FormulaParseError("One description line must follow a formula line.")
+
+
+def load_default_formulas() -> Generator[TraitFormula, None, None]:
+    """Load the default formulas."""
+    file_reader = files("glytrait").joinpath(DEFAULT_FORMULA_FILE).open("r")
+    yield from load_formulas(file_reader)
+
+
+def _parse_expression(expr: str) -> tuple[str, list[str], list[str]]:
+    """Parse the expression of a formula.
+
+    Args:
+        expr (str): The expression of a formula.
+
+    Returns:
+        tuple[str, list[str], list[str]]: The name, numerator properties, and denominator
+            properties of the formula.
+    """
+    pattern = r"(\w+) = \((.+)\) / \((.+)\)"
+    match = re.match(pattern, expr)
+    if match is None:
+        raise FormulaParseError(f"Invalid expression: '{expr}'")
+    name, num_prop, den_prop = match.groups()
+
+    num_prop = num_prop.split("*")
+    num_prop = [p.strip() for p in num_prop]
+    den_prop = den_prop.split("*")
+    den_prop = [p.strip() for p in den_prop]
+
+    # Check if there are invalid characters in the properties
+    for prop in num_prop + den_prop:
+        if re.search(r"\W", prop) and prop != ".":
+            raise FormulaParseError(f"Invalid expression: '{expr}'")
+
+    return name, num_prop, den_prop

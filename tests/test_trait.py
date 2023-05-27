@@ -79,3 +79,91 @@ class TestTraitFormula:
         result = formula2.calcu_trait(abundance_table)
         expected = [5 / 22, 7 / 26, 9 / 30]
         np.testing.assert_array_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "expression, name, num_props, den_props",
+    [
+        ("TM = (isHighMannose) / (.)", "TM", ["isHighMannose"], ["."]),
+        ("MHy = (isHighMannose) / (isHybrid)", "MHy", ["isHighMannose"], ["isHybrid"]),
+        (
+            "CA1 = (isComplex * is1Antennay) / (isComplex)",
+            "CA1",
+            ["isComplex", "is1Antennay"],
+            ["isComplex"],
+        ),
+    ],
+)
+def test_parse_expression(expression, name, num_props, den_props):
+    result = trait._parse_expression(expression)
+    expected = (name, num_props, den_props)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "(isHighMannose) / (.)",
+        "TM = (isHighMannose) / (isHybrid",
+        "MHy = (isHighMannose)  (isHybrid)",
+        "CA1 = (isComplex  is1Antennay) / (isComplex)",
+        "CA1 * TM = (isComplex * is1Antennay) / (isComplex)",
+    ],
+)
+def test_parse_expression_invalid(expression):
+    with pytest.raises(trait.FormulaParseError) as excinfo:
+        trait._parse_expression(expression)
+    assert f"Invalid expression: '{expression}'" in str(excinfo.value)
+
+
+def test_load_default_formulas(tmp_path, monkeypatch):
+    text = """
+# Some comment
+
+@ Relative abundance of high mannose type glycans within total spectrum
+$ TM = (isHighMannose) / (.)
+
+@ The ratio of high-mannose to hybrid glycans
+$ MHy = (isHighMannose) / (isHybrid)
+"""
+    formula_file = tmp_path / "formula.txt"
+    formula_file.write_text(text)
+    monkeypatch.setattr(trait, "DEFAULT_FORMULA_FILE", str(formula_file))
+    result = list(trait.load_default_formulas())
+    expected = [
+        trait.TraitFormula(
+            description="Relative abundance of high mannose type glycans within total spectrum",
+            name="TM",
+            numerator_properties=["isHighMannose"],
+            denominator_properties=["."],
+        ),
+        trait.TraitFormula(
+            description="The ratio of high-mannose to hybrid glycans",
+            name="MHy",
+            numerator_properties=["isHighMannose"],
+            denominator_properties=["isHybrid"],
+        ),
+    ]
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        """
+@ Description 1
+@ Description 2
+""",
+        """
+@ Description 1
+$ TM = (isHighMannose) / (.)
+$ MHy = (isHighMannose) / (isHybrid)
+""",
+    ],
+)
+def test_load_default_formulas_invalid(text, tmp_path, monkeypatch):
+    formula_file = tmp_path / "formula.txt"
+    formula_file.write_text(text)
+    monkeypatch.setattr(trait, "DEFAULT_FORMULA_FILE", str(formula_file))
+    with pytest.raises(trait.FormulaParseError):
+        list(trait.load_default_formulas())

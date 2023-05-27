@@ -1,0 +1,112 @@
+# =======================
+# File Format Description
+# =======================
+# Each formula is a block of text. Each block starts with a description line starting with "@",
+# followed by the formula line starting with "$". The description line and the formula line should
+# have a line break. Formula blocks are separated by one empty line. All lines starting with
+# "#" are comments and will be ignored.
+#
+# Example:
+# # This is a comment line, and will be ignored.  (the comment line, not necessary)
+# @ Relative abundance of high mannose type glycans within total spectrum  (the description line)
+# $ TM = (isHighMannose) / (.)  (the formula line)
+#
+#
+# ===================
+# Formula Description
+# ===================
+# The formula is instinctive to understand. It represents the ratio of the summed abundance of
+# two groups of glycans. Most commonly, it can be interpreted as the relative abundance of one
+# smaller group of glycans within a larger group of glycans.
+#
+# Let's look at an example:
+# CA1 = (isComplex * is1Antennay) / (isComplex)
+#
+# "CA1" is the name of the trait. Behind the "=" we can see the numerator
+# (isComplex * is1Antennay) and the denominator (isComplex). There are two "meta properties" in
+# the numerator: "isComplex" and "is1Antennay", and only one "meta property" in the denominator:
+# "isComplex". The "meta property" is just a fancy name for some basic properties of glycans, such
+# as "isHighMannose", "isHybrid", "isComplex", "is1Antennay", etc. For a full list of valid meta
+# properties, see the section "Valid Meta Properties" below. The "*" means "and", so the numerator
+# means "those glycans that are complex and monoantennary". All in all, the formula above means
+# "the relative abundance of monoantennary glycans within complex type glycans".
+#
+# Note that "isComplex" is necessary in the numerator, as the "smaller group" in this case is a
+# subset of the "bigger group", the glycans of complex type. As a rule of thumb, if you want to
+# calculate the relative abundance of a group of glycans WITHIN another group of glycans, you
+# should always include the "isXXX" property of the bigger group both in the denominator and the
+# numerator.
+#
+# In detail, the formula should be in the format of:
+#
+# <Name> = (<Numerator1> * <Numerator2> * ...) / (<Denominator1> * <Denominator2> * ...)
+#
+# - <Name> is the name of the formula, which will be used as the column name in the output file.
+# - <Numerator1>, <Numerator2>, ... are the meta properties of the numerator.
+# - <Denominator1>, <Denominator2>, ... are the meta properties of the denominator.
+# - () is necessary to group the numerator and denominator for clearness, even if there is only
+#   one meta property on the numerator and the denominator.
+# - All numerators and denominators should be separated by "*". If there is only one numerator or
+#   denominator, "*" is not needed.
+# - The "/" is necessary to separate the numerator and denominator.
+# - Some formulas may use all glycans as the denominator. In this case, use (.) as the
+#   denominator. A combination of "." and other meta properties (e.g. (. * isComplex)) is not
+#   allowed.
+#
+# Examples:
+# @ Relative abundance of high mannose type glycans within total spectrum
+# $ TM = (isHighMannose) / (.)
+#
+# @ Relative abundance of monoantennary glycans within complex type glycans
+# $ CA1 = (isComplex * is1Antennay) / (isComplex)
+#
+#
+# =====================
+# Valid Meta Properties
+# =====================
+#   - . (means all glycans, see above for details)
+#   - isHighMannose
+#   - isHybrid
+#   - isComplex
+#   - is1Antennary
+#   - is2Antennary
+#   - is3Antennary
+#   - is4Antennary
+#   - totalAntenna
+#   - coreFuc
+#   - antennaryFuc
+#   - totalFuc
+#   - totalMan
+#   - totalSia
+#   - totalGal
+#
+# By now the custom meta properties are not supported. If you want to use custom meta properties,
+# please feel free to modify the source code. If you find some important missing meta properties,
+# please contact the author: 21210220012@m.fudan.edu.cn, or open an issue on GitHub.
+
+
+# From now on are the default formulas defined in glyTrait package.
+
+@ Relative abundance of high mannose type glycans within total spectrum
+$ TM = (isHighMannose) / (.)
+
+@ Relative abundance of hybrid type glycans within total spectrum
+$ THy = (isHybrid) / (.)
+
+@ The ratio of high-mannose to hybrid glycans
+$ MHy = (isHighMannose) / (isHybrid)
+
+@ Average number of mannoses on high mannose type glycans
+$ MM = (isHighMannose * totalMan) / (isHighMannose)
+
+@ Relative abundance of monoantennary glycans within complex type glycans
+$ CA1 = (isComplex * is1Antennay) / (isComplex)
+
+@ Relative abundance of diantennary glycans within complex type glycans
+$ CA2 = (isComplex * is2Antennay) / (isComplex)
+
+@ Relative abundance of triantennary glycans within complex type glycans
+$ CA3 = (isComplex * is3Antennay) / (isComplex)
+
+@ Relative abundance of tetra-antennary glycans within complex type glycans
+$ CA4 = (isComplex * is4Antennay) / (isComplex)
