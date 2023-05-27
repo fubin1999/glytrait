@@ -200,7 +200,7 @@ class NGlycan:
     def count_antenna(self) -> int:
         """The number of branches in the glycan."""
         if not self.is_complex():
-            raise BranchError("Cannot count branches on non-complex glycans.")
+            return 0
         node1, node2 = self._get_branch_core_man()
         return len(node1.links) + len(node2.links) - 2
 
