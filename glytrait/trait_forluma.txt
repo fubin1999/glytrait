@@ -100,13 +100,13 @@ $ MHy = (isHighMannose) / (isHybrid)
 $ MM = (isHighMannose * totalMan) / (isHighMannose)
 
 @ Relative abundance of monoantennary glycans within complex type glycans
-$ CA1 = (isComplex * is1Antennay) / (isComplex)
+$ CA1 = (isComplex * is1Antennary) / (isComplex)
 
 @ Relative abundance of diantennary glycans within complex type glycans
-$ CA2 = (isComplex * is2Antennay) / (isComplex)
+$ CA2 = (isComplex * is2Antennary) / (isComplex)
 
 @ Relative abundance of triantennary glycans within complex type glycans
-$ CA3 = (isComplex * is3Antennay) / (isComplex)
+$ CA3 = (isComplex * is3Antennary) / (isComplex)
 
 @ Relative abundance of tetra-antennary glycans within complex type glycans
-$ CA4 = (isComplex * is4Antennay) / (isComplex)
+$ CA4 = (isComplex * is4Antennary) / (isComplex)
