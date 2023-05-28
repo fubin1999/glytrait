@@ -15,7 +15,7 @@ python >= 3.10
 1. Install pipx following its [Document](https://pypa.github.io/pipx/installation/).
 2. Install glyTrait:
 ```shell
-$ pipx install https://github.com/fubin1999/glytrait.git
+pipx install git+https://github.com/fubin1999/glytrait.git
 ```
 
 ### Using poetry
