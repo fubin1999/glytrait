@@ -22,8 +22,13 @@ valid_meta_properties = [
     "totalAntenna",
     "coreFuc",
     "antennaryFuc",
+    "hasAntennaryFuc",
     "totalFuc",
+    "hasFuc",
+    "noFuc"
     "totalSia",
+    "hasSia",
+    "noSia",
     "totalMan",
     "totalGal",
 ]
@@ -50,8 +55,13 @@ def build_meta_property_table(
         - totalAntenna: The total number of antennae.
         - coreFuc: The number of fucoses on the core.
         - antennaryFuc: The number of fucoses on the antenna.
+        - hasAntennaryFuc: Whether the glycan has any fucoses on the antenna.
         - totalFuc: The total number of fucoses.
+        - hasFuc: Whether the glycan has any fucoses.
+        - noFuc: Whether the glycan has no fucoses.
         - totalSia: The total number of sialic acids.
+        - hasSia: Whether the glycan has any sialic acids.
+        - noSia: Whether the glycan has no sialic acids.
         - totalMan: The total number of mannoses.
         - totalGal: The total number of galactoses.
 
@@ -77,8 +87,13 @@ def build_meta_property_table(
     meta_property_table["totalAntenna"] = [g.count_antenna() for g in glycans]
     meta_property_table["coreFuc"] = [g.count_core_fuc() for g in glycans]
     meta_property_table["antennaryFuc"] = [g.count_antennary_fuc() for g in glycans]
+    meta_property_table["hasAntennaryFuc"] = [g.count_antennary_fuc() > 0 for g in glycans]
     meta_property_table["totalFuc"] = [g.count_fuc() for g in glycans]
+    meta_property_table["hasFuc"] = [g.count_fuc() > 0 for g in glycans]
+    meta_property_table["noFuc"] = [g.count_fuc() == 0 for g in glycans]
     meta_property_table["totalSia"] = [g.count_sia() for g in glycans]
+    meta_property_table["hasSia"] = [g.count_sia() > 0 for g in glycans]
+    meta_property_table["noSia"] = [g.count_sia() == 0 for g in glycans]
     meta_property_table["totalMan"] = [g.count_man() for g in glycans]
     meta_property_table["totalGal"] = [g.count_gal() for g in glycans]
 
