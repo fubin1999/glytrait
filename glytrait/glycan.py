@@ -224,6 +224,21 @@ class NGlycan:
         """The number of sialic acids."""
         return self._composition[Neu5Ac] + self._composition[Neu5Gc]
 
+    def count_a23_sia(self) -> int:
+        """The number of a2,3-linked sialic acids."""
+        n = 0
+        for node in self._breadth_first_traversal():
+            if get_mono_comp(node) == "Neu5Ac":
+                if node.links[2][0].parent_position == -1:
+                    raise StructureParseError("Sialic acid linkage not specified")
+                elif node.links[2][0].parent_position == 3:
+                    n = n + 1
+        return n
+
+    def count_a26_sia(self) -> int:
+        """The number of a2,6-linked sialic acids."""
+        return self.count_sia() - self.count_a23_sia()
+
     def count_man(self) -> int:
         """The number of mannoses."""
         return self._composition[Man]

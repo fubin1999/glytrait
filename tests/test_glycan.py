@@ -373,6 +373,147 @@ LIN
 """
 
 
+# H5N4E2 (two a2,6-linked Neu5Ac)
+r"""
+Neu5Ac - Gal - Glc2NAc - Man
+      a26                   \
+                             Man - Glc2NAc - Glc2NAc
+                            /
+Neu5Ac - Gal - Glc2NAc - Man
+      a26
+"""
+test_glycoct_10 = """RES
+1b:b-dglc-HEX-1:5
+2s:n-acetyl
+3b:b-dglc-HEX-1:5
+4s:n-acetyl
+5b:b-dman-HEX-1:5
+6b:a-dman-HEX-1:5
+7b:x-dglc-HEX-1:5
+8b:x-dgal-HEX-1:5
+9b:a-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+10s:n-acetyl
+11s:n-acetyl
+12b:a-dman-HEX-1:5
+13b:x-dglc-HEX-1:5
+14b:x-dgal-HEX-1:5
+15b:a-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+16s:n-acetyl
+17s:n-acetyl
+LIN
+1:1d(2+1)2n
+2:1o(4+1)3d
+3:3d(2+1)4n
+4:3o(4+1)5d
+5:5o(3+1)6d
+6:6o(-1+1)7d
+7:7o(-1+1)8d
+8:8o(6+2)9d
+9:9d(5+1)10n
+10:7d(2+1)11n
+11:5o(6+1)12d
+12:12o(-1+1)13d
+13:13o(-1+1)14d
+14:14o(6+2)15d
+15:15d(5+1)16n
+16:13d(2+1)17n
+"""
+
+
+# H5N4L2 (two a2,3-linked Neu5Ac)
+r"""
+Neu5Ac - Gal - Glc2NAc - Man
+      a23                   \
+                             Man - Glc2NAc - Glc2NAc
+                            /
+Neu5Ac - Gal - Glc2NAc - Man
+      a23
+"""
+test_glycoct_11 = """RES
+1b:b-dglc-HEX-1:5
+2s:n-acetyl
+3b:b-dglc-HEX-1:5
+4s:n-acetyl
+5b:b-dman-HEX-1:5
+6b:a-dman-HEX-1:5
+7b:x-dglc-HEX-1:5
+8b:x-dgal-HEX-1:5
+9b:a-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+10s:n-acetyl
+11s:n-acetyl
+12b:a-dman-HEX-1:5
+13b:x-dglc-HEX-1:5
+14b:x-dgal-HEX-1:5
+15b:a-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+16s:n-acetyl
+17s:n-acetyl
+LIN
+1:1d(2+1)2n
+2:1o(4+1)3d
+3:3d(2+1)4n
+4:3o(4+1)5d
+5:5o(3+1)6d
+6:6o(-1+1)7d
+7:7o(-1+1)8d
+8:8o(3+2)9d
+9:9d(5+1)10n
+10:7d(2+1)11n
+11:5o(6+1)12d
+12:12o(-1+1)13d
+13:13o(-1+1)14d
+14:14o(3+2)15d
+15:15d(5+1)16n
+16:13d(2+1)17n
+"""
+
+
+# H5N4L1E1 (one a2,3-linked Neu5Ac, one a2,6-linked Neu5Ac)
+r"""
+Neu5Ac - Gal - Glc2NAc - Man
+      a23                   \
+                             Man - Glc2NAc - Glc2NAc
+                            /
+Neu5Ac - Gal - Glc2NAc - Man
+      a26
+"""
+test_glycoct_12 = """RES
+1b:b-dglc-HEX-1:5
+2s:n-acetyl
+3b:b-dglc-HEX-1:5
+4s:n-acetyl
+5b:b-dman-HEX-1:5
+6b:a-dman-HEX-1:5
+7b:x-dglc-HEX-1:5
+8b:x-dgal-HEX-1:5
+9b:a-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+10s:n-acetyl
+11s:n-acetyl
+12b:a-dman-HEX-1:5
+13b:x-dglc-HEX-1:5
+14b:x-dgal-HEX-1:5
+15b:a-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+16s:n-acetyl
+17s:n-acetyl
+LIN
+1:1d(2+1)2n
+2:1o(4+1)3d
+3:3d(2+1)4n
+4:3o(4+1)5d
+5:5o(3+1)6d
+6:6o(-1+1)7d
+7:7o(-1+1)8d
+8:8o(6+2)9d
+9:9d(5+1)10n
+10:7d(2+1)11n
+11:5o(6+1)12d
+12:12o(-1+1)13d
+13:13o(-1+1)14d
+14:14o(3+2)15d
+15:15d(5+1)16n
+16:13d(2+1)17n
+"""
+
+
 class TestGlycan:
     def test_from_string(self):
         glycan = glyc.NGlycan.from_string(test_glycoct_1, format="glycoct")
@@ -512,6 +653,37 @@ class TestGlycan:
     def test_count_sia(self, glycoct, expected, make_glycan):
         glycan = make_glycan(glycoct)
         assert glycan.count_sia() == expected
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_10, 0),
+            (test_glycoct_11, 2),
+            (test_glycoct_12, 1),
+            (test_glycoct_3, 0),
+        ]
+    )
+    def test_count_a23_sia(self, glycoct, expected, make_glycan):
+        assert make_glycan(glycoct).count_a23_sia() == expected
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_10, 2),
+            (test_glycoct_11, 0),
+            (test_glycoct_12, 1),
+            (test_glycoct_3, 0),
+        ]
+    )
+    def test_count_a26_sia(self, glycoct, expected, make_glycan):
+        assert make_glycan(glycoct).count_a26_sia() == expected
+
+    def test_count_a23_a26_sia_no_linkage_info(self, make_glycan):
+        glycan = make_glycan(test_glycoct_1)
+        with pytest.raises(glyc.StructureParseError):
+            glycan.count_a23_sia()
+        with pytest.raises(glyc.StructureParseError):
+            glycan.count_a26_sia()
 
     @pytest.mark.parametrize(
         "glycoct, expected",
