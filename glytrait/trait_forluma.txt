@@ -4,12 +4,14 @@
 # Each formula is a block of text. Each block starts with a description line starting with "@",
 # followed by the formula line starting with "$". The description line and the formula line should
 # have a line break. Formula blocks are separated by one empty line. All lines starting with
-# "#" are comments and will be ignored.
+# "#" are comments and will be ignored. (You are looking at a comment line right now :P)
 #
-# Example:
-# # This is a comment line, and will be ignored.  (the comment line, not necessary)
-# @ Relative abundance of high mannose type glycans within total spectrum  (the description line)
-# $ TM = (isHighMannose) / (.)  (the formula line)
+# Examples:
+# @ Relative abundance of high mannose type glycans within total spectrum
+# $ TM = (isHighMannose) / (.)
+#
+# @ Relative abundance of monoantennary glycans within complex type glycans
+# $ CA1 = (isComplex * is1Antennay) / (isComplex)
 #
 #
 # ===================
@@ -20,7 +22,7 @@
 # smaller group of glycans within a larger group of glycans.
 #
 # Let's look at an example:
-# CA1 = (isComplex * is1Antennay) / (isComplex)
+# $ CA1 = (isComplex * is1Antennay) / (isComplex)
 #
 # "CA1" is the name of the trait. Behind the "=" we can see the numerator
 # (isComplex * is1Antennay) and the denominator (isComplex). There are two "meta properties" in
@@ -32,14 +34,48 @@
 # "the relative abundance of monoantennary glycans within complex type glycans".
 #
 # Note that "isComplex" is necessary in the numerator, as the "smaller group" in this case is a
-# subset of the "bigger group", the glycans of complex type. As a rule of thumb, if you want to
-# calculate the relative abundance of a group of glycans WITHIN another group of glycans, you
-# should always include the "isXXX" property of the bigger group both in the denominator and the
-# numerator.
+# subset of the "bigger group", the glycans of complex type. However, this can be cumbersome for
+# complex traits. For example, look at the following formula:
 #
-# In detail, the formula should be in the format of:
+# $ A2SF = (isComplex * is2Antennary * hasSia * hasFuc) / (isComplex * is2Antennary * hasSia)
+#           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #
-# <Name> = (<Numerator1> * <Numerator2> * ...) / (<Denominator1> * <Denominator2> * ...)
+# Notice the repeated part. It is both redundant to write and hard to read. To solve this problem,
+# you can use a special symbol "//", means "proportion of". Using this symbol, the formula above
+# can be simplified as:
+#
+# $ A2SF = (hasFuc) // (isComplex * is2Antennary * hasSia)
+#
+# Now the formula is short and much more clear. The "//" symbol means "proportion of", so the
+# formula above means "the proportion of fucosylated glycans within all sialylated diantennary
+# glycans of complex type". For the sake of simplicity and to avoid unnecessary mistakes, the
+# "//" is recommended to be used whenever a trait means "the proportion of ... within ...".
+#
+# Although the "//" symbol is handy, the basic "/" symbol is still necessary in some cases. For
+# example, the following formula means "the ratio of high-mannose to hybrid glycans":
+# $ MHy = (isHighMannose) / (isHybrid)
+#
+# In some special cases, we want all the glycans detected as the denominator. In this case, we use
+# the symbol "." to represent all glycans. For example:
+#
+# $ TM = (isHighMannose) / (.)
+#
+# This formula means "the relative abundance of high mannose type glycans within total spectrum".
+#
+# In other cases, we need to multiply something to the final result. For example, we want to
+# calculate the galactosylation per antenna within diantennary glycans. The formula is:
+#
+# $ A2G = (totalGal) // (isComplex * is2Antennary) * 0.5
+#
+# The " * 0.5" part means "multiply the final result by 0.5". "0.5" is called a "coefficient".
+# Coefficients can be either in decimal (0.5), integer (2), or fraction (1/2) format, and must be
+# positive. The coefficient part is optional. If omitted, the coefficient is assumed to be 1.
+#
+# In summary, the formula should be in the format of:
+#
+# $ <Name> = (<Numerator1> * <Numerator2> * ...) / (<Denominator1> * <Denominator2> * ...) * <Coefficient>
+#                                               ~~~                                       ~~~~~~~~~~~~~~~~
+#                                              or //                                         optional
 #
 # - <Name> is the name of the formula, which will be used as the column name in the output file.
 # - <Numerator1>, <Numerator2>, ... are the meta properties of the numerator.
@@ -48,17 +84,13 @@
 #   one meta property on the numerator and the denominator.
 # - All numerators and denominators should be separated by "*". If there is only one numerator or
 #   denominator, "*" is not needed.
-# - The "/" is necessary to separate the numerator and denominator.
+# - The "/" is necessary to separate the numerator and denominator. If the trait is a proportion
+#   of something within something, use "//" instead of "/".
 # - Some formulas may use all glycans as the denominator. In this case, use (.) as the
 #   denominator. A combination of "." and other meta properties (e.g. (. * isComplex)) is not
 #   allowed.
-#
-# Examples:
-# @ Relative abundance of high mannose type glycans within total spectrum
-# $ TM = (isHighMannose) / (.)
-#
-# @ Relative abundance of monoantennary glycans within complex type glycans
-# $ CA1 = (isComplex * is1Antennay) / (isComplex)
+# - <Coefficient> is the coefficient multiplied to the final result. The coefficient part 
+#   (* <Coefficient>) is optional. If omitted, the coefficient is assumed to be 1.
 #
 #
 # =====================
@@ -68,6 +100,7 @@
 #   - isHighMannose
 #   - isHybrid
 #   - isComplex
+#   - isBisecting
 #   - is1Antennary
 #   - is2Antennary
 #   - is3Antennary
@@ -75,17 +108,27 @@
 #   - totalAntenna
 #   - coreFuc
 #   - antennaryFuc
+#   - hasAntennaryFuc
 #   - totalFuc
+#   - hasFuc
+#   - noFuc
 #   - totalMan
 #   - totalSia
+#   - hasSia
+#   - noSia
 #   - totalGal
 #
 # By now the custom meta properties are not supported. If you want to use custom meta properties,
-# please feel free to modify the source code. If you find some important missing meta properties,
-# please contact the author: 21210220012@m.fudan.edu.cn, or open an issue on GitHub.
+# please feel free to modify the source code. If you find some meta properties really important
+# but missing in the glyTrait package, please contact the author: 21210220012@m.fudan.edu.cn,
+# or open an issue on GitHub.
 
 
-# From now on are the default formulas defined in glyTrait package.
+# From now on are the default formulas defined in glyTrait package. Feel free to modify them or
+# add your own formulas.
+
+
+# Glycan type
 
 @ Relative abundance of high mannose type glycans within total spectrum
 $ TM = (isHighMannose) / (.)
@@ -97,16 +140,301 @@ $ THy = (isHybrid) / (.)
 $ MHy = (isHighMannose) / (isHybrid)
 
 @ Average number of mannoses on high mannose type glycans
-$ MM = (isHighMannose * totalMan) / (isHighMannose)
+$ MM = (totalMan) // (isHighMannose)
 
 @ Relative abundance of monoantennary glycans within complex type glycans
-$ CA1 = (isComplex * is1Antennary) / (isComplex)
+$ CA1 = (is1Antennary) // (isComplex)
 
 @ Relative abundance of diantennary glycans within complex type glycans
-$ CA2 = (isComplex * is2Antennary) / (isComplex)
+$ CA2 = (is2Antennary) // (isComplex)
 
 @ Relative abundance of triantennary glycans within complex type glycans
-$ CA3 = (isComplex * is3Antennary) / (isComplex)
+$ CA3 = (is3Antennary) // (isComplex)
 
 @ Relative abundance of tetra-antennary glycans within complex type glycans
-$ CA4 = (isComplex * is4Antennary) / (isComplex)
+$ CA4 = (is4Antennary) // (isComplex)
+
+
+# Fucosylation
+
+@ Fucosylation within complex type glycans
+$ CF = (hasFuc) // (isComplex)
+
+@ Fucosylation within monoantennary glycans
+$ A1F = (hasFuc) // (isComplex * is1Antennary)
+
+@ Fucosylation within diantennary glycans
+$ A2F = (hasFuc) // (isComplex * is2Antennary)
+
+@ Fucosylation within triantennary glycans
+$ A3F = (hasFuc) // (isComplex * is3Antennary)
+
+@ Fucosylation within tetra-antennary glycans
+$ A4F = (hasFuc) // (isComplex * is4Antennary)
+
+@ Fucosylation within sialylated monoantennary glycans
+$ A1SF = (hasFuc) // (isComplex * is1Antennary * hasSia)
+
+@ Fucosylation within sialylated diantennary glycans
+$ A2SF = (hasFuc) // (isComplex * is2Antennary * hasSia)
+
+@ Fucosylation within sialylated triantennary glycans
+$ A3SF = (hasFuc) // (isComplex * is3Antennary * hasSia)
+
+@ Fucosylation within sialylated tetra-antennary glycans
+$ A4SF = (hasFuc) // (isComplex * is4Antennary * hasSia)
+
+@ Fucosylation within non-sialylated monoantennary glycans
+$ A1S0F = (hasFuc) // (isComplex * is1Antennary * noSia)
+
+@ Fucosylation within non-sialylated diantennary glycans
+$ A2S0F = (hasFuc) // (isComplex * is2Antennary * noSia)
+
+@ Fucosylation within non-sialylated triantennary glycans
+$ A3S0F = (hasFuc) // (isComplex * is3Antennary * noSia)
+
+@ Fucosylation within non-sialylated tetra-antennary glycans
+$ A4S0F = (hasFuc) // (isComplex * is4Antennary * noSia)
+
+
+# Antennary fucosylation
+
+@ Relative abundance of species with at least one antennary fucose within all complex type glycans
+$ CFa = (hasAntennaryFuc) // (isComplex)
+
+@ Relative abundance of species with at least one antennary fucose within monoantennary glycans
+$ A1Fa = (hasAntennaryFuc) // (isComplex * is1Antennary)
+
+@ Relative abundance of species with at least one antennary fucose within diantennary glycans
+$ A2Fa = (hasAntennaryFuc) // (isComplex * is2Antennary)
+
+@ Relative abundance of species with at least one antennary fucose within triantennary glycans
+$ A3Fa = (hasAntennaryFuc) // (isComplex * is3Antennary)
+
+@ Relative abundance of species with at least one antennary fucose within tetra-antennary glycans
+$ A4Fa = (hasAntennaryFuc) // (isComplex * is4Antennary)
+
+
+# Bisection
+
+@ Relative abundance of species with a bisecting GlcNAc within all complex glycans
+$ CB = (isBisecting) // (isComplex)
+
+@ Relative abundance of species with a bisecting GlcNAc within diantennary glycans
+$ A2B = (isBisecting) // (isComplex * is2Antennary)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated diantennary
+$ A2FB = (isBisecting) // (isComplex * is2Antennary * hasFuc)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated diantennary glycans
+$ A2F0B = (isBisecting) // (isComplex * is2Antennary * noFuc)
+
+@ Relative abundance of species with a bisecting GlcNAc within sialylated diantennary glycans
+$ A2SB = (isBisecting) // (isComplex * is2Antennary * hasSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-sialylated diantennary glycans
+$ A2S0B = (isBisecting) // (isComplex * is2Antennary * noSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated sialylated diantennary glycans
+$ A2FSB = (isBisecting) // (isComplex * is2Antennary * hasFuc * hasSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated sialylated diantennary glycans
+$ A2F0SB = (isBisecting) // (isComplex * is2Antennary * noFuc * hasSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated non-sialylated diantennary glycans
+$ A2FS0B = (isBisecting) // (isComplex * is2Antennary * hasFuc * noSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-sialylated diantennary glycans
+$ A2F0S0B = (isBisecting) // (isComplex * is2Antennary * noFuc * noSia)
+
+
+# Galactosylaiton
+
+@ Galactosylation within all complex glycans
+$ CG = (totalGal) // (isComplex)
+
+@ Galactosylation per antenna within monoantennary glycans
+$ A1G = (totalGal) // (isComplex * is1Antennary) * 1/1
+
+@ Galactosylation per antenna within diantennary glycans
+$ A2G = (totalGal) // (isComplex * is2Antennary) * 1/2
+
+@ Galactosylation per antenna within triantennary glycans
+$ A3G = (totalGal) // (isComplex * is3Antennary) * 1/3
+
+@ Galactosylation per antenna within tetra-antennary glycans
+$ A4G = (totalGal) // (isComplex * is4Antennary) * 1/4
+
+@ Galactosylation per antenna within fucosylated monoantennary glycans
+$ A1FG = (totalGal) // (isComplex * is1Antennary * hasFuc) * 1/1
+
+@ Galactosylation per antenna within fucosylated diantennary glycans
+$ A2FG = (totalGal) // (isComplex * is2Antennary * hasFuc) * 1/2
+
+@ Galactosylation per antenna within fucosylated triantennary glycans
+$ A3FG = (totalGal) // (isComplex * is3Antennary * hasFuc) * 1/3
+
+@ Galactosylation per antenna within fucosylated tetra-antennary glycans
+$ A4FG = (totalGal) // (isComplex * is4Antennary * hasFuc) * 1/4
+
+@ Galactosylation per antenna within non-fucosylated monoantennary glycans
+$ A1F0G = (totalGal) // (isComplex * is1Antennary * noFuc) * 1/1
+
+@ Galactosylation per antenna within non-fucosylated diantennary glycans
+$ A2F0G = (totalGal) // (isComplex * is2Antennary * noFuc) * 1/2
+
+@ Galactosylation per antenna within non-fucosylated triantennary glycans
+$ A3F0G = (totalGal) // (isComplex * is3Antennary * noFuc) * 1/3
+
+@ Galactosylation per antenna within non-fucosylated tetra-antennary glycans
+$ A4F0G = (totalGal) // (isComplex * is4Antennary * noFuc) * 1/4
+
+@ Galactosylation per antenna within sialylated monoantennary glycans
+$ A1SG = (totalGal) // (isComplex * is1Antennary * hasSia) * 1/1
+
+@ Galactosylation per antenna within sialylated diantennary glycans
+$ A2SG = (totalGal) // (isComplex * is2Antennary * hasSia) * 1/2
+
+@ Galactosylation per antenna within sialylated triantennary glycans
+$ A3SG = (totalGal) // (isComplex * is3Antennary * hasSia) * 1/3
+
+@ Galactosylation per antenna within sialylated tetra-antennary glycans
+$ A4SG = (totalGal) // (isComplex * is4Antennary * hasSia) * 1/4
+
+@ Galactosylation per antenna within non-sialylated monoantennary glycans
+$ A1S0G = (totalGal) // (isComplex * is1Antennary * noSia) * 1/1
+
+@ Galactosylation per antenna within non-sialylated diantennary glycans
+$ A2S0G = (totalGal) // (isComplex * is2Antennary * noSia) * 1/2
+
+@ Galactosylation per antenna within non-sialylated triantennary glycans
+$ A3S0G = (totalGal) // (isComplex * is3Antennary * noSia) * 1/3
+
+@ Galactosylation per antenna within non-sialylated tetra-antennary glycans
+$ A4S0G = (totalGal) // (isComplex * is4Antennary * noSia) * 1/4
+
+@ Galactosylation per antenna within fucosylated sialylated monoantennary glycans
+$ A1FSG = (totalGal) // (isComplex * is1Antennary * hasFuc * hasSia) * 1/1
+
+@ Galactosylation per antenna within fucosylated sialylated diantennary glycans
+$ A2FSG = (totalGal) // (isComplex * is2Antennary * hasFuc * hasSia) * 1/2
+
+@ Galactosylation per antenna within fucosylated sialylated triantennary glycans
+$ A3FSG = (totalGal) // (isComplex * is3Antennary * hasFuc * hasSia) * 1/3
+
+@ Galactosylation per antenna within fucosylated sialylated tetra-antennary glycans
+$ A4FSG = (totalGal) // (isComplex * is4Antennary * hasFuc * hasSia) * 1/4
+
+@ Galactosylation per antenna within non-fucosylated sialylated monoantennary glycans
+$ A1F0SG = (totalGal) // (isComplex * is1Antennary * noFuc * hasSia) * 1/1
+
+@ Galactosylation per antenna within non-fucosylated sialylated diantennary glycans
+$ A2F0SG = (totalGal) // (isComplex * is2Antennary * noFuc * hasSia) * 1/2
+
+@ Galactosylation per antenna within non-fucosylated sialylated triantennary glycans
+$ A3F0SG = (totalGal) // (isComplex * is3Antennary * noFuc * hasSia) * 1/3
+
+@ Galactosylation per antenna within non-fucosylated sialylated tetra-antennary glycans
+$ A4F0SG = (totalGal) // (isComplex * is4Antennary * noFuc * hasSia) * 1/4
+
+@ Galactosylation per antenna within fucosylated non-sialylated monoantennary glycans
+$ A1FS0G = (totalGal) // (isComplex * is1Antennary * hasFuc * noSia) * 1/1
+
+@ Galactosylation per antenna within fucosylated non-sialylated diantennary glycans
+$ A2FS0G = (totalGal) // (isComplex * is2Antennary * hasFuc * noSia) * 1/2
+
+@ Galactosylation per antenna within fucosylated non-sialylated triantennary glycans
+$ A3FS0G = (totalGal) // (isComplex * is3Antennary * hasFuc * noSia) * 1/3
+
+@ Galactosylation per antenna within fucosylated non-sialylated tetra-antennary glycans
+$ A4FS0G = (totalGal) // (isComplex * is4Antennary * hasFuc * noSia) * 1/4
+
+@ Galactosylation per antenna within non-fucosylated, non-sialylated monoantennary glycans
+$ A1F0S0G = (totalGal) // (isComplex * is1Antennary * noFuc * noSia) * 1/1
+
+@ Galactosylation per antenna within non-fucosylated, non-sialylated diantennary glycans
+$ A2F0S0G = (totalGal) // (isComplex * is2Antennary * noFuc * noSia) * 1/2
+
+@ Galactosylation per antenna within non-fucosylated, non-sialylated triantennary glycans
+$ A3F0S0G = (totalGal) // (isComplex * is3Antennary * noFuc * noSia) * 1/3
+
+@ Galactosylation per antenna within non-fucosylated, non-sialylated tetra-antennary glycans
+$ A4F0S0G = (totalGal) // (isComplex * is4Antennary * noFuc * noSia) * 1/4
+
+
+# Sialylation
+
+@ Sialylation per antenna within all complex glycans
+$ A1S = (isComplex * totalSia) / (isComplex * totalAntenna)
+
+@ Sialylation per antenna within monoantennary glycans
+$ A1S = (totalSia) // (isComplex * is1Antennary) * 1/1
+
+@ Sialylation per antenna within diantennary glycans
+$ A2S = (totalSia) // (isComplex * is2Antennary) * 1/2
+
+@ Sialylation per antenna within triantennary glycans
+$ A3S = (totalSia) // (isComplex * is3Antennary) * 1/3
+
+@ Sialylation per antenna within tetra-antennary glycans
+$ A4S = (totalSia) // (isComplex * is4Antennary) * 1/4
+
+@ Sialylation per antenna within fucosylated monoantennary glycans
+$ A1FS = (totalSia) // (isComplex * is1Antennary * hasFuc) * 1/1
+
+@ Sialylation per antenna within fucosylated diantennary glycans
+$ A2FS = (totalSia) // (isComplex * is2Antennary * hasFuc) * 1/2
+
+@ Sialylation per antenna within fucosylated triantennary glycans
+$ A3FS = (totalSia) // (isComplex * is3Antennary * hasFuc) * 1/3
+
+@ Sialylation per antenna within fucosylated tetra-antennary glycans
+$ A4FS = (totalSia) // (isComplex * is4Antennary * hasFuc) * 1/4
+
+@ Sialylation per antenna within non-fucosylated monoantennary glycans
+$ A1F0S = (totalSia) // (isComplex * is1Antennary * noFuc) * 1/1
+
+@ Sialylation per antenna within non-fucosylated diantennary glycans
+$ A2F0S = (totalSia) // (isComplex * is2Antennary * noFuc) * 1/2
+
+@ Sialylation per antenna within non-fucosylated triantennary glycans
+$ A3F0S = (totalSia) // (isComplex * is3Antennary * noFuc) * 1/3
+
+@ Sialylation per antenna within non-fucosylated tetra-antennary glycans
+$ A4F0S = (totalSia) // (isComplex * is4Antennary * noFuc) * 1/4
+
+@ Sialylation per galactose within monoantennary glycans
+$ A1GS = (isComplex * is1Antennary * totalSia) / (isComplex * is1Antennary * totalGal)
+
+@ Sialylation per galactose within diantennary glycans
+$ A2GS = (isComplex * is2Antennary * totalSia) / (isComplex * is2Antennary * totalGal)
+
+@ Sialylation per galactose within triantennary glycans
+$ A3GS = (isComplex * is3Antennary * totalSia) / (isComplex * is3Antennary * totalGal)
+
+@ Sialylation per galactose within tetra-antennary glycans
+$ A4GS = (isComplex * is4Antennary * totalSia) / (isComplex * is4Antennary * totalGal)
+
+@ Sialylation per galactose within fucosylated monoantennary glycans
+$ A1FGS = (isComplex * is1Antennary * hasFuc * totalSia) / (isComplex * is1Antennary * hasFuc * totalGal)
+
+@ Sialylation per galactose within fucosylated diantennary glycans
+$ A2FGS = (isComplex * is2Antennary * hasFuc * totalSia) / (isComplex * is2Antennary * hasFuc * totalGal)
+
+@ Sialylation per galactose within fucosylated triantennary glycans
+$ A3FGS = (isComplex * is3Antennary * hasFuc * totalSia) / (isComplex * is3Antennary * hasFuc * totalGal)
+
+@ Sialylation per galactose within fucosylated tetra-antennary glycans
+$ A4FGS = (isComplex * is4Antennary * hasFuc * totalSia) / (isComplex * is4Antennary * hasFuc * totalGal)
+
+@ Sialylation per galactose within non-fucosylated monoantennary glycans
+$ A1F0GS = (isComplex * is1Antennary * noFuc * totalSia) / (isComplex * is1Antennary * noFuc * totalGal)
+
+@ Sialylation per galactose within non-fucosylated diantennary glycans
+$ A2F0GS = (isComplex * is2Antennary * noFuc * totalSia) / (isComplex * is2Antennary * noFuc * totalGal)
+
+@ Sialylation per galactose within non-fucosylated triantennary glycans
+$ A3F0GS = (isComplex * is3Antennary * noFuc * totalSia) / (isComplex * is3Antennary * noFuc * totalGal)
+
+@ Sialylation per galactose within non-fucosylated tetra-antennary glycans
+$ A4F0GS = (isComplex * is4Antennary * noFuc * totalSia) / (isComplex * is4Antennary * noFuc * totalGal)
