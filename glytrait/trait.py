@@ -26,7 +26,7 @@ valid_meta_properties = [
     "hasAntennaryFuc",
     "totalFuc",
     "hasFuc",
-    "noFuc"
+    "noFuc",
     "totalSia",
     "hasSia",
     "noSia",
@@ -199,6 +199,8 @@ class TraitFormula:
 
         numerator = abundance_table.values @ self._numerator
         denominator = abundance_table.values @ self._denominator
+        if np.any(denominator == 0):
+            return np.zeros_like(numerator)
         return numerator / denominator * self.coefficient
 
 
