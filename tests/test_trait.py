@@ -87,6 +87,20 @@ class TestTraitFormula:
             in str(excinfo.value)
         )
 
+    @pytest.mark.parametrize(
+        "coef",
+        [-1, 0]
+    )
+    def test_init_invalid_coef(self, coef):
+        with pytest.raises(ValueError):
+            trait.TraitFormula(
+                description="The ratio of high-mannose to hybrid glycans",
+                name="MHy",
+                numerator_properties=["isHighMannose"],
+                denominator_properties=["isHybrid"],
+                coefficient=coef,
+            )
+
     def test_calcu_trait_without_initialization(self, formula1):
         with pytest.raises(RuntimeError):
             formula1.calcu_trait(None)
@@ -103,33 +117,68 @@ class TestTraitFormula:
         expected = [5 / 22, 7 / 26, 9 / 30]
         np.testing.assert_array_equal(result, expected)
 
+    def test_calcu_trait_with_coef(self, formula1, meta_property_table, abundance_table):
+        formula1.coefficient = 2
+        formula1.initialize(meta_property_table)
+        result = formula1.calcu_trait(abundance_table)
+        expected = [10 / 10, 14 / 11, 18 / 12]
+        np.testing.assert_array_equal(result, expected)
+
 
 @pytest.mark.parametrize(
-    "expression, name, num_props, den_props",
+    "expression, name, num_props, den_props, coef",
     [
-        ("TM = (isHighMannose) / (.)", "TM", ["isHighMannose"], ["."]),
-        ("MHy = (isHighMannose) / (isHybrid)", "MHy", ["isHighMannose"], ["isHybrid"]),
+        ("TM = (isHighMannose) / (.)", "TM", ["isHighMannose"], ["."], 1.0),
+        (
+            "MHy = (isHighMannose) / (isHybrid)",
+            "MHy",
+            ["isHighMannose"],
+            ["isHybrid"],
+            1.0,
+        ),
         (
             "CA1 = (isComplex * is1Antennay) / (isComplex)",
             "CA1",
             ["isComplex", "is1Antennay"],
             ["isComplex"],
+            1.0,
         ),
         (
             "CA1 = (is1Antennay) // (isComplex)",
             "CA1",
             ["isComplex", "is1Antennay"],
             ["isComplex"],
+            1.0,
+        ),
+        (
+            "CA1 = (isComplex * is1Antennay) / (isComplex) * 1/2",
+            "CA1",
+            ["isComplex", "is1Antennay"],
+            ["isComplex"],
+            0.5,
+        ),
+        (
+            "CA1 = (isComplex * is1Antennay) / (isComplex) * 0.5",
+            "CA1",
+            ["isComplex", "is1Antennay"],
+            ["isComplex"],
+            0.5,
+        ),
+        (
+            "CA1 = (isComplex * is1Antennay) / (isComplex) * 2",
+            "CA1",
+            ["isComplex", "is1Antennay"],
+            ["isComplex"],
+            2,
         ),
     ],
 )
-def test_parse_expression(expression, name, num_props, den_props):
-    result_name, result_num_props, result_den_props = trait._parse_expression(
-        expression
-    )
-    assert result_name == name
-    assert sorted(result_num_props) == sorted(num_props)
-    assert sorted(result_den_props) == sorted(den_props)
+def test_parse_expression(expression, name, num_props, den_props, coef):
+    r_name, r_num_props, r_den_props, r_coef = trait._parse_expression(expression)
+    assert r_name == name
+    assert sorted(r_num_props) == sorted(num_props)
+    assert sorted(r_den_props) == sorted(den_props)
+    assert pytest.approx(coef) == r_coef
 
 
 @pytest.mark.parametrize(
@@ -140,6 +189,8 @@ def test_parse_expression(expression, name, num_props, den_props):
         "MHy = (isHighMannose)  (isHybrid)",
         "CA1 = (isComplex  is1Antennay) / (isComplex)",
         "CA1 * TM = (isComplex * is1Antennay) / (isComplex)",
+        "MHy = (isHighMannose) / (isHybrid) * a",
+        "MHy = (isHighMannose) / (isHybrid) * "
     ],
 )
 def test_parse_expression_invalid(expression):

@@ -2,6 +2,7 @@ import re
 from collections.abc import Iterable, Generator
 from importlib.resources import files
 
+import attrs.validators
 import numpy as np
 import pandas as pd
 from attrs import define, field
@@ -133,6 +134,7 @@ class TraitFormula:
         name (str): The name of the trait.
         numerator_properties (tuple[str]): The meta properties in the numerator.
         denominator_properties (tuple[str]): The meta properties in the denominator.
+        coefficient (float): The coefficient of the trait.
 
     Examples:
         >>> formula = TraitFormula(
@@ -153,6 +155,7 @@ class TraitFormula:
     denominator_properties: list[str] = field(converter=list, validator=[
         _check_length, _check_meta_properties, _check_denominator
     ])
+    coefficient: float = field(default=1.0, validator=attrs.validators.gt(0))
     _initialized = field(init=False, default=False)
     _numerator = field(init=False, default=None)
     _denominator = field(init=False, default=None)
@@ -196,7 +199,7 @@ class TraitFormula:
 
         numerator = abundance_table.values @ self._numerator
         denominator = abundance_table.values @ self._denominator
-        return numerator / denominator
+        return numerator / denominator * self.coefficient
 
 
 DEFAULT_FORMULA_FILE = "trait_forluma.txt"
@@ -229,12 +232,13 @@ def load_formulas(
                     "One formula line must follow a description line."
                 )
             expression = line[1:].strip()
-            name, num_prop, den_prop = _parse_expression(expression)
+            name, num_prop, den_prop, coef = _parse_expression(expression)
             yield TraitFormula(
                 description=description,
                 name=name,
                 numerator_properties=num_prop,
                 denominator_properties=den_prop,
+                coefficient=coef,
             )
             description = None
             expression = None
@@ -249,20 +253,20 @@ def load_default_formulas() -> Generator[TraitFormula, None, None]:
     yield from load_formulas(file_reader)
 
 
-def _parse_expression(expr: str) -> tuple[str, list[str], list[str]]:
+def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
     """Parse the expression of a formula.
 
     Args:
         expr (str): The expression of a formula.
 
     Returns:
-        tuple[str, list[str], list[str]]: The name, numerator properties, and denominator
-            properties of the formula.
+        tuple[str, list[str], list[str], float]: The name, numerator properties, denominator
+            properties, and the coefficient of the formula.
     """
     if "//" in expr:
-        pattern = r"(\w+) = \((.+)\) // \((.+)\)"
+        pattern = r"(\w+) = \((.+)\) // \((.+)\)"  # Expression with the "//" shortcut
     else:
-        pattern = r"(\w+) = \((.+)\) / \((.+)\)"
+        pattern = r"(\w+) = \((.+)\) / \((.+)\)"  # Normal expression
 
     match = re.match(pattern, expr)
     if match is None:
@@ -279,7 +283,18 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str]]:
         if re.search(r"\W", prop) and prop != ".":
             raise FormulaParseError(f"Invalid expression: '{expr}'")
 
+    # If "//" is used, we need to add the denominator properties to the numerator properties.
     if "//" in expr:
         num_prop.extend(den_prop)
 
-    return name, num_prop, den_prop
+    # Parse the coefficient
+    if ") *" in expr:
+        coef_pattern = r"\) \* (\d+/\d+|\d+(\.\d+)?)"
+        match = re.search(coef_pattern, expr)
+        if match is None:
+            raise FormulaParseError(f"Invalid expression: '{expr}'")
+        coef = eval(match.group(1))
+    else:
+        coef = 1.0
+
+    return name, num_prop, den_prop, coef
