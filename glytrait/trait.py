@@ -259,7 +259,11 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str]]:
         tuple[str, list[str], list[str]]: The name, numerator properties, and denominator
             properties of the formula.
     """
-    pattern = r"(\w+) = \((.+)\) / \((.+)\)"
+    if "//" in expr:
+        pattern = r"(\w+) = \((.+)\) // \((.+)\)"
+    else:
+        pattern = r"(\w+) = \((.+)\) / \((.+)\)"
+
     match = re.match(pattern, expr)
     if match is None:
         raise FormulaParseError(f"Invalid expression: '{expr}'")
@@ -274,5 +278,8 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str]]:
     for prop in num_prop + den_prop:
         if re.search(r"\W", prop) and prop != ".":
             raise FormulaParseError(f"Invalid expression: '{expr}'")
+
+    if "//" in expr:
+        num_prop.extend(den_prop)
 
     return name, num_prop, den_prop

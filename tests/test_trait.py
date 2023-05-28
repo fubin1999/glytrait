@@ -115,12 +115,21 @@ class TestTraitFormula:
             ["isComplex", "is1Antennay"],
             ["isComplex"],
         ),
+        (
+            "CA1 = (is1Antennay) // (isComplex)",
+            "CA1",
+            ["isComplex", "is1Antennay"],
+            ["isComplex"],
+        ),
     ],
 )
 def test_parse_expression(expression, name, num_props, den_props):
-    result = trait._parse_expression(expression)
-    expected = (name, num_props, den_props)
-    assert result == expected
+    result_name, result_num_props, result_den_props = trait._parse_expression(
+        expression
+    )
+    assert result_name == name
+    assert sorted(result_num_props) == sorted(num_props)
+    assert sorted(result_den_props) == sorted(den_props)
 
 
 @pytest.mark.parametrize(
