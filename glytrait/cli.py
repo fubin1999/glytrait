@@ -1,8 +1,15 @@
+from typing import Optional
+
 import click
 import emoji
 
-from glytrait.trait import save_trait_formula_template
-from glytrait.workflow import run_workflow
+from glytrait.io import read_input, write_output
+from glytrait.trait import (
+    save_trait_formula_template,
+    load_formulas,
+    build_meta_property_table,
+    calcu_trait,
+)
 
 UNDIFINED = "__UNDEFINED__"
 
@@ -55,6 +62,22 @@ def cli(input_file, output_file, sia_linkage, formula_file):
     run_workflow(input_file, output_file, sia_linkage, formula_file)
     msg = f"Done :thumbs_up:! Output written to {output_file}."
     click.echo(emoji.emojize(msg))
+
+
+def run_workflow(
+    input_file: str,
+    output_file: str,
+    sia_linkage: bool = False,
+    user_formula_file: Optional[str] = None,
+) -> None:
+    """Run the workflow."""
+    glycans, abund_df = read_input(input_file)
+    formulas = load_formulas(user_formula_file)
+    if not sia_linkage:
+        formulas = [f for f in formulas if f.sia_linkage is False]
+    meta_prop_df = build_meta_property_table(abund_df.columns, glycans, sia_linkage)
+    trait_df = calcu_trait(abund_df, meta_prop_df, formulas)
+    write_output(output_file, trait_df, abund_df, meta_prop_df, formulas)
 
 
 if __name__ == "__main__":
