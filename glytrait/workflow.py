@@ -64,11 +64,14 @@ def calcu_trait(
     Returns:
         pd.DataFrame: The trait values, with samples as index and trait names as columns.
     """
-    trait_df = pd.DataFrame(index=abund_df.index)
+    trait_series: list[pd.Series] = []
     for formula in formulas:
         formula.initialize(meta_prop_df)
-        trait_df[formula.name] = formula.calcu_trait(abund_df)
-    return trait_df
+        trait_s = pd.Series(
+            data=formula.calcu_trait(abund_df), index=abund_df.index, name=formula.name
+        )
+        trait_series.append(trait_s)
+    return pd.concat(trait_series, axis=1)
 
 
 def write_output(
