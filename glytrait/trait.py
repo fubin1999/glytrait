@@ -13,6 +13,9 @@ from numpy.typing import NDArray
 
 from .glycan import NGlycan
 
+DEFAULT_FORMULA_FILE = "trait_forluma.txt"
+FORMULA_TEMPLATE_FILE = "trait_formula_template.txt"
+
 basic_meta_properties = [
     ".",
     "isComplex",
@@ -248,9 +251,6 @@ class TraitFormula:
         return numerator / denominator * self.coefficient
 
 
-DEFAULT_FORMULA_FILE = "trait_forluma.txt"
-
-
 def _load_formulas(
     formula_file_reader: Iterable[str],
 ) -> Generator[TraitFormula, None, None]:
@@ -335,6 +335,20 @@ def load_formulas(user_file: Optional[str] = None) -> list[TraitFormula]:
             continue
         formulas.append(f)
     return formulas
+
+
+def save_trait_formula_template(dirpath: str) -> None:
+    """Copy the template of trait formula file to the given path.
+
+    Args:
+        dirpath (str): The path to save the template.
+    """
+    dirpath = Path(dirpath)
+    dirpath.mkdir(parents=True, exist_ok=True)
+    file = dirpath / "trait_formula.txt"
+    content = files("glytrait").joinpath(FORMULA_TEMPLATE_FILE).open("r").read()
+    with open(file, "w") as f:
+        f.write(content)
 
 
 def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
