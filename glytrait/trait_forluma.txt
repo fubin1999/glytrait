@@ -1,3 +1,13 @@
+# ======================
+# Trait Formula Overview
+# ======================
+# Trait formula is the way glyTrait uses to calculate glycan traits. It is a simple and powerful
+# way to define glycan traits. It is simple because it is easy to understand and use. It is
+# powerful because it can be used to calculate almost all glycan traits you can think of. Trait
+# formulas have their own grammar, which will be explained in detail below. The trait formula
+# grammar is closely related to the innate calculation algorithm of traits. Understanding the
+# trait calculation algorithm will help you to write new trait formulas more easily.
+#
 # =======================
 # File Format Description
 # =======================
