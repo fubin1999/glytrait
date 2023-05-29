@@ -1,3 +1,5 @@
+from typing import Optional
+
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.styles import Side
@@ -5,13 +7,18 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.worksheet import Worksheet
 
 from .glycan import NGlycan
-from .trait import build_meta_property_table, TraitFormula, load_default_formulas
+from .trait import build_meta_property_table, TraitFormula, load_formulas
 
 
-def run_workflow(input_file: str, output_file: str, sia_linkage: bool = False) -> None:
+def run_workflow(
+    input_file: str,
+    output_file: str,
+    sia_linkage: bool = False,
+    user_formula_file: Optional[str] = None,
+) -> None:
     """Run the workflow."""
     glycans, abund_df = read_input(input_file)
-    formulas = list(load_default_formulas())
+    formulas = load_formulas(user_formula_file)
     if not sia_linkage:
         formulas = [f for f in formulas if f.sia_linkage is False]
     meta_prop_df = build_meta_property_table(abund_df.columns, glycans, sia_linkage)
