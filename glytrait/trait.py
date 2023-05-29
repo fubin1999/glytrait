@@ -1,3 +1,4 @@
+import itertools
 import re
 from collections.abc import Iterable, Generator
 from importlib.resources import files
@@ -10,7 +11,7 @@ from numpy.typing import NDArray
 
 from .glycan import NGlycan
 
-valid_meta_properties = [
+basic_meta_properties = [
     ".",
     "isComplex",
     "isHighMannose",
@@ -34,13 +35,24 @@ valid_meta_properties = [
     "totalGal",
 ]
 
+sia_linkage_meta_properties = [
+    "a23Sia",
+    "a26Sia",
+    "hasa23Sia",
+    "hasa26Sia",
+    "noa23Sia",
+    "noa26Sia",
+]
+
+meta_properties = basic_meta_properties + sia_linkage_meta_properties
+
 
 class FormulaParseError(Exception):
     """Raised if a formula could not be parsed."""
 
 
 def build_meta_property_table(
-    glycan_ids: Iterable[str], glycans: Iterable[NGlycan]
+    glycan_ids: Iterable[str], glycans: Iterable[NGlycan], sia_linkage: bool = False
 ) -> pd.DataFrame:
     """Build a table of meta properties for glycans.
 
@@ -66,10 +78,20 @@ def build_meta_property_table(
         - totalMan: The total number of mannoses.
         - totalGal: The total number of galactoses.
 
+    If `sia_linkage` is True, the following meta properties are also included:
+        - a23Sia: The number of sialic acids with an alpha-2,3 linkage.
+        - a26Sia: The number of sialic acids with an alpha-2,6 linkage.
+        - hasa23Sia: Whether the glycan has any sialic acids with an alpha-2,3 linkage.
+        - hasa26Sia: Whether the glycan has any sialic acids with an alpha-2,6 linkage.
+        - noa23Sia: Whether the glycan has no sialic acids with an alpha-2,3 linkage.
+        - noa26Sia: Whether the glycan has no sialic acids with an alpha-2,6 linkage.
+
     Args:
         glycan_ids (Iterable[str]): The IDs of the glycans. Could be the
             accession, or the composition.
         glycans (Iterable[NGlycan]): The glycans.
+        sia_linkage (bool, optional): Whether to include the sialic acid linkage
+            meta properties. Defaults to False.
 
     Returns:
         pd.DataFrame: The table of meta properties, with glycan IDs as the index,
@@ -98,6 +120,14 @@ def build_meta_property_table(
     meta_property_table["totalMan"] = [g.count_man() for g in glycans]
     meta_property_table["totalGal"] = [g.count_gal() for g in glycans]
 
+    if sia_linkage:
+        meta_property_table["a23Sia"] = [g.count_a23_sia() for g in glycans]
+        meta_property_table["a26Sia"] = [g.count_a26_sia() for g in glycans]
+        meta_property_table["hasa23Sia"] = [g.count_a23_sia() > 0 for g in glycans]
+        meta_property_table["hasa26Sia"] = [g.count_a26_sia() > 0 for g in glycans]
+        meta_property_table["noa23Sia"] = [g.count_a23_sia() == 0 for g in glycans]
+        meta_property_table["noa26Sia"] = [g.count_a26_sia() == 0 for g in glycans]
+
     return meta_property_table
 
 
@@ -107,7 +137,7 @@ def _check_length(instance, attribute, value):
 
 
 def _check_meta_properties(instance, attribute, value):
-    invalid_properties = set(value) - set(valid_meta_properties)
+    invalid_properties = set(value) - set(meta_properties)
     if len(invalid_properties) > 0:
         raise ValueError(
             f"`{attribute.name}` contains invalid meta properties: "
@@ -156,9 +186,21 @@ class TraitFormula:
         _check_length, _check_meta_properties, _check_denominator
     ])
     coefficient: float = field(default=1.0, validator=attrs.validators.gt(0))
+    _sia_linkage: bool = field(init=False, default=False)
     _initialized = field(init=False, default=False)
     _numerator = field(init=False, default=None)
     _denominator = field(init=False, default=None)
+
+    def __attrs_post_init__(self):
+        for prop in itertools.chain(self.numerator_properties, self.denominator_properties):
+            if prop in sia_linkage_meta_properties:
+                self._sia_linkage = True
+                break
+
+    @property
+    def sia_linkage(self) -> bool:
+        """Whether the formula contains sia linkage meta properties."""
+        return self._sia_linkage
 
     def initialize(self, meta_property_table: pd.DataFrame) -> None:
         """Initialize the trait formula.

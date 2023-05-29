@@ -8,11 +8,13 @@ from .glycan import NGlycan
 from .trait import build_meta_property_table, TraitFormula, load_default_formulas
 
 
-def run_workflow(input_file: str, output_file: str) -> None:
+def run_workflow(input_file: str, output_file: str, sia_linkage: bool = False) -> None:
     """Run the workflow."""
     glycans, abund_df = read_input(input_file)
     formulas = list(load_default_formulas())
-    meta_prop_df = build_meta_property_table(abund_df.columns, glycans)
+    if not sia_linkage:
+        formulas = [f for f in formulas if f.sia_linkage is False]
+    meta_prop_df = build_meta_property_table(abund_df.columns, glycans, sia_linkage)
     trait_df = calcu_trait(abund_df, meta_prop_df, formulas)
     write_output(output_file, trait_df, abund_df, meta_prop_df, formulas)
 
