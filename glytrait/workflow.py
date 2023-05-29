@@ -49,6 +49,7 @@ def read_input(file: str) -> tuple[list[NGlycan], pd.DataFrame]:
             as columns.
     """
     df = pd.read_csv(file, index_col=0)
+    df = df.dropna(how="all")
     glycans = [NGlycan.from_glycoct(structure) for structure in df["Structure"]]
     abundance_table = df.drop(columns=["Structure"]).T
     return glycans, abundance_table
