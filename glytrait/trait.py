@@ -2,6 +2,8 @@ import itertools
 import re
 from collections.abc import Iterable, Generator
 from importlib.resources import files
+from pathlib import Path
+from typing import Optional
 
 import attrs.validators
 import numpy as np
@@ -249,7 +251,7 @@ class TraitFormula:
 DEFAULT_FORMULA_FILE = "trait_forluma.txt"
 
 
-def load_formulas(
+def _load_formulas(
     formula_file_reader: Iterable[str],
 ) -> Generator[TraitFormula, None, None]:
     """Load the formulas from a file.
@@ -294,7 +296,45 @@ def load_formulas(
 def load_default_formulas() -> Generator[TraitFormula, None, None]:
     """Load the default formulas."""
     file_reader = files("glytrait").joinpath(DEFAULT_FORMULA_FILE).open("r")
-    yield from load_formulas(file_reader)
+    yield from _load_formulas(file_reader)
+
+
+def load_user_formulas(file: str) -> Generator[TraitFormula, None, None]:
+    """Load the user-defined formulas.
+
+    If the formula name is duplicated, the first one will be used.
+
+    Args:
+        file (str): The path of the user-defined formula file.
+
+    Yields:
+        The formulas parsed.
+    """
+    formulas_parsed: set[str] = set()
+    file_reader = Path(file).open("r")
+    for formula in _load_formulas(file_reader):
+        if formula.name in formulas_parsed:
+            continue
+        yield formula
+        formulas_parsed.add(formula.name)
+
+
+def load_formulas(user_file: Optional[str] = None) -> list[TraitFormula]:
+    """Load both the default formulas and the user-defined formulas."""
+    default_formulas = list(load_default_formulas())
+    if user_file is None:
+        return default_formulas
+
+    default_formula_names = [f.name for f in default_formulas]
+    user_formulas = list(load_user_formulas(user_file))
+
+    formulas: list[TraitFormula] = []
+    formulas.extend(default_formulas)
+    for f in user_formulas:
+        if f.name in default_formula_names:
+            continue
+        formulas.append(f)
+    return formulas
 
 
 def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:

@@ -87,10 +87,7 @@ class TestTraitFormula:
             in str(excinfo.value)
         )
 
-    @pytest.mark.parametrize(
-        "coef",
-        [-1, 0]
-    )
+    @pytest.mark.parametrize("coef", [-1, 0])
     def test_init_invalid_coef(self, coef):
         with pytest.raises(ValueError):
             trait.TraitFormula(
@@ -117,7 +114,9 @@ class TestTraitFormula:
         expected = [5 / 22, 7 / 26, 9 / 30]
         np.testing.assert_array_equal(result, expected)
 
-    def test_calcu_trait_with_coef(self, formula1, meta_property_table, abundance_table):
+    def test_calcu_trait_with_coef(
+        self, formula1, meta_property_table, abundance_table
+    ):
         formula1.coefficient = 2
         formula1.initialize(meta_property_table)
         result = formula1.calcu_trait(abundance_table)
@@ -190,7 +189,7 @@ def test_parse_expression(expression, name, num_props, den_props, coef):
         "CA1 = (isComplex  is1Antennay) / (isComplex)",
         "CA1 * TM = (isComplex * is1Antennay) / (isComplex)",
         "MHy = (isHighMannose) / (isHybrid) * a",
-        "MHy = (isHighMannose) / (isHybrid) * "
+        "MHy = (isHighMannose) / (isHybrid) * ",
     ],
 )
 def test_parse_expression_invalid(expression):
@@ -250,3 +249,40 @@ def test_load_default_formulas_invalid(text, tmp_path, monkeypatch):
     monkeypatch.setattr(trait, "DEFAULT_FORMULA_FILE", str(formula_file))
     with pytest.raises(trait.FormulaParseError):
         list(trait.load_default_formulas())
+
+
+def test_load_user_formulas(clean_dir):
+    content = """@ Relative abundance of complex type glycans within total spectrum
+$ TC = (isComplex) / (.)
+
+@ A duplicate of the above
+$ TC = (isComplex) / (isHybrid)"""
+    file = clean_dir / "formulas.txt"
+    file.write_text(content)
+    result = list(trait.load_user_formulas(file))
+    assert len(result) == 1
+    assert result[0].name == "TC"
+    assert (
+        result[0].description
+        == "Relative abundance of complex type glycans within total spectrum"
+    )
+
+
+def test_load_formulas(clean_dir):
+    content = """@ Relative abundance of complex type glycans within total spectrum
+$ TC = (isComplex) / (.)
+
+@ A duplicate of TM
+$ TM = (isHighMannose) / (.)"""
+    user_file = clean_dir / "formulas.txt"
+    user_file.write_text(content)
+    result = list(trait.load_formulas(user_file))
+
+    TM = [f for f in result if f.name == "TM"]
+    assert len(TM) == 1
+    assert (
+        TM[0].description
+        == "Relative abundance of high mannose type glycans within total spectrum"
+    )
+
+    assert "TC" in [f.name for f in result]
