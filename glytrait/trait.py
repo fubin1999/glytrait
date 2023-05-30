@@ -271,6 +271,7 @@ def _load_formulas(
     description = None
     expression = None
     for line in formula_file_reader:
+        line = line.strip()
         if line.startswith("@"):
             if description is not None:
                 raise FormulaError(
@@ -297,8 +298,7 @@ def _load_formulas(
                 )
             except FormulaError as e:
                 raise FormulaError(
-                    f"Invalid line: '{line}'.\n"
-                    f"Error in formula '{expression}': {e}"
+                    f"Invalid line: '{line}'.\n" f"Error in formula '{expression}': {e}"
                 )
             description = None
             expression = None
@@ -436,7 +436,10 @@ def calcu_trait(
     for formula in formulas:
         formula.initialize(meta_prop_df)
         trait_s = pd.Series(
-            data=formula.calcu_trait(abund_df), index=abund_df.index, name=formula.name
+            data=formula.calcu_trait(abund_df),
+            index=abund_df.index,
+            name=formula.name,
+            dtype=float,
         )
         trait_series.append(trait_s)
     return pd.concat(trait_series, axis=1)

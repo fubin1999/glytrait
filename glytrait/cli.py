@@ -23,8 +23,8 @@ def save_template_callback(ctx, param, value):
         save_trait_formula_template(value)
         msg = (
             f"Template saved to {value}. :victory_hand:\n"
-            f"You can edit the template and use `glytrait input_file output_file -f "
-            f"template_file` to provide additional traits to glyTrait."
+            f"You can edit the template and use `glytrait INPUT_FILE OUTPUT_FILE -f "
+            f"TEMPLATE_FILE` to provide additional traits to glyTrait."
         )
         click.echo(emoji.emojize(msg))
         ctx.exit()

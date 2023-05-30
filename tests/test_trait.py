@@ -4,6 +4,7 @@ import pytest
 
 from glytrait import trait
 from glytrait.exception import *
+from . import glycoct
 
 
 class TestTraitFormula:
@@ -277,7 +278,7 @@ $ TC = (isComplex) / (isHybrid)"""
     )
 
 
-def test_load_formulas(clean_dir):
+def test_load_formulas_with_user_file(clean_dir):
     content = """@ Relative abundance of complex type glycans within total spectrum
 $ TC = (isComplex) / (.)
 
@@ -295,3 +296,151 @@ $ TM = (isHighMannose) / (.)"""
     )
 
     assert "TC" in [f.name for f in result]
+
+
+def test_load_formulas_without_user_file():
+    result = list(trait.load_formulas(None))
+    assert len(result) == 164
+
+
+def test_load_formulas_bad_formula(clean_dir):
+    content = """@ Relative abundance of complex type glycans within total spectrum
+$ TC = (isComplex) / (. * isComplex)
+"""
+    user_file = clean_dir / "formulas.txt"
+    user_file.write_text(content)
+    with pytest.raises(FormulaError) as excinfo:
+        list(trait.load_formulas(user_file))
+    assert "Invalid line: '$ TC = (isComplex) / (. * isComplex)'" in str(excinfo.value)
+    assert "Error in formula 'TC = (isComplex) / (. * isComplex)'" in str(excinfo.value)
+
+
+def test_load_formulas_end_with_description(clean_dir):
+    content = """@ Relative abundance of complex type glycans within total spectrum
+$ TC = (isComplex) / (.)
+    
+@ A duplicate of TM
+"""
+    user_file = clean_dir / "formulas.txt"
+    user_file.write_text(content)
+    with pytest.raises(FormulaError) as excinfo:
+        list(trait.load_formulas(user_file))
+    assert "Invalid line: '@ A duplicate of TM'" in str(excinfo.value)
+    assert "One description line must follow a formula line." in str(excinfo.value)
+
+
+def test_save_trait_formula_template(clean_dir):
+    trait.save_trait_formula_template(clean_dir)
+    template_file = clean_dir / "trait_formula.txt"
+    assert template_file.exists()
+    assert "# Trait Formula Overview" in template_file.read_text()
+
+
+def test_calcu_trait():
+    trait_formulas = [
+        trait.TraitFormula(
+            description="Relative abundance of high mannose type glycans within total spectrum",
+            name="TM",
+            numerator_properties=["isHighMannose"],
+            denominator_properties=["."],
+        ),
+        trait.TraitFormula(
+            description="The ratio of high-mannose to hybrid glycans",
+            name="MHy",
+            numerator_properties=["isHighMannose"],
+            denominator_properties=["isHybrid"],
+        ),
+    ]
+
+    abundance_df = pd.DataFrame(
+        {
+            "G1": [1, 2, 3],
+            "G2": [4, 5, 6],
+            "G3": [7, 8, 9],
+        },
+        index=["S1", "S2", "S3"],
+    )
+
+    meta_prop_df = pd.DataFrame(
+        {
+            "isHighMannose": [True, False, False],
+            "isHybrid": [False, False, True],
+            "isComplex": [False, True, False],
+        },
+        index=["G1", "G2", "G3"],
+    )
+
+    result = trait.calcu_trait(abundance_df, meta_prop_df, trait_formulas)
+    expected = pd.DataFrame(
+        {
+            "TM": [1 / 12, 2 / 15, 3 / 18],
+            "MHy": [1 / 7, 2 / 8, 3 / 9],
+        },
+        index=["S1", "S2", "S3"],
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_build_meta_property_table_no_sia_linkage(make_glycan):
+    glycoct_strings = {
+        k: v for k, v in glycoct.__dict__.items() if k.startswith("test_glycoct")
+    }
+    del glycoct_strings["test_glycoct_13"]  # an O-glycan
+
+    glycan_ids = list(glycoct_strings.keys())
+    glycans = [make_glycan(s) for s in glycoct_strings.values()]
+
+    result = trait.build_meta_property_table(glycan_ids, glycans, sia_linkage=False)
+    expected = pd.DataFrame(
+        {
+            "isComplex": [1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1],
+            "isHighMannose": [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            "isHybrid": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+            "isBisecting": [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+            "is1Antennary": [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            "is2Antennary": [1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+            "is3Antennary": [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+            "is4Antennary": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "totalAntenna": [2, 2, 0, 0, 0, 1, 0, 3, 2, 2, 2, 2],
+            "coreFuc": [0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+            "antennaryFuc": [0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
+            "hasAntennaryFuc": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            "totalFuc": [0, 1, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0],
+            "hasFuc": [0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
+            "noFuc": [1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1],
+            "totalSia": [2, 1, 0, 1, 0, 1, 0, 1, 1, 2, 2, 2],
+            "hasSia": [1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1],
+            "noSia": [0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0],
+            "totalMan": [3, 3, 5, 5, 3, 3, 6, 3, 3, 3, 3, 3],
+            "totalGal": [2, 2, 0, 1, 0, 1, 0, 3, 1, 2, 2, 2],
+        },
+        index=glycan_ids,
+    )
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_build_meta_property_table_sia_linkage(make_glycan):
+    glycoct_strings = {
+        k: v
+        for k, v in glycoct.__dict__.items()
+        if k in ("test_glycoct_10", "test_glycoct_11", "test_glycoct_12")
+    }
+
+    glycan_ids = list(glycoct_strings.keys())
+    glycans = [make_glycan(s) for s in glycoct_strings.values()]
+
+    result = trait.build_meta_property_table(glycan_ids, glycans, sia_linkage=True)
+    partial_expected = pd.DataFrame(
+        {
+            "a23Sia": [0, 2, 1],
+            "a26Sia": [2, 0, 1],
+            "hasa23Sia": [0, 1, 1],
+            "hasa26Sia": [1, 0, 1],
+            "noa23Sia": [1, 0, 0],
+            "noa26Sia": [0, 1, 0],
+        },
+        index=glycan_ids,
+    )
+    assert len(result.columns) == 26
+    partial_result = result[partial_expected.columns]
+    pd.testing.assert_frame_equal(partial_result, partial_expected, check_dtype=False)

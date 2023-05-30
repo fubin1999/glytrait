@@ -76,7 +76,7 @@ class NGlycan:
         core_comps = [get_mono_comp(n) for n in core_residues]
         N_glycan_core_comps = ["Glc2NAc", "Glc2NAc", "Man", "Man", "Man"]
         if sorted(core_comps) != N_glycan_core_comps:
-            raise StructureParseError("This is not a N-glycan.")
+            raise StructureParseError("This is not an N-glycan.")
 
     @classmethod
     def from_string(

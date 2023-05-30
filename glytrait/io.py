@@ -41,7 +41,6 @@ def read_input(file: str) -> tuple[list[NGlycan], pd.DataFrame]:
     df = df.dropna(how="all")
     _check_input(df)
     df = df.set_index("Glycan ID")
-    glycans = [NGlycan.from_glycoct(structure) for structure in df["Structure"]]
     glycans: list[NGlycan] = []
     for glycan_id, structure in zip(df.index, df["Structure"]):
         try:
