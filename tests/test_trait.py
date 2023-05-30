@@ -124,6 +124,14 @@ class TestTraitFormula:
         expected = [10 / 10, 14 / 11, 18 / 12]
         np.testing.assert_array_equal(result, expected)
 
+    def test_calcu_trait_inf(self, formula1, meta_property_table, abundance_table):
+        meta_property_table = meta_property_table.drop("G4", axis=0)
+        abundance_table = abundance_table.drop("G4", axis=1)
+        formula1.initialize(meta_property_table)
+        result = formula1.calcu_trait(abundance_table)
+        expected = np.array([np.nan, np.nan, np.nan])
+        np.testing.assert_array_equal(result, expected)
+
 
 @pytest.mark.parametrize(
     "expression, name, num_props, den_props, coef",

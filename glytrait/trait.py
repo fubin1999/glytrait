@@ -253,7 +253,7 @@ class TraitFormula:
         numerator = abundance_table.values @ self._numerator
         denominator = abundance_table.values @ self._denominator
         if np.any(denominator == 0):
-            return np.zeros_like(numerator)
+            return np.array([np.nan] * len(abundance_table))
         return numerator / denominator * self.coefficient
 
 
