@@ -7,12 +7,9 @@ from openpyxl.styles import Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.worksheet import Worksheet
 
+from glytrait.exception import InputError, StructureParseError
 from glytrait.glycan import NGlycan
 from glytrait.trait import TraitFormula
-
-
-class InputError(Exception):
-    """The input file format error."""
 
 
 def read_input(file: str) -> tuple[list[NGlycan], pd.DataFrame]:
@@ -40,10 +37,19 @@ def read_input(file: str) -> tuple[list[NGlycan], pd.DataFrame]:
     Raises:
         InputError: If the input file format is wrong.
     """
-    df = pd.read_csv(file, index_col=0)
+    df = pd.read_csv(file)
     df = df.dropna(how="all")
     _check_input(df)
+    df = df.set_index("Glycan ID")
     glycans = [NGlycan.from_glycoct(structure) for structure in df["Structure"]]
+    glycans: list[NGlycan] = []
+    for glycan_id, structure in zip(df.index, df["Structure"]):
+        try:
+            glycan = NGlycan.from_glycoct(structure)
+        except StructureParseError as e:
+            raise StructureParseError(glycan_id + ": " + str(e))
+        else:
+            glycans.append(glycan)
     abundance_table = df.drop(columns=["Structure"]).T
     return glycans, abundance_table
 
@@ -51,17 +57,17 @@ def read_input(file: str) -> tuple[list[NGlycan], pd.DataFrame]:
 def _check_input(df: pd.DataFrame) -> NoReturn:
     """Check the input dataframe."""
     if df.columns[0] != "Glycan ID":
-        raise InputError("The first column should be Glycan ID.")
+        raise InputError("The first column of the input file should be Glycan ID.")
     if df.columns[1] != "Structure":
-        raise InputError("The second column should be Structure.")
+        raise InputError("The second column of the input file should be Structure.")
     if df["Glycan ID"].duplicated().sum() > 0:
-        raise InputError("There are duplicated glycan IDs in the input dataframe.")
+        raise InputError("There are duplicated glycan IDs in the input file.")
     if df["Structure"].duplicated().sum() > 0:
-        raise InputError("There are duplicated structures in the input dataframe.")
+        raise InputError("There are duplicated structures in the input file.")
     if np.any(df.iloc[:, 2:].dtypes != "float64"):
-        raise InputError("The abundance columns should be numeric.")
+        raise InputError("The abundance columns in the input file should be numeric.")
     if df.isna().sum().sum() > 0:
-        raise InputError("There are missing values in the input dataframe.")
+        raise InputError("There are missing values in the input file.")
 
 
 def write_output(

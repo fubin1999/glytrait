@@ -14,6 +14,8 @@ from glypy.structure.glycan_composition import (
 )
 from glypy.structure.monosaccharide import Monosaccharide
 
+from glytrait.exception import StructureParseError, SiaLinkageError
+
 N_glycan_core = GlycanComposition.parse("{Man:3; Glc2NAc:2}")
 Glc2NAc = MonosaccharideResidue.from_iupac_lite("Glc2NAc")
 Man = MonosaccharideResidue.from_iupac_lite("Man")
@@ -21,14 +23,6 @@ Gal = MonosaccharideResidue.from_iupac_lite("Gal")
 Neu5Ac = MonosaccharideResidue.from_iupac_lite("Neu5Ac")
 Neu5Gc = MonosaccharideResidue.from_iupac_lite("Neu5Gc")
 Fuc = MonosaccharideResidue.from_iupac_lite("Fuc")
-
-
-class StructureParseError(Exception):
-    """Raised when a structure cannot be parsed."""
-
-
-class BranchError(Exception):
-    """Raised when `count_branch` is called on non-complex glycans."""
 
 
 class GlycanType(Enum):
@@ -44,12 +38,13 @@ class NGlycan:
     """A glycan."""
 
     _glypy_glycan: GlypyGlycan = field(repr=False)
-    _composition: GlycanComposition = field(init=False)
-    _cores: list[int] = field(init=False)
+    _composition: GlycanComposition = field(init=False, repr=False)
+    _cores: list[int] = field(init=False, repr=False)
 
     def __attrs_post_init__(self):
         self._init_composition()
         self._init_cores()
+        self._check_cores(self._cores)
 
     def _init_composition(self):
         object.__setattr__(
@@ -70,7 +65,6 @@ class NGlycan:
                 cores.append(node.id)
             if len(cores) == 5:
                 break
-        self._check_cores(cores)
         object.__setattr__(self, "_cores", cores)
 
     def _check_cores(self, cores):
@@ -82,7 +76,7 @@ class NGlycan:
         core_comps = [get_mono_comp(n) for n in core_residues]
         N_glycan_core_comps = ["Glc2NAc", "Glc2NAc", "Man", "Man", "Man"]
         if sorted(core_comps) != N_glycan_core_comps:
-            raise ValueError(f"Invalid core: {core_comps}")
+            raise StructureParseError("This is not a N-glycan.")
 
     @classmethod
     def from_string(
@@ -104,7 +98,7 @@ class NGlycan:
             except GlycoCTError:
                 raise StructureParseError(f"Could not parse string: {string}")
         else:
-            raise ValueError(f"Unknown format: {format}")
+            raise StructureParseError(f"Unknown format: {format}")
 
     @classmethod
     def from_glycoct(cls, glycoct: str) -> NGlycan:
@@ -230,7 +224,7 @@ class NGlycan:
         for node in self._breadth_first_traversal():
             if get_mono_comp(node) == "Neu5Ac":
                 if node.links[2][0].parent_position == -1:
-                    raise StructureParseError("Sialic acid linkage not specified")
+                    raise SiaLinkageError("Sialic acid linkage not specified")
                 elif node.links[2][0].parent_position == 3:
                     n = n + 1
         return n

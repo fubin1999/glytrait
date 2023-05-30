@@ -1,6 +1,7 @@
 import pytest
 
 from glytrait import glycan as glyc
+from glytrait.exception import *
 
 
 @pytest.fixture
@@ -520,12 +521,12 @@ class TestGlycan:
         assert repr(glycan) == "NGlycan({Gal:2; Man:3; Glc2NAc:4; Neu5Ac:2})"
 
     def test_from_string_wrong_format(self):
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(StructureParseError) as excinfo:
             glyc.NGlycan.from_string(test_glycoct_1, format="unknown")
             assert "Unknown format: unknown" in str(excinfo.value)
 
     def test_from_string_wrong_string(self):
-        with pytest.raises(glyc.StructureParseError) as excinfo:
+        with pytest.raises(StructureParseError) as excinfo:
             glyc.NGlycan.from_string("wrong string", format="glycoct")
             assert "Could not parse string: wrong string" in str(excinfo.value)
 
@@ -534,7 +535,7 @@ class TestGlycan:
         assert repr(glycan) == "NGlycan({Gal:2; Man:3; Glc2NAc:4; Neu5Ac:2})"
 
     def test_from_glycoct_wrong_string(self):
-        with pytest.raises(glyc.StructureParseError) as excinfo:
+        with pytest.raises(StructureParseError) as excinfo:
             glyc.NGlycan.from_glycoct("wrong string")
             assert "Could not parse string: wrong string" in str(excinfo.value)
 
@@ -680,9 +681,9 @@ class TestGlycan:
 
     def test_count_a23_a26_sia_no_linkage_info(self, make_glycan):
         glycan = make_glycan(test_glycoct_1)
-        with pytest.raises(glyc.StructureParseError):
+        with pytest.raises(SiaLinkageError):
             glycan.count_a23_sia()
-        with pytest.raises(glyc.StructureParseError):
+        with pytest.raises(SiaLinkageError):
             glycan.count_a26_sia()
 
     @pytest.mark.parametrize(

@@ -10,6 +10,7 @@ from glytrait.trait import (
     build_meta_property_table,
     calcu_trait,
 )
+from glytrait.exception import GlyTraitError
 
 UNDIFINED = "__UNDEFINED__"
 
@@ -59,7 +60,10 @@ def cli(input_file, output_file, sia_linkage, formula_file):
         raise click.UsageError(
             "You must provide both an input file and an output file."
         )
-    run_workflow(input_file, output_file, sia_linkage, formula_file)
+    try:
+        run_workflow(input_file, output_file, sia_linkage, formula_file)
+    except GlyTraitError as e:
+        raise click.UsageError(str(e) + emoji.emojize(" :thumbs_down:"))
     msg = f"Done :thumbs_up:! Output written to {output_file}."
     click.echo(emoji.emojize(msg))
 

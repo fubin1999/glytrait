@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from glytrait import trait
+from glytrait.exception import *
 
 
 class TestTraitFormula:
@@ -44,7 +45,7 @@ class TestTraitFormula:
         return pd.DataFrame(data, index=["S1", "S2", "S3"])
 
     def test_init_invalid_properties(self):
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(FormulaError) as excinfo:
             trait.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
@@ -55,7 +56,7 @@ class TestTraitFormula:
         assert msg in str(excinfo.value)
 
     def test_init_0_length_properties(self):
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(FormulaError) as excinfo:
             trait.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
@@ -65,7 +66,7 @@ class TestTraitFormula:
         assert "`numerator_properties` cannot be empty." in str(excinfo.value)
 
     def test_init_dot_in_numerator(self):
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(FormulaError) as excinfo:
             trait.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
@@ -75,7 +76,7 @@ class TestTraitFormula:
         assert "'.' should not be used in the numerator." in str(excinfo.value)
 
     def test_init_dot_with_others_in_denominator(self):
-        with pytest.raises(ValueError) as excinfo:
+        with pytest.raises(FormulaError) as excinfo:
             trait.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
@@ -193,7 +194,7 @@ def test_parse_expression(expression, name, num_props, den_props, coef):
     ],
 )
 def test_parse_expression_invalid(expression):
-    with pytest.raises(trait.FormulaParseError) as excinfo:
+    with pytest.raises(FormulaError) as excinfo:
         trait._parse_expression(expression)
     assert f"Invalid expression: '{expression}'" in str(excinfo.value)
 
@@ -247,7 +248,7 @@ def test_load_default_formulas_invalid(text, tmp_path, monkeypatch):
     formula_file = tmp_path / "formula.txt"
     formula_file.write_text(text)
     monkeypatch.setattr(trait, "DEFAULT_FORMULA_FILE", str(formula_file))
-    with pytest.raises(trait.FormulaParseError):
+    with pytest.raises(FormulaError):
         list(trait.load_default_formulas())
 
 

@@ -11,6 +11,7 @@ import pandas as pd
 from attrs import define, field
 from numpy.typing import NDArray
 
+from .exception import FormulaError
 from .glycan import NGlycan
 
 DEFAULT_FORMULA_FILE = "trait_forluma.txt"
@@ -50,10 +51,6 @@ sia_linkage_meta_properties = [
 ]
 
 meta_properties = basic_meta_properties + sia_linkage_meta_properties
-
-
-class FormulaParseError(Exception):
-    """Raised if a formula could not be parsed."""
 
 
 def build_meta_property_table(
@@ -140,13 +137,13 @@ def build_meta_property_table(
 
 def _check_length(instance, attribute, value):
     if len(value) == 0:
-        raise ValueError(f"`{attribute.name}` cannot be empty.")
+        raise FormulaError(f"`{attribute.name}` cannot be empty.")
 
 
 def _check_meta_properties(instance, attribute, value):
     invalid_properties = set(value) - set(meta_properties)
     if len(invalid_properties) > 0:
-        raise ValueError(
+        raise FormulaError(
             f"`{attribute.name}` contains invalid meta properties: "
             f"{', '.join(invalid_properties)}."
         )
@@ -154,12 +151,12 @@ def _check_meta_properties(instance, attribute, value):
 
 def _check_numerator(instance, attribute, value):
     if "." in value:
-        raise ValueError("'.' should not be used in the numerator.")
+        raise FormulaError("'.' should not be used in the numerator.")
 
 
 def _check_denominator(instance, attribute, value):
     if "." in value and len(value) > 1:
-        raise ValueError(
+        raise FormulaError(
             "'.' should not be used with other meta properties in the denominator."
         )
 
@@ -276,30 +273,41 @@ def _load_formulas(
     for line in formula_file_reader:
         if line.startswith("@"):
             if description is not None:
-                raise FormulaParseError(
-                    "One description line must follow a formula line."
+                raise FormulaError(
+                    f"Invalid line: '{line}'.\n"
+                    f"One description line must follow a formula line."
                 )
             description = line[1:].strip()
 
         if line.startswith("$"):
             if description is None:
-                raise FormulaParseError(
+                raise FormulaError(
+                    f"Invalid line: '{line}'.\n"
                     "One formula line must follow a description line."
                 )
             expression = line[1:].strip()
             name, num_prop, den_prop, coef = _parse_expression(expression)
-            yield TraitFormula(
-                description=description,
-                name=name,
-                numerator_properties=num_prop,
-                denominator_properties=den_prop,
-                coefficient=coef,
-            )
+            try:
+                yield TraitFormula(
+                    description=description,
+                    name=name,
+                    numerator_properties=num_prop,
+                    denominator_properties=den_prop,
+                    coefficient=coef,
+                )
+            except FormulaError as e:
+                raise FormulaError(
+                    f"Invalid line: '{line}'.\n"
+                    f"Error in formula '{expression}': {e}"
+                )
             description = None
             expression = None
 
     if description is not None and expression is None:
-        raise FormulaParseError("One description line must follow a formula line.")
+        raise FormulaError(
+            f"Invalid line: '{line}'.\n"
+            f"One description line must follow a formula line."
+        )
 
 
 def load_default_formulas() -> Generator[TraitFormula, None, None]:
@@ -377,7 +385,7 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
 
     match = re.match(pattern, expr)
     if match is None:
-        raise FormulaParseError(f"Invalid expression: '{expr}'")
+        raise FormulaError(f"Invalid expression: '{expr}'")
     name, num_prop, den_prop = match.groups()
 
     num_prop = num_prop.split("*")
@@ -388,7 +396,7 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
     # Check if there are invalid characters in the properties
     for prop in num_prop + den_prop:
         if re.search(r"\W", prop) and prop != ".":
-            raise FormulaParseError(f"Invalid expression: '{expr}'")
+            raise FormulaError(f"Invalid expression: '{expr}'")
 
     # If "//" is used, we need to add the denominator properties to the numerator properties.
     if "//" in expr:
@@ -399,7 +407,7 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
         coef_pattern = r"\) \* (\d+/\d+|\d+(\.\d+)?)"
         match = re.search(coef_pattern, expr)
         if match is None:
-            raise FormulaParseError(f"Invalid expression: '{expr}'")
+            raise FormulaError(f"Invalid expression: '{expr}'")
         coef = eval(match.group(1))
     else:
         coef = 1.0
