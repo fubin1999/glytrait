@@ -77,7 +77,7 @@ def test_cli(mocker, input_file):
     runner = CliRunner()
     run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
     result = runner.invoke(cli.cli, [str(input_file)])
-    output_path = input_file.with_stem(input_file.stem + "_glytrait")
+    output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
         str(input_file), str(output_path), False, None
@@ -98,7 +98,7 @@ def test_cli_sia_linkage(mocker, input_file):
     runner = CliRunner()
     run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
     result = runner.invoke(cli.cli, [str(input_file), "-s"])
-    output_path = input_file.with_stem(input_file.stem + "_glytrait")
+    output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
         str(input_file), str(output_path), True, None
@@ -111,7 +111,7 @@ def test_cli_user_traits(mocker, input_file, clean_dir):
     runner = CliRunner()
     run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
     result = runner.invoke(cli.cli, [str(input_file), "-f", str(user_file)])
-    output_path = input_file.with_stem(input_file.stem + "_glytrait")
+    output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
         str(input_file), str(output_path), False, str(user_file)

@@ -92,7 +92,7 @@ def cli(input_file, output_file, sia_linkage, formula_file):
     """
     if output_file is None:
         output_file = str(
-            Path(input_file).with_stem(Path(input_file).stem + "_glytrait")
+            Path(input_file).with_name(Path(input_file).stem + "_glytrait.xlsx")
         )
     else:
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
