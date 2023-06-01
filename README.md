@@ -118,3 +118,6 @@ A few things to be noted:
 - If a custom formula has the same name with a default formula, it will be ignored.
 - If more than one custom formulas have the same name, only the first one will be used.
 - If any formula is in wrong format, GlyTrait will raise an error to inform you.
+
+## License
+[MIT License](LICENSE)
