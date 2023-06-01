@@ -1,146 +1,146 @@
-# ======================
-# Trait Formula Overview
-# ======================
-# Trait formula is the way glyTrait uses to calculate glycan traits. It is a simple and powerful
-# way to define glycan traits. It is simple because it is easy to understand and use. It is
-# powerful because it can be used to calculate almost all glycan traits you can think of. Trait
-# formulas have their own grammar, which will be explained in detail below. The trait formula
-# grammar is closely related to the innate calculation algorithm of traits. Understanding the
-# trait calculation algorithm will help you to write new trait formulas more easily.
-#
-# =======================
-# File Format Description
-# =======================
-# Each formula is a block of text. Each block starts with a description line starting with "@",
-# followed by the formula line starting with "$". The description line and the formula line should
-# have a line break. Formula blocks are separated by one empty line. All lines starting with
-# "#" are comments and will be ignored. (You are looking at a comment line right now :P)
-#
-# Examples:
-# @ Relative abundance of high mannose type glycans within total spectrum
-# $ TM = (isHighMannose) / (.)
-#
-# @ Relative abundance of monoantennary glycans within complex type glycans
-# $ CA1 = (isComplex * is1Antennay) / (isComplex)
-#
-#
-# ===================
-# Formula Description
-# ===================
-# The formula is instinctive to understand. It represents the ratio of the summed abundance of
-# two groups of glycans. Most commonly, it can be interpreted as the relative abundance of one
-# smaller group of glycans within a larger group of glycans.
-#
-# Let's look at an example:
-# $ CA1 = (isComplex * is1Antennay) / (isComplex)
-#
-# "CA1" is the name of the trait. Behind the "=" we can see the numerator
-# (isComplex * is1Antennay) and the denominator (isComplex). There are two "meta properties" in
-# the numerator: "isComplex" and "is1Antennay", and only one "meta property" in the denominator:
-# "isComplex". The "meta property" is just a fancy name for some basic properties of glycans, such
-# as "isHighMannose", "isHybrid", "isComplex", "is1Antennay", etc. For a full list of valid meta
-# properties, see the section "Valid Meta Properties" below. The "*" means "and", so the numerator
-# means "those glycans that are complex and monoantennary". All in all, the formula above means
-# "the relative abundance of monoantennary glycans within complex type glycans".
-#
-# Note that "isComplex" is necessary in the numerator, as the "smaller group" in this case is a
-# subset of the "bigger group", the glycans of complex type. However, this can be cumbersome for
-# complex traits. For example, look at the following formula:
-#
-# $ A2SF = (isComplex * is2Antennary * hasSia * hasFuc) / (isComplex * is2Antennary * hasSia)
-#           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#
-# Notice the repeated part. It is both redundant to write and hard to read. To solve this problem,
-# you can use a special symbol "//", means "proportion of". Using this symbol, the formula above
-# can be simplified as:
-#
-# $ A2SF = (hasFuc) // (isComplex * is2Antennary * hasSia)
-#
-# Now the formula is short and much more clear. The "//" symbol means "proportion of", so the
-# formula above means "the proportion of fucosylated glycans within all sialylated diantennary
-# glycans of complex type". For the sake of simplicity and to avoid unnecessary mistakes, the
-# "//" is recommended to be used whenever a trait means "the proportion of ... within ...".
-#
-# Although the "//" symbol is handy, the basic "/" symbol is still necessary in some cases. For
-# example, the following formula means "the ratio of high-mannose to hybrid glycans":
-# $ MHy = (isHighMannose) / (isHybrid)
-#
-# In some special cases, we want all the glycans detected as the denominator. In this case, we use
-# the symbol "." to represent all glycans. For example:
-#
-# $ TM = (isHighMannose) / (.)
-#
-# This formula means "the relative abundance of high mannose type glycans within total spectrum".
-#
-# In other cases, we need to multiply something to the final result. For example, we want to
-# calculate the galactosylation per antenna within diantennary glycans. The formula is:
-#
-# $ A2G = (totalGal) // (isComplex * is2Antennary) * 0.5
-#
-# The " * 0.5" part means "multiply the final result by 0.5". "0.5" is called a "coefficient".
-# Coefficients can be either in decimal (0.5), integer (2), or fraction (1/2) format, and must be
-# positive. The coefficient part is optional. If omitted, the coefficient is assumed to be 1.
-#
-# In summary, the formula should be in the format of:
-#
-# $ <Name> = (<Numerator1> * <Numerator2> * ...) / (<Denominator1> * <Denominator2> * ...) * <Coefficient>
-#                                               ~~~                                       ~~~~~~~~~~~~~~~~
-#                                              or //                                         optional
-#
-# - <Name> is the name of the formula, which will be used as the column name in the output file.
-# - <Numerator1>, <Numerator2>, ... are the meta properties of the numerator.
-# - <Denominator1>, <Denominator2>, ... are the meta properties of the denominator.
-# - () is necessary to group the numerator and denominator for clearness, even if there is only
-#   one meta property on the numerator and the denominator.
-# - All numerators and denominators should be separated by "*". If there is only one numerator or
-#   denominator, "*" is not needed.
-# - The "/" is necessary to separate the numerator and denominator. If the trait is a proportion
-#   of something within something, use "//" instead of "/".
-# - Some formulas may use all glycans as the denominator. In this case, use (.) as the
-#   denominator. A combination of "." and other meta properties (e.g. (. * isComplex)) is not
-#   allowed.
-# - <Coefficient> is the coefficient multiplied to the final result. The coefficient part
-#   (* <Coefficient>) is optional. If omitted, the coefficient is assumed to be 1.
-#
-#
-# =====================
-# Valid Meta Properties
-# =====================
-# Basic meta properties:
-#   - . (means all glycans, see above for details)
-#   - isHighMannose
-#   - isHybrid
-#   - isComplex
-#   - isBisecting
-#   - is1Antennary
-#   - is2Antennary
-#   - is3Antennary
-#   - is4Antennary
-#   - totalAntenna
-#   - coreFuc
-#   - antennaryFuc
-#   - hasAntennaryFuc
-#   - totalFuc
-#   - hasFuc
-#   - noFuc
-#   - totalMan
-#   - totalSia
-#   - hasSia
-#   - noSia
-#   - totalGal
-# Sialic acid linkage meta properties:
-#   - a23Sia
-#   - a26Sia
-#   - hasa23Sia
-#   - hasa26Sia
-#   - noa23Sia
-#   - noa26Sia
-#
-# By now the custom meta properties are not supported. If you want to use custom meta properties,
-# please feel free to modify the source code. If you find some meta properties really important
-# but missing in the glyTrait package, please contact the author: 21210220012@m.fudan.edu.cn,
-# or open an issue on GitHub.
+======================
+Trait Formula Overview
+======================
+Trait formula is the way glyTrait uses to calculate glycan traits. It is a simple and powerful
+way to define glycan traits. It is simple because it is easy to understand and use. It is
+powerful because it can be used to calculate almost all glycan traits you can think of. Trait
+formulas have their own grammar, which will be explained in detail below. The trait formula
+grammar is closely related to the innate calculation algorithm of traits. Understanding the
+trait calculation algorithm will help you to write new trait formulas more easily.
+
+=======================
+File Format Description
+=======================
+Each formula is a block of text. Each block starts with a description line starting with "@",
+followed by the formula line starting with "$". The description line and the formula line should
+have a line break. Formula blocks are separated by one empty line. Lines not starting with "@" or
+"$" are ignored.
+
+Examples:
+@ Relative abundance of high mannose type glycans within total spectrum
+$ TM = (isHighMannose) / (.)
+
+@ Relative abundance of monoantennary glycans within complex type glycans
+$ CA1 = (isComplex * is1Antennay) / (isComplex)
 
 
-# From now on, you can write your own trait formulas. Good luck! :)
-# ================================================================================================
+===================
+Formula Description
+===================
+The formula is instinctive to understand. It represents the ratio of the summed abundance of
+two groups of glycans. Most commonly, it can be interpreted as the relative abundance of one
+smaller group of glycans within a larger group of glycans.
+
+Let's look at an example:
+$ CA1 = (isComplex * is1Antennay) / (isComplex)
+
+"CA1" is the name of the trait. Behind the "=" we can see the numerator
+(isComplex * is1Antennay) and the denominator (isComplex). There are two "meta properties" in
+the numerator: "isComplex" and "is1Antennay", and only one "meta property" in the denominator:
+"isComplex". The "meta property" is just a fancy name for some basic properties of glycans, such
+as "isHighMannose", "isHybrid", "isComplex", "is1Antennay", etc. For a full list of valid meta
+properties, see the section "Valid Meta Properties" below. The "*" means "and", so the numerator
+means "those glycans that are complex and monoantennary". All in all, the formula above means
+"the relative abundance of monoantennary glycans within complex type glycans".
+
+Note that "isComplex" is necessary in the numerator, as the "smaller group" in this case is a
+subset of the "bigger group", the glycans of complex type. However, this can be cumbersome for
+complex traits. For example, look at the following formula:
+
+$ A2SF = (isComplex * is2Antennary * hasSia * hasFuc) / (isComplex * is2Antennary * hasSia)
+       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Notice the repeated part. It is both redundant to write and hard to read. To solve this problem,
+you can use a special symbol "//", means "proportion of". Using this symbol, the formula above
+can be simplified as:
+
+$ A2SF = (hasFuc) // (isComplex * is2Antennary * hasSia)
+
+Now the formula is short and much more clear. The "//" symbol means "proportion of", so the
+formula above means "the proportion of fucosylated glycans within all sialylated diantennary
+glycans of complex type". For the sake of simplicity and to avoid unnecessary mistakes, the
+"//" is recommended to be used whenever a trait means "the proportion of ... within ...".
+
+Although the "//" symbol is handy, the basic "/" symbol is still necessary in some cases. For
+example, the following formula means "the ratio of high-mannose to hybrid glycans":
+$ MHy = (isHighMannose) / (isHybrid)
+
+In some special cases, we want all the glycans detected as the denominator. In this case, we use
+the symbol "." to represent all glycans. For example:
+
+$ TM = (isHighMannose) / (.)
+
+This formula means "the relative abundance of high mannose type glycans within total spectrum".
+
+In other cases, we need to multiply something to the final result. For example, we want to
+calculate the galactosylation per antenna within diantennary glycans. The formula is:
+
+$ A2G = (totalGal) // (isComplex * is2Antennary) * 0.5
+
+The " * 0.5" part means "multiply the final result by 0.5". "0.5" is called a "coefficient".
+Coefficients can be either in decimal (0.5), integer (2), or fraction (1/2) format, and must be
+positive. The coefficient part is optional. If omitted, the coefficient is assumed to be 1.
+
+In summary, the formula should be in the format of:
+
+$ <Name> = (<Numerator1> * <Numerator2> * ...) / (<Denominator1> * <Denominator2> * ...) * <Coefficient>
+                                              ~~~                                       ~~~~~~~~~~~~~~~~
+                                             or //                                          optional
+
+- <Name> is the name of the formula, which will be used as the column name in the output file.
+- <Numerator1>, <Numerator2>, ... are the meta properties of the numerator.
+- <Denominator1>, <Denominator2>, ... are the meta properties of the denominator.
+- () is necessary to group the numerator and denominator for clearness, even if there is only
+one meta property on the numerator and the denominator.
+- All numerators and denominators should be separated by "*". If there is only one numerator or
+denominator, "*" is not needed.
+- The "/" is necessary to separate the numerator and denominator. If the trait is a proportion
+of something within something, use "//" instead of "/".
+- Some formulas may use all glycans as the denominator. In this case, use (.) as the
+denominator. A combination of "." and other meta properties (e.g. (. * isComplex)) is not
+allowed.
+- <Coefficient> is the coefficient multiplied to the final result. The coefficient part
+(* <Coefficient>) is optional. If omitted, the coefficient is assumed to be 1.
+
+
+=====================
+Valid Meta Properties
+=====================
+Basic meta properties:
+    - . (means all glycans, see above for details)
+    - isHighMannose
+    - isHybrid
+    - isComplex
+    - isBisecting
+    - is1Antennary
+    - is2Antennary
+    - is3Antennary
+    - is4Antennary
+    - totalAntenna
+    - coreFuc
+    - antennaryFuc
+    - hasAntennaryFuc
+    - totalFuc
+    - hasFuc
+    - noFuc
+    - totalMan
+    - totalSia
+    - hasSia
+    - noSia
+    - totalGal
+Sialic acid linkage meta properties:
+    - a23Sia
+    - a26Sia
+    - hasa23Sia
+    - hasa26Sia
+    - noa23Sia
+    - noa26Sia
+
+By now the custom meta properties are not supported. If you want to use custom meta properties,
+please feel free to modify the source code. If you find some meta properties really important
+but missing in the glyTrait package, please contact the author: 21210220012@m.fudan.edu.cn,
+or open an issue on GitHub.
+
+
+From now on, you can write your own trait formulas. Good luck! :)
+================================================================================================

@@ -333,7 +333,7 @@ def test_save_trait_formula_template(clean_dir):
     trait.save_trait_formula_template(clean_dir)
     template_file = clean_dir / "trait_formula.txt"
     assert template_file.exists()
-    assert "# Trait Formula Overview" in template_file.read_text()
+    assert "Trait Formula Overview" in template_file.read_text()
 
 
 def test_calcu_trait():
