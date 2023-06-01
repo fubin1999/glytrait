@@ -25,8 +25,11 @@ def test_run_workflow(mocker, sia_linkage):
     build_meta_property_table_mock = mocker.patch(
         "glytrait.cli.build_meta_property_table", return_value="meta_prop_df"
     )
-    calcu_trait_mock = mocker.patch(
-        "glytrait.cli.calcu_trait", return_value="trait_df"
+    calcu_derived_traits_mock = mocker.patch(
+        "glytrait.cli.calcu_derived_trait", return_value="derived_trait_df"
+    )
+    calcu_direct_traits_mock = mocker.patch(
+        "glytrait.cli.calcu_direct_trait", return_value="direct_trait_df"
     )
     write_output_mock = mocker.patch("glytrait.cli.write_output")
 
@@ -40,11 +43,15 @@ def test_run_workflow(mocker, sia_linkage):
 
     if sia_linkage is False:
         formulas_mock.pop(1)
-    calcu_trait_mock.assert_called_once_with(
+    calcu_derived_traits_mock.assert_called_once_with(
         abund_df_mock, "meta_prop_df", formulas_mock
     )
     write_output_mock.assert_called_once_with(
-        "output_file", "trait_df", abund_df_mock, "meta_prop_df", formulas_mock
+        "output_file",
+        "derived_trait_df",
+        "direct_trait_df",
+        "meta_prop_df",
+        formulas_mock,
     )
 
 
@@ -112,12 +119,14 @@ def test_cli_user_traits(mocker, input_file, clean_dir):
 
 
 def test_cli_glytrait_error(mocker, input_file):
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", side_effect=cli.GlyTraitError)
+    run_workflow_mock = mocker.patch(
+        "glytrait.cli.run_workflow", side_effect=cli.GlyTraitError
+    )
     runner = CliRunner()
     result = runner.invoke(cli.cli, [str(input_file)])
     run_workflow_mock.assert_called_once()
     assert result.exit_code != 0
-    assert '👎' in result.output
+    assert "👎" in result.output
 
 
 def test_cli_input_not_csv(mocker, clean_dir):

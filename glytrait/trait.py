@@ -181,7 +181,7 @@ class TraitFormula:
         ...     denominator_properties=["isComplex"],
         ... )
         >>> formula.initialize(meta_property_table)
-        >>> trait_df[formula.name] = glytrait.trait.calcu_trait(abundance_table)
+        >>> trait_df[formula.name] = glytrait.trait.calcu_derived_trait(abundance_table)
     """
 
     description: str = field()
@@ -415,12 +415,12 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
     return name, num_prop, den_prop, coef
 
 
-def calcu_trait(
+def calcu_derived_trait(
     abund_df: pd.DataFrame,
     meta_prop_df: pd.DataFrame,
     formulas: list[TraitFormula],
 ) -> pd.DataFrame:
-    """Calculate the trait values.
+    """Calculate the derived trait values.
 
     Args:
         abund_df (pd.DataFrame): The abundance table, with samples as index and glycan IDs
@@ -443,3 +443,17 @@ def calcu_trait(
         )
         trait_series.append(trait_s)
     return pd.concat(trait_series, axis=1)
+
+
+def calcu_direct_trait(abund_df: pd.DataFrame) -> pd.DataFrame:
+    """Calculate the direct trait values.
+
+    Args:
+        abund_df (pd.DataFrame): The abundance table, with samples as index and glycan IDs
+            as columns.
+
+    Returns:
+        pd.DataFrame: The trait values, with samples as index and trait names as columns.
+    """
+    row_sums = abund_df.sum(axis=1)
+    return abund_df.div(row_sums, axis=0)
