@@ -1,8 +1,10 @@
+from pathlib import Path
 from typing import Optional
 
 import click
 import emoji
 
+from glytrait.exception import GlyTraitError
 from glytrait.io import read_input, write_output
 from glytrait.trait import (
     save_trait_formula_template,
@@ -10,7 +12,6 @@ from glytrait.trait import (
     build_meta_property_table,
     calcu_trait,
 )
-from glytrait.exception import GlyTraitError
 
 UNDIFINED = "__UNDEFINED__"
 
@@ -19,6 +20,8 @@ def save_template_callback(ctx, param, value):
     """Save a template for the user to fill in."""
     if value == UNDIFINED:
         return
+    if Path(value).exists() and not Path(value).is_dir():
+        raise click.BadParameter("The path to save the template must be a directory.")
     else:
         save_trait_formula_template(value)
         msg = (
@@ -30,14 +33,49 @@ def save_template_callback(ctx, param, value):
         ctx.exit()
 
 
+def valid_input_file(ctx, param, value):
+    """Validate input file."""
+    if Path(value).suffix != ".csv":
+        raise click.BadParameter("Input file must be a csv file.")
+    return value
+
+
+def valid_output_file(ctx, param, value):
+    """Validate output file."""
+    if value is not None and Path(value).suffix != ".xlsx":
+        raise click.BadParameter("Output file must be a xlsx file.")
+    return value
+
+
+def valid_formula_file(ctx, param, value):
+    """Validate formula file."""
+    if value is not None and Path(value).suffix != ".txt":
+        raise click.BadParameter("Formula file must be a txt file.")
+    return value
+
+
 @click.command()
-@click.argument("input_file", type=click.Path(exists=True), required=False)
-@click.argument("output_file", type=click.Path(), required=False)
+@click.argument(
+    "input_file",
+    type=click.Path(exists=True),
+    required=False,
+    callback=valid_input_file,
+)
+@click.option(
+    "-o",
+    "--output_file",
+    type=click.Path(),
+    callback=valid_output_file
+)
 @click.option(
     "-s", "--sia_linkage", is_flag=True, help="Include sialic acid linkage traits."
 )
 @click.option(
-    "-f", "--formula_file", type=click.Path(exists=True), help="User formula file."
+    "-f",
+    "--formula_file",
+    type=click.Path(exists=True),
+    help="User formula file.",
+    callback=valid_formula_file,
 )
 @click.option(
     "-t",
@@ -52,14 +90,16 @@ def save_template_callback(ctx, param, value):
 def cli(input_file, output_file, sia_linkage, formula_file):
     """Run the glytrait workflow.
 
-    You can use `--save_template` option to save the formula template
-    to the specified directory. You can then edit the template and
+    You can use the `--save_template` option to save the formula template
+    to the specified directory, then edit the template and
     use it to provide additional traits to glyTrait.
     """
-    if input_file is None or output_file is None:
-        raise click.UsageError(
-            "You must provide both an input file and an output file."
+    if output_file is None:
+        output_file = str(
+            Path(input_file).with_stem(Path(input_file).stem + "_glytrait")
         )
+    else:
+        Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     try:
         run_workflow(input_file, output_file, sia_linkage, formula_file)
     except GlyTraitError as e:
