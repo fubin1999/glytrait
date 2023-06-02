@@ -31,7 +31,7 @@
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>71</width>
+       <width>111</width>
        <height>31</height>
       </rect>
      </property>
@@ -82,11 +82,18 @@
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="1">
+     <item row="1" column="1">
+      <widget class="QPushButton" name="input_button">
+       <property name="text">
+        <string>select</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="0">
       <widget class="QLabel" name="input_label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <pointsize>12</pointsize>
          <bold>true</bold>
         </font>
        </property>
@@ -95,18 +102,11 @@
        </property>
       </widget>
      </item>
-     <item row="6" column="1">
-      <widget class="QCheckBox" name="sia_checkbox">
-       <property name="text">
-        <string>Include the sialic-acid-linkage traits</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
+     <item row="3" column="0">
       <widget class="QLabel" name="output_label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <pointsize>12</pointsize>
          <bold>true</bold>
         </font>
        </property>
@@ -115,11 +115,18 @@
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="6" column="0">
+      <widget class="QCheckBox" name="sia_checkbox">
+       <property name="text">
+        <string>Include the sialic-acid-linkage traits</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
       <widget class="QLineEdit" name="output_line_edit">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <pointsize>10</pointsize>
          <bold>false</bold>
         </font>
        </property>
@@ -128,33 +135,26 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
+     <item row="1" column="0">
       <widget class="QLineEdit" name="input_line_edit"/>
      </item>
-     <item row="5" column="1">
+     <item row="4" column="1">
+      <widget class="QPushButton" name="output_button">
+       <property name="text">
+        <string>select</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0">
       <widget class="QLabel" name="sia_label">
        <property name="font">
         <font>
-         <pointsize>14</pointsize>
+         <pointsize>12</pointsize>
          <bold>true</bold>
         </font>
        </property>
        <property name="text">
         <string>Sialic acid linkage</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="2">
-      <widget class="QPushButton" name="input_button">
-       <property name="text">
-        <string>select</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="2">
-      <widget class="QPushButton" name="output_button">
-       <property name="text">
-        <string>select</string>
        </property>
       </widget>
      </item>
@@ -165,13 +165,13 @@
      <rect>
       <x>20</x>
       <y>100</y>
-      <width>101</width>
+      <width>131</width>
       <height>21</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>15</pointsize>
+      <pointsize>14</pointsize>
       <bold>true</bold>
      </font>
     </property>
@@ -196,14 +196,14 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>360</y>
-      <width>141</width>
+      <y>370</y>
+      <width>181</width>
       <height>21</height>
      </rect>
     </property>
     <property name="font">
      <font>
-      <pointsize>15</pointsize>
+      <pointsize>14</pointsize>
       <bold>true</bold>
      </font>
     </property>
@@ -215,7 +215,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>380</y>
+      <y>390</y>
       <width>601</width>
       <height>20</height>
      </rect>
@@ -228,7 +228,7 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>400</y>
+      <y>410</y>
       <width>601</width>
       <height>80</height>
      </rect>
@@ -240,7 +240,7 @@
         <widget class="QLabel" name="save_template_label">
          <property name="font">
           <font>
-           <pointsize>14</pointsize>
+           <pointsize>12</pointsize>
            <bold>true</bold>
           </font>
          </property>
@@ -271,7 +271,7 @@
         <widget class="QLabel" name="use_template_label">
          <property name="font">
           <font>
-           <pointsize>14</pointsize>
+           <pointsize>12</pointsize>
            <bold>true</bold>
           </font>
          </property>
@@ -298,40 +298,32 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>500</y>
+      <y>520</y>
       <width>601</width>
-      <height>31</height>
+      <height>51</height>
      </rect>
     </property>
     <property name="title">
      <string/>
     </property>
-    <widget class="QPushButton" name="run_label">
+    <widget class="QPushButton" name="run_button">
      <property name="geometry">
       <rect>
-       <x>200</x>
-       <y>0</y>
+       <x>190</x>
+       <y>10</y>
        <width>201</width>
-       <height>32</height>
+       <height>31</height>
       </rect>
+     </property>
+     <property name="font">
+      <font>
+       <pointsize>10</pointsize>
+      </font>
      </property>
      <property name="text">
       <string>Run</string>
      </property>
     </widget>
-   </widget>
-   <widget class="QLabel" name="status_label">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>530</y>
-      <width>601</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Result saved to ...</string>
-    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -340,7 +332,7 @@
      <x>0</x>
      <y>0</y>
      <width>650</width>
-     <height>24</height>
+     <height>22</height>
     </rect>
    </property>
   </widget>

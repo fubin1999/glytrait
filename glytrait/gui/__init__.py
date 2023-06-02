@@ -1,19 +1,36 @@
 import sys
 from pathlib import Path
+import platform
 
 from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
 
 from glytrait.trait import save_trait_formula_template
 from glytrait.core import run_workflow
-from mainwindow_mac import Ui_MainWindow
+from glytrait.gui.mainwindow_mac import Ui_MainWindow as Ui_MainWindow_mac
+from glytrait.gui.mainwindow_win import Ui_MainWindow as Ui_MainWindow_win
+
+
+def get_os():
+    os_name = platform.system()
+    if os_name == "Darwin":
+        return "MacOS"
+    elif os_name == "Windows":
+        return "Windows"
+    else:
+        return "Unknown"
 
 
 class MainWindow(QMainWindow):
 
     def __init__(self):
         super(MainWindow, self).__init__()
-        self.ui = Ui_MainWindow()
+        if get_os() == "Windows":
+            self.ui = Ui_MainWindow_win()
+        elif get_os() == "MacOS":
+            self.ui = Ui_MainWindow_mac()
+        else:
+            raise OSError("Unsupported OS.")
         self.ui.setupUi(self)
         self.setWindowTitle("GlyTrait")
         self.setFixedSize(650, 600)
