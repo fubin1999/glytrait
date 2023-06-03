@@ -61,6 +61,8 @@ class MainWindow(QMainWindow):
         dirname = QFileDialog.getExistingDirectory(
             self, "Choose a directory to save the template"
         )
+        if dirname == "":
+            return
         save_trait_formula_template(dirname)
         msg = f"Template saved to {Path(dirname) / 'trait_formula.txt'}."
         self.statusBar().showMessage(msg)
