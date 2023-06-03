@@ -6,10 +6,10 @@ from PySide6.QtCore import Slot
 from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
 
 from glytrait.core import run_workflow
+from glytrait.exception import GlyTraitError
 from glytrait.gui.mainwindow_mac import Ui_MainWindow as Ui_MainWindow_mac
 from glytrait.gui.mainwindow_win import Ui_MainWindow as Ui_MainWindow_win
 from glytrait.trait import save_trait_formula_template
-from glytrait.exception import GlyTraitError
 
 
 def get_os():
@@ -99,13 +99,11 @@ class MainWindow(QMainWindow):
             run_workflow(input_file, output_file, sia_linkage, formula_file)
         except GlyTraitError as e:
             self.pop_message_box(
-                text="Error!",
-                infor_text=str(e),
-                icon=QMessageBox.Icon.Critical
+                text="Error!", infor_text=str(e), icon=QMessageBox.Icon.Critical
             )
         else:
-            msg = f"Done! Results saved to {output_file}."
-            self.statusBar().showMessage(msg)
+            msg = f"Results saved to {output_file}."
+            self.pop_message_box(text="Done!", infor_text=msg)
 
     def get_input_filename(self):
         return self.ui.input_line_edit.text()
