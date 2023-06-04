@@ -123,25 +123,26 @@ class MainWindow(QMainWindow):
     def get_sia_linkage(self):
         return self.ui.sia_checkbox.isChecked()
 
-    def valid_filename(self, filename: str | None, suffix: str):
+    def valid_filename(self, filename: str | None, suffix: str, *, check_exists=False):
         if filename == "":
             return False
-        if not Path(filename).exists():
-            return False
-        if not Path(filename).is_file():
-            return False
+        if check_exists:
+            if not Path(filename).exists():
+                return False
+            if not Path(filename).is_file():
+                return False
         if not Path(filename).suffix == suffix:
             return False
         return True
 
     def valid_input_filename(self, filename):
-        return self.valid_filename(filename, ".csv")
+        return self.valid_filename(filename, ".csv", check_exists=True)
 
     def valid_output_filename(self, filename):
         return self.valid_filename(filename, ".xlsx")
 
     def valid_formula_filename(self, filename):
-        return self.valid_filename(filename, ".txt")
+        return self.valid_filename(filename, ".txt", check_exists=True)
 
     def pop_message_box(self, text, infor_text, icon=QMessageBox.Icon.NoIcon):
         msgBox = QMessageBox()
