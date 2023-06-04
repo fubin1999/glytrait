@@ -146,6 +146,7 @@ class MainWindow(QMainWindow):
     def pop_message_box(self, text, infor_text, icon=QMessageBox.Icon.NoIcon):
         msgBox = QMessageBox()
         msgBox.setIcon(icon)
+        msgBox.setWindowTitle("GlyTrait")
         msgBox.setText(text)
         msgBox.setInformativeText(infor_text)
         msgBox.exec()
