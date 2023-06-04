@@ -8,7 +8,7 @@ readme = "README.md"
 [[tool.poetry.source]]
 name = "aliyun"
 url = "http://mirrors.aliyun.com/pypi/simple"
-default = true
+priority = "default"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
