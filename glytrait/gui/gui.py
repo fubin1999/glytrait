@@ -65,7 +65,7 @@ class MainWindow(QMainWindow):
             return
         save_trait_formula_template(dirname)
         msg = f"Template saved to {Path(dirname) / 'trait_formula.txt'}."
-        self.statusBar().showMessage(msg)
+        self.pop_message_box(text="Done!", infor_text=msg)
 
     @Slot()
     def formula_button_clicked(self):
