@@ -463,3 +463,23 @@ def test_calcu_direct_trait():
         }
     )
     pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_filter_derived_trait():
+    df = pd.DataFrame(
+        {
+            "A": [1, 2, 3],
+            "B": [np.nan, np.nan, np.nan],
+            "C": [1, 1, np.nan],
+            "D": [0, 0, 0],
+            "E": [1, 1, 1],
+            "F": [0.5, 0.5, 0.5],
+        }
+    )
+    result = trait.filter_derived_trait(df)
+    expected = pd.DataFrame(
+        {
+            "A": [1, 2, 3],
+        }
+    )
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)

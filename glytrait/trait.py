@@ -442,7 +442,9 @@ def calcu_derived_trait(
             dtype=float,
         )
         trait_series.append(trait_s)
-    return pd.concat(trait_series, axis=1)
+    derived_trait_df = pd.concat(trait_series, axis=1)
+    derived_trait_df = derived_trait_df.round(6)
+    return derived_trait_df
 
 
 def calcu_direct_trait(abund_df: pd.DataFrame) -> pd.DataFrame:
@@ -456,4 +458,35 @@ def calcu_direct_trait(abund_df: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: The trait values, with samples as index and trait names as columns.
     """
     row_sums = abund_df.sum(axis=1)
-    return abund_df.div(row_sums, axis=0)
+    direct_trait_df = abund_df.div(row_sums, axis=0)
+    direct_trait_df = direct_trait_df.round(6)
+    return direct_trait_df
+
+
+def _filter_all_same(trait_df: pd.DataFrame) -> pd.DataFrame:
+    """Rule out the traits that have the same value for all samples."""
+    return trait_df.loc[:, trait_df.nunique() != 1]
+
+
+def _filter_all_nan(trait_df: pd.DataFrame) -> pd.DataFrame:
+    """Rule out the traits that are NaN for all samples."""
+    return trait_df.loc[:, trait_df.notna().any()]
+
+
+def filter_derived_trait(trait_df: pd.DataFrame) -> pd.DataFrame:
+    """Rule out the invalid traits.
+
+    A trait is invalid if it:
+    1. Has the same value for all samples.
+    2. Is NaN for all samples.
+
+    Args:
+        trait_df (pd.DataFrame): The trait values, with samples as index and trait names
+            as columns.
+
+    Returns:
+        pd.DataFrame: The filtered trait values.
+    """
+    trait_df = _filter_all_same(trait_df)
+    trait_df = _filter_all_nan(trait_df)
+    return trait_df

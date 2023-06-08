@@ -78,7 +78,11 @@ def valid_formula_file(ctx, param, value):
     default=UNDIFINED,
     help="Save a template for the user to fill in.",
 )
-def cli(input_file, output_file, sia_linkage, formula_file):
+@click.option(
+    "--filter/--no-filter",
+    default=True,
+)
+def cli(input_file, output_file, sia_linkage, formula_file, filter):
     """Run the glytrait workflow.
 
     You can use the `--save_template` option to save the formula template
@@ -92,7 +96,7 @@ def cli(input_file, output_file, sia_linkage, formula_file):
     else:
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     try:
-        run_workflow(input_file, output_file, sia_linkage, formula_file)
+        run_workflow(input_file, output_file, sia_linkage, formula_file, filter)
     except GlyTraitError as e:
         raise click.UsageError(str(e) + emoji.emojize(" :thumbs_down:"))
     msg = f"Done :thumbs_up:! Output written to {output_file}."

@@ -31,7 +31,7 @@ def test_cli(mocker, input_file):
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), str(output_path), False, None
+        str(input_file), str(output_path), False, None, True
     )
 
 
@@ -41,7 +41,7 @@ def test_cli_output_path(mocker, input_file):
     result = runner.invoke(cli.cli, [str(input_file), "-o", "output_path.xlsx"])
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), "output_path.xlsx", False, None
+        str(input_file), "output_path.xlsx", False, None, True
     )
 
 
@@ -52,7 +52,7 @@ def test_cli_sia_linkage(mocker, input_file):
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), str(output_path), True, None
+        str(input_file), str(output_path), True, None, True
     )
 
 
@@ -65,7 +65,7 @@ def test_cli_user_traits(mocker, input_file, clean_dir):
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), str(output_path), False, str(user_file)
+        str(input_file), str(output_path), False, str(user_file), True
     )
 
 
@@ -128,7 +128,7 @@ def test_cli_output_dir_not_exist(mocker, input_file, clean_dir):
     result = runner.invoke(cli.cli, [str(input_file), "-o", str(output_file)])
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), str(output_file), False, None
+        str(input_file), str(output_file), False, None, True
     )
 
 
@@ -139,3 +139,14 @@ def test_cli_formula_file_not_exist(mocker, input_file, clean_dir):
     result = runner.invoke(cli.cli, [str(input_file), "-f", str(formula_file)])
     assert result.exit_code != 0
     assert "does not exist" in result.output
+
+
+def test_cli_filter_off(mocker, input_file):
+    runner = CliRunner()
+    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
+    result = runner.invoke(cli.cli, [str(input_file), "--no-filter"])
+    output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
+    assert result.exit_code == 0
+    run_workflow_mock.assert_called_once_with(
+        str(input_file), str(output_path), False, None, False
+    )
