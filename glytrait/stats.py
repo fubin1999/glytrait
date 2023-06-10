@@ -27,4 +27,6 @@ def ttest(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
             )
         ttest_result.index = [col]
         ttest_results.append(ttest_result)
-    return pd.concat(ttest_results, axis=0)
+    result_df = pd.concat(ttest_results, axis=0)
+    _, result_df["p-val-adjusted"] = pg.multicomp(result_df["p-val"], method="fdr_bh")
+    return result_df

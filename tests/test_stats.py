@@ -22,6 +22,7 @@ def test_ttest():
         "cohen-d",
         "BF10",
         "power",
+        "p-val-adjusted",
     ]
     assert result.columns.tolist() == expected_columns
     assert result.index.tolist() == trait_df.columns.tolist()
