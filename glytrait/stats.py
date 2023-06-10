@@ -30,3 +30,42 @@ def ttest(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
     result_df = pd.concat(ttest_results, axis=0)
     _, result_df["p-val-adjusted"] = pg.multicomp(result_df["p-val"], method="fdr_bh")
     return result_df
+
+
+def anova(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
+    """Perform ANOVA for multiple groups.
+
+    Args:
+        trait_df (pd.DataFrame): Dataframe containing the trait data.
+        groups (pd.Series): Series containing the group information, with the same index as df.
+
+    Returns:
+        pd.DataFrame: Dataframe containing the ANOVA results, with trait names as index.
+    """
+    anove_results = []
+    trait_names = trait_df.columns
+    groups = pd.DataFrame(groups, columns=["group"])
+    trait_df = trait_df.merge(groups, left_index=True, right_index=True)
+    for trait in trait_names:
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)
+            anova_result = pg.anova(data=trait_df, dv=trait, between="group")
+        anova_result.index = [trait]
+        anove_results.append(anova_result)
+    result_df = pd.concat(anove_results, axis=0)
+    result_df = result_df.drop("Source", axis=1)
+    result_df = result_df.rename(columns={"p-unc": "p-val"})
+    result_df["reject"], result_df["p-val-adjusted"] = pg.multicomp(
+        result_df["p-val"], method="fdr_bh"
+    )
+
+    result_df["posthoc"] = ""
+    for trait in result_df.index:
+        if result_df.loc[trait, "reject"]:
+            posthoc_result = pg.pairwise_tukey(data=trait_df, dv=trait, between="group")
+            posthoc_result = posthoc_result[posthoc_result["p-tukey"] < 0.05]
+            result_df.loc[trait, "posthoc"] = ",".join(
+                posthoc_result["A"] + "-" + posthoc_result["B"]
+            )
+
+    return result_df
