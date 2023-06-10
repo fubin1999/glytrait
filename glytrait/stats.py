@@ -3,6 +3,8 @@ import warnings
 import pandas as pd
 import pingouin as pg
 
+from .exception import HypothesisTestingError
+
 
 def ttest(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
     """Perform t-test for two groups.
@@ -69,3 +71,31 @@ def anova(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
             )
 
     return result_df
+
+
+def auto_hypothesis_test(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
+    """Automatically perform hypothesis test for the trait data.
+
+    If `groups` has two unique values, t-test will be performed. Otherwise, ANOVA
+    will be performed.
+
+    Args:
+        trait_df (pd.DataFrame): Dataframe containing the trait data.
+        groups (pd.Series): Series containing the group information, with the same index as df.
+
+    Returns:
+        pd.DataFrame: Dataframe containing the hypothesis test results,
+            with trait names as index.
+
+    Raises:
+        HypothesisTestingError: If only one group is provided, or when the index of
+            `groups` and `trait_df` are not the same.
+    """
+    if set(groups.index) != set(trait_df.index):
+        raise HypothesisTestingError("The index of groups and trait_df must be the same.")
+    if groups.nunique() == 1:
+        raise HypothesisTestingError("Only one group is provided.")
+    elif groups.nunique() == 2:
+        return ttest(trait_df, groups)
+    else:
+        return anova(trait_df, groups)

@@ -16,3 +16,7 @@ class FormulaError(GlyTraitError):
 
 class SiaLinkageError(GlyTraitError):
     """Raised if a sialic acid linkage is not specified but used."""
+
+
+class HypothesisTestingError(GlyTraitError):
+    """Raised if a hypothesis test is not possible."""
