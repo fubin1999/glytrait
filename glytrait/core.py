@@ -1,6 +1,9 @@
 from typing import Optional
 
-from glytrait.io import read_input, write_output
+import pandas as pd
+
+from glytrait.io import read_input, write_output, read_group
+from glytrait.stats import auto_hypothesis_test
 from glytrait.trait import (
     load_formulas,
     build_meta_property_table,
@@ -16,6 +19,7 @@ def run_workflow(
     sia_linkage: bool = False,
     user_formula_file: Optional[str] = None,
     filter_invalid: bool = True,
+    group_file: Optional[str] = None,
 ) -> None:
     """Run the workflow."""
     glycans, abund_df = read_input(input_file)
@@ -28,4 +32,12 @@ def run_workflow(
         derived_traits = filter_derived_trait(derived_traits)
         formulas = [f for f in formulas if f.name in derived_traits.columns]
     direct_traits = calcu_direct_trait(abund_df)
-    write_output(output_file, derived_traits, direct_traits, meta_prop_df, formulas)
+    if group_file is not None:
+        groups = read_group(group_file)
+        combined_traits = pd.concat([direct_traits, derived_traits], axis=1)
+        hypo_result = auto_hypothesis_test(combined_traits, groups)
+    else:
+        hypo_result = None
+    write_output(
+        output_file, derived_traits, direct_traits, meta_prop_df, formulas, hypo_result
+    )

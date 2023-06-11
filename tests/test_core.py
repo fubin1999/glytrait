@@ -21,6 +21,9 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
     derived_trait_df_filtered_mock = Mock()
     derived_trait_df_filtered_mock.columns = ["trait1"]
     direct_trait_df_mock = Mock()
+    group_series_mock = Mock()
+    hypo_test_result_mock = Mock()
+    combined_traits_mock = Mock()
 
     formula_1_mock = Mock()
     formula_1_mock.sia_linkage = False
@@ -53,9 +56,21 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
         "glytrait.core.filter_derived_trait",
         return_value=derived_trait_df_filtered_mock,
     )
+    read_group_mock = mocker.patch(
+        "glytrait.core.read_group", return_value=group_series_mock
+    )
+    hypo_test_mock = mocker.patch(
+        "glytrait.core.auto_hypothesis_test", return_value=hypo_test_result_mock
+    )
+    pd_concat_mock = mocker.patch("pandas.concat", return_value=combined_traits_mock)
 
     glytrait.core.run_workflow(
-        "input_file", "output_file", sia_linkage, "user_formula_file", filter_invalid
+        "input_file",
+        "output_file",
+        sia_linkage,
+        "user_formula_file",
+        filter_invalid,
+        "group_file",
     )
 
     read_input_mock.assert_called_once_with("input_file")
@@ -89,10 +104,23 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
         derived_trait_df = derived_trait_df_filtered_mock
     else:
         derived_trait_df = derived_trait_df_mock
+
+    read_group_mock.assert_called_once_with("group_file")
+    hypo_test_mock.assert_called_once_with(combined_traits_mock, group_series_mock)
+    if filter_invalid:
+        pd_concat_mock.assert_called_once_with(
+            [direct_trait_df_mock, derived_trait_df_filtered_mock], axis=1
+        )
+    else:
+        pd_concat_mock.assert_called_once_with(
+            [direct_trait_df_mock, derived_trait_df_mock], axis=1
+        )
+
     write_output_mock.assert_called_once_with(
         "output_file",
         derived_trait_df,
         direct_trait_df_mock,
         meta_prop_df_mock,
         formulas_mock,
+        hypo_test_result_mock
     )
