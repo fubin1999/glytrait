@@ -31,6 +31,7 @@ def ttest(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
         ttest_results.append(ttest_result)
     result_df = pd.concat(ttest_results, axis=0)
     _, result_df["p-val-adjusted"] = pg.multicomp(result_df["p-val"], method="fdr_bh")
+    result_df["CI95%"] = result_df["CI95%"].astype(str)
     return result_df
 
 
@@ -46,7 +47,7 @@ def anova(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
     """
     anove_results = []
     trait_names = trait_df.columns
-    groups = pd.DataFrame(groups, columns=["group"])
+    groups = groups.rename("group")
     trait_df = trait_df.merge(groups, left_index=True, right_index=True)
     for trait in trait_names:
         with warnings.catch_warnings():
