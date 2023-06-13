@@ -31,7 +31,7 @@ def test_cli(mocker, input_file):
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), str(output_path), False, None, True
+        str(input_file), str(output_path), False, None, True, None
     )
 
 
@@ -41,7 +41,7 @@ def test_cli_output_path(mocker, input_file):
     result = runner.invoke(cli.cli, [str(input_file), "-o", "output_path.xlsx"])
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), "output_path.xlsx", False, None, True
+        str(input_file), "output_path.xlsx", False, None, True, None
     )
 
 
@@ -52,7 +52,7 @@ def test_cli_sia_linkage(mocker, input_file):
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), str(output_path), True, None, True
+        str(input_file), str(output_path), True, None, True, None
     )
 
 
@@ -65,7 +65,7 @@ def test_cli_user_traits(mocker, input_file, clean_dir):
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), str(output_path), False, str(user_file), True
+        str(input_file), str(output_path), False, str(user_file), True, None
     )
 
 
@@ -88,7 +88,7 @@ def test_cli_input_not_csv(mocker, clean_dir):
     result = runner.invoke(cli.cli, [str(input_file)])
     run_workflow_mock.assert_not_called()
     assert result.exit_code != 0
-    assert "Input file must be a csv file." in result.output
+    assert "Input file must be a .csv file." in result.output
 
 
 def test_cli_output_not_xlsx(mocker, input_file):
@@ -97,7 +97,7 @@ def test_cli_output_not_xlsx(mocker, input_file):
     result = runner.invoke(cli.cli, [str(input_file), "-o", "output_path.not_xlsx"])
     run_workflow_mock.assert_not_called()
     assert result.exit_code != 0
-    assert "Output file must be a xlsx file." in result.output
+    assert "Output file must be a .xlsx file." in result.output
 
 
 def test_cli_formula_not_txt(mocker, input_file, clean_dir):
@@ -108,7 +108,7 @@ def test_cli_formula_not_txt(mocker, input_file, clean_dir):
     result = runner.invoke(cli.cli, [str(input_file), "-f", str(formula_file)])
     run_workflow_mock.assert_not_called()
     assert result.exit_code != 0
-    assert "Formula file must be a txt file." in result.output
+    assert "Formula file must be a .txt file." in result.output
 
 
 def test_cli_input_file_not_exist(mocker, clean_dir):
@@ -128,7 +128,7 @@ def test_cli_output_dir_not_exist(mocker, input_file, clean_dir):
     result = runner.invoke(cli.cli, [str(input_file), "-o", str(output_file)])
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), str(output_file), False, None, True
+        str(input_file), str(output_file), False, None, True, None
     )
 
 
@@ -148,5 +148,18 @@ def test_cli_filter_off(mocker, input_file):
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
     run_workflow_mock.assert_called_once_with(
-        str(input_file), str(output_path), False, None, False
+        str(input_file), str(output_path), False, None, False, None
+    )
+
+
+def test_cli_group_file(mocker, input_file, clean_dir):
+    group_file = clean_dir / "group_file.csv"
+    group_file.write_text("")
+    runner = CliRunner()
+    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
+    result = runner.invoke(cli.cli, [str(input_file), "-g", str(group_file)])
+    output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
+    assert result.exit_code == 0
+    run_workflow_mock.assert_called_once_with(
+        str(input_file), str(output_path), False, None, True, str(group_file)
     )

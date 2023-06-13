@@ -5,9 +5,7 @@ import emoji
 
 from glytrait.core import run_workflow
 from glytrait.exception import GlyTraitError
-from glytrait.trait import (
-    save_trait_formula_template
-)
+from glytrait.trait import save_trait_formula_template
 
 UNDIFINED = "__UNDEFINED__"
 
@@ -29,25 +27,17 @@ def save_template_callback(ctx, param, value):
         ctx.exit()
 
 
-def valid_input_file(ctx, param, value):
-    """Validate input file."""
-    if Path(value).suffix != ".csv":
-        raise click.BadParameter("Input file must be a csv file.")
-    return value
+def file_validator(suffix: str, file_name: str):
+    """Validate file suffix."""
 
+    def validator(ctx, param, value):
+        if value is not None and Path(value).suffix != suffix:
+            raise click.BadParameter(
+                f"{file_name.capitalize()} must be a {suffix} file."
+            )
+        return value
 
-def valid_output_file(ctx, param, value):
-    """Validate output file."""
-    if value is not None and Path(value).suffix != ".xlsx":
-        raise click.BadParameter("Output file must be a xlsx file.")
-    return value
-
-
-def valid_formula_file(ctx, param, value):
-    """Validate formula file."""
-    if value is not None and Path(value).suffix != ".txt":
-        raise click.BadParameter("Formula file must be a txt file.")
-    return value
+    return validator
 
 
 @click.command()
@@ -55,9 +45,14 @@ def valid_formula_file(ctx, param, value):
     "input_file",
     type=click.Path(exists=True),
     required=False,
-    callback=valid_input_file,
+    callback=file_validator(".csv", "input file"),
 )
-@click.option("-o", "--output_file", type=click.Path(), callback=valid_output_file)
+@click.option(
+    "-o",
+    "--output_file",
+    type=click.Path(),
+    callback=file_validator(".xlsx", "output file"),
+)
 @click.option(
     "-s", "--sia_linkage", is_flag=True, help="Include sialic acid linkage traits."
 )
@@ -66,7 +61,7 @@ def valid_formula_file(ctx, param, value):
     "--formula_file",
     type=click.Path(exists=True),
     help="User formula file.",
-    callback=valid_formula_file,
+    callback=file_validator(".txt", "formula file"),
 )
 @click.option(
     "-t",
@@ -82,7 +77,14 @@ def valid_formula_file(ctx, param, value):
     "--filter/--no-filter",
     default=True,
 )
-def cli(input_file, output_file, sia_linkage, formula_file, filter):
+@click.option(
+    "-g",
+    "--group_file",
+    type=click.Path(exists=True),
+    help="Group file for hypothesis test.",
+    callback=file_validator(".csv", "group file"),
+)
+def cli(input_file, output_file, sia_linkage, formula_file, filter, group_file):
     """Run the glytrait workflow.
 
     You can use the `--save_template` option to save the formula template
@@ -96,7 +98,9 @@ def cli(input_file, output_file, sia_linkage, formula_file, filter):
     else:
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     try:
-        run_workflow(input_file, output_file, sia_linkage, formula_file, filter)
+        run_workflow(
+            input_file, output_file, sia_linkage, formula_file, filter, group_file
+        )
     except GlyTraitError as e:
         raise click.UsageError(str(e) + emoji.emojize(" :thumbs_down:"))
     msg = f"Done :thumbs_up:! Output written to {output_file}."
