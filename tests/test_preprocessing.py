@@ -49,3 +49,22 @@ def test_filter_glycans(ratio, expected):
     )
     result = pp.filter_glycans(df, ratio)
     assert sorted(result.columns.tolist()) == sorted(expected)
+
+
+def test_normalization():
+    df = pd.DataFrame(
+        {
+            "Glycan1": [0.1, 0.2, 0.3],
+            "Glycan2": [0.2, 0.3, 0.4],
+            "Glycan3": [0.3, 0.4, 0.5],
+        }
+    )
+    result = pp.normalization(df)
+    expected = pd.DataFrame(
+        {
+            "Glycan1": [0.1 / 0.6, 0.2 / 0.9, 0.3 / 1.2],
+            "Glycan2": [0.2 / 0.6, 0.3 / 0.9, 0.4 / 1.2],
+            "Glycan3": [0.3 / 0.6, 0.4 / 0.9, 0.5 / 1.2],
+        }
+    )
+    pd.testing.assert_frame_equal(result, expected)

@@ -53,3 +53,18 @@ def impute(
     else:
         raise ValueError("The imputation method is not supported.")
     return imputed_df
+
+
+def normalization(abundance_df: pd.DataFrame) -> pd.DataFrame:
+    """Normalize the abundance table by dividing the sum of each sample.
+
+    Args:
+        abundance_df (pd.DataFrame): The abundance table, with samples as index and glycan IDs
+            as columns.
+
+    Returns:
+        normalized_df (pd.DataFrame): The normalized abundance table.
+    """
+    row_sums = abundance_df.sum(axis=1)
+    normalized_df = abundance_df.div(row_sums, axis=0).round(6)
+    return normalized_df
