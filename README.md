@@ -99,6 +99,31 @@ An example input file would be like:
 
 This file contains 3 glycans (H3N3F1, N3N4 and N3N4F1) and three samples (Sample 1, 2, and 3).
 
+### Preprocessing
+
+GlyTrait will carry out a preprocessing step before calculating derived traits. The following 
+steps will be done:
+- Remove glycans with missing values in more than a certain proportion of samples.
+- Impute missing values.
+- Perform Total Abundance Normalization.
+
+In the glycan-filtering step, the proportion threshold could be specified by the "-r" or the 
+"--filter_glycan_ratio" option. The default value is 0.5, which means if a glycan has missing
+values in more than 50% of samples, it will be removed. You can change this value to 0.3 by:
+
+```shell
+glytrait data.csv -r 0.3
+```
+
+The imputation method could be specified by the "-i" or the "--impute_method" option. The default
+method is "min", which means missing values will be imputed by the minimum value of a glycan. 
+Other supported methods are "mean", "median", "zero", "lod". You can change imputation method to 
+"mean" by:
+
+```shell
+glytrait data.csv -i mean
+```
+
 ### Sialic-acid-linkage traits
 
 Sialic acids can have different linkages for N-glycans (e.g. α2,3 and α2,6). Different sialic acid
