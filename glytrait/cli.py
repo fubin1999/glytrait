@@ -54,6 +54,20 @@ def file_validator(suffix: str, file_name: str):
     callback=file_validator(".xlsx", "output file"),
 )
 @click.option(
+    "-r",
+    "--filter_glycan_ratio",
+    type=click.FLOAT,
+    default=0.5,
+    help="Glycans with missing value ratio greater than this value will be filtered out.",
+)
+@click.option(
+    "-i",
+    "--impute_method",
+    type=click.Choice(["zero", "min", "lod", "mean", "median"]),
+    default="min",
+    help="Method to impute missing values.",
+)
+@click.option(
     "-s", "--sia_linkage", is_flag=True, help="Include sialic acid linkage traits."
 )
 @click.option(
@@ -76,6 +90,7 @@ def file_validator(suffix: str, file_name: str):
 @click.option(
     "--filter/--no-filter",
     default=True,
+    help="Filter out invalid derived traits.",
 )
 @click.option(
     "-g",
@@ -84,7 +99,16 @@ def file_validator(suffix: str, file_name: str):
     help="Group file for hypothesis test.",
     callback=file_validator(".csv", "group file"),
 )
-def cli(input_file, output_file, sia_linkage, formula_file, filter, group_file):
+def cli(
+    input_file,
+    output_file,
+    filter_glycan_ratio,
+    impute_method,
+    sia_linkage,
+    formula_file,
+    filter,
+    group_file,
+):
     """Run the glytrait workflow.
 
     You can use the `--save_template` option to save the formula template
@@ -99,7 +123,14 @@ def cli(input_file, output_file, sia_linkage, formula_file, filter, group_file):
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     try:
         run_workflow(
-            input_file, output_file, sia_linkage, formula_file, filter, group_file
+            input_file,
+            output_file,
+            filter_max_na=filter_glycan_ratio,
+            impute_method=impute_method,
+            sia_linkage=sia_linkage,
+            user_formula_file=formula_file,
+            filter_invalid=filter,
+            group_file=group_file,
         )
     except GlyTraitError as e:
         raise click.UsageError(str(e) + emoji.emojize(" :thumbs_down:"))
