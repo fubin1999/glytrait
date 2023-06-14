@@ -68,3 +68,26 @@ def test_normalization():
         }
     )
     pd.testing.assert_frame_equal(result, expected)
+
+
+def test_preprocess_pipeline(mocker):
+    abund_df_mock = mocker.Mock()
+    filtered_df_mock = mocker.Mock()
+    imputed_df_mock = mocker.Mock()
+    normalized_df_mock = mocker.Mock()
+    filter_glycan_mock = mocker.patch(
+        "glytrait.preprocessing.filter_glycans", return_value=filtered_df_mock
+    )
+    impute_mock = mocker.patch(
+        "glytrait.preprocessing.impute", return_value=imputed_df_mock
+    )
+    normalization_mock = mocker.patch(
+        "glytrait.preprocessing.normalization", return_value=normalized_df_mock
+    )
+
+    result = pp.preprocess_pipeline(abund_df_mock, 0.5, "zero")
+
+    assert result == normalized_df_mock
+    filter_glycan_mock.assert_called_once_with(abund_df_mock, 0.5)
+    impute_mock.assert_called_once_with(filtered_df_mock, "zero")
+    normalization_mock.assert_called_once_with(imputed_df_mock)
