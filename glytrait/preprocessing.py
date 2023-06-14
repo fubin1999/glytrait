@@ -3,6 +3,21 @@ from typing import Literal
 import pandas as pd
 
 
+def filter_glycans(abundance_df: pd.DataFrame, max_na: float) -> pd.DataFrame:
+    """Filter glycans with too many missing values.
+
+    Args:
+        abundance_df (pd.DataFrame): The abundance table, with samples as index and glycan IDs
+            as columns.
+        max_na (float): The maximum proportion of missing values allowed for a glycan.
+
+    Returns:
+        filtered_df (pd.DataFrame): The filtered abundance table.
+    """
+    filtered_df = abundance_df.loc[:, abundance_df.isna().mean() <= max_na]
+    return filtered_df.copy()
+
+
 def impute(
     abundance_df: pd.DataFrame,
     method: Literal["zero", "min", "lod", "mean", "median"],
