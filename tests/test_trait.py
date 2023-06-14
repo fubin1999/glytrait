@@ -446,25 +446,6 @@ def test_build_meta_property_table_sia_linkage(make_glycan):
     pd.testing.assert_frame_equal(partial_result, partial_expected, check_dtype=False)
 
 
-def test_calcu_direct_trait():
-    df = pd.DataFrame(
-        {
-            "A": [1, 2, 3],
-            "B": [4, 5, 6],
-            "C": [7, 8, 9],
-        }
-    )
-    result = trait.calcu_direct_trait(df)
-    expected = pd.DataFrame(
-        {
-            "A": [1 / 12, 2 / 15, 3 / 18],
-            "B": [4 / 12, 5 / 15, 6 / 18],
-            "C": [7 / 12, 8 / 15, 9 / 18],
-        }
-    )
-    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
-
-
 def test_filter_derived_trait():
     df = pd.DataFrame(
         {

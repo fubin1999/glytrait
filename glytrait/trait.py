@@ -447,22 +447,6 @@ def calcu_derived_trait(
     return derived_trait_df
 
 
-def calcu_direct_trait(abund_df: pd.DataFrame) -> pd.DataFrame:
-    """Calculate the direct trait values.
-
-    Args:
-        abund_df (pd.DataFrame): The abundance table, with samples as index and glycan IDs
-            as columns.
-
-    Returns:
-        pd.DataFrame: The trait values, with samples as index and trait names as columns.
-    """
-    row_sums = abund_df.sum(axis=1)
-    direct_trait_df = abund_df.div(row_sums, axis=0)
-    direct_trait_df = direct_trait_df.round(6)
-    return direct_trait_df
-
-
 def _filter_all_same(trait_df: pd.DataFrame) -> pd.DataFrame:
     """Rule out the traits that have the same value for all samples."""
     return trait_df.loc[:, trait_df.nunique() != 1]

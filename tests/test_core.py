@@ -14,16 +14,16 @@ import glytrait.core
     ],
 )
 def test_run_workflow(mocker, sia_linkage, filter_invalid):
-    abund_df_mock = Mock()
+    raw_abund_df_mock = Mock(name="raw_abund_df_mock")
+    abund_df_mock = Mock(name="abund_df_mock")
     abund_df_mock.columns = ["col1", "col2"]
-    meta_prop_df_mock = Mock()
-    derived_trait_df_mock = Mock()
-    derived_trait_df_filtered_mock = Mock()
+    meta_prop_df_mock = Mock(name="meta_prop_df_mock")
+    derived_trait_df_mock = Mock(name="derived_trait_df_mock")
+    derived_trait_df_filtered_mock = Mock(name="derived_trait_df_filtered_mock")
     derived_trait_df_filtered_mock.columns = ["trait1"]
-    direct_trait_df_mock = Mock()
-    group_series_mock = Mock()
-    hypo_test_result_mock = Mock()
-    combined_traits_mock = Mock()
+    group_series_mock = Mock(name="group_series_mock")
+    hypo_test_result_mock = Mock(name="hypo_test_result_mock")
+    combined_traits_mock = Mock(name="combined_traits_mock")
 
     formula_1_mock = Mock()
     formula_1_mock.sia_linkage = False
@@ -37,7 +37,10 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
     formulas_mock = [formula_1_mock, formula_2_mock, formula_3_mock]
 
     read_input_mock = mocker.patch(
-        "glytrait.core.read_input", return_value=("glycans", abund_df_mock)
+        "glytrait.core.read_input", return_value=("glycans", raw_abund_df_mock)
+    )
+    preprocess_pipeline_mock = mocker.patch(
+        "glytrait.core.preprocess_pipeline", return_value=abund_df_mock
     )
     load_formulas_mock = mocker.patch(
         "glytrait.core.load_formulas", return_value=formulas_mock
@@ -47,9 +50,6 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
     )
     calcu_derived_traits_mock = mocker.patch(
         "glytrait.core.calcu_derived_trait", return_value=derived_trait_df_mock
-    )
-    calcu_direct_traits_mock = mocker.patch(
-        "glytrait.core.calcu_direct_trait", return_value=direct_trait_df_mock
     )
     write_output_mock = mocker.patch("glytrait.core.write_output")
     filter_derived_trait_mock = mocker.patch(
@@ -67,18 +67,18 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
     glytrait.core.run_workflow(
         "input_file",
         "output_file",
-        sia_linkage,
-        "user_formula_file",
-        filter_invalid,
-        "group_file",
+        sia_linkage=sia_linkage,
+        user_formula_file="user_formula_file",
+        filter_invalid=filter_invalid,
+        group_file="group_file",
     )
 
     read_input_mock.assert_called_once_with("input_file")
+    preprocess_pipeline_mock.assert_called_once_with(raw_abund_df_mock, 0.5, "min")
     load_formulas_mock.assert_called_once_with("user_formula_file")
     build_meta_property_table_mock.assert_called_once_with(
         ["col1", "col2"], "glycans", sia_linkage
     )
-    calcu_direct_traits_mock.assert_called_once_with(abund_df_mock)
     if filter_invalid:
         filter_derived_trait_mock.assert_called_once_with(derived_trait_df_mock)
     else:
@@ -109,17 +109,17 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
     hypo_test_mock.assert_called_once_with(combined_traits_mock, group_series_mock)
     if filter_invalid:
         pd_concat_mock.assert_called_once_with(
-            [direct_trait_df_mock, derived_trait_df_filtered_mock], axis=1
+            [abund_df_mock, derived_trait_df_filtered_mock], axis=1
         )
     else:
         pd_concat_mock.assert_called_once_with(
-            [direct_trait_df_mock, derived_trait_df_mock], axis=1
+            [abund_df_mock, derived_trait_df_mock], axis=1
         )
 
     write_output_mock.assert_called_once_with(
         "output_file",
         derived_trait_df,
-        direct_trait_df_mock,
+        abund_df_mock,
         meta_prop_df_mock,
         formulas_mock,
         hypo_test_result_mock
