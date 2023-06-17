@@ -20,3 +20,7 @@ class SiaLinkageError(GlyTraitError):
 
 class HypothesisTestingError(GlyTraitError):
     """Raised if a hypothesis test is not possible."""
+
+
+class ConfigError(GlyTraitError):
+    """Raised if a parameter is invalid."""

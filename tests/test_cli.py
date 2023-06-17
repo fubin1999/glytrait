@@ -30,16 +30,18 @@ def test_cli(mocker, input_file):
     result = runner.invoke(cli.cli, [str(input_file)])
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
-    run_workflow_mock.assert_called_once_with(
-        str(input_file),
-        str(output_path),
-        filter_max_na=0.5,
+    config = dict(
+        input_file=str(input_file),
+        output_file=str(output_path),
+        filter_glycan_max_na=0.5,
         impute_method="min",
         sia_linkage=False,
-        user_formula_file=None,
-        filter_invalid=True,
+        formula_file=None,
+        filter_invalid_traits=True,
         group_file=None,
     )
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config
 
 
 def test_cli_output_path(mocker, input_file):
@@ -47,16 +49,18 @@ def test_cli_output_path(mocker, input_file):
     run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
     result = runner.invoke(cli.cli, [str(input_file), "-o", "output_path.xlsx"])
     assert result.exit_code == 0
-    run_workflow_mock.assert_called_once_with(
-        str(input_file),
-        "output_path.xlsx",
-        filter_max_na=0.5,
+    config = dict(
+        input_file=str(input_file),
+        output_file="output_path.xlsx",
+        filter_glycan_max_na=0.5,
         impute_method="min",
         sia_linkage=False,
-        user_formula_file=None,
-        filter_invalid=True,
+        formula_file=None,
+        filter_invalid_traits=True,
         group_file=None,
     )
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config
 
 
 def test_cli_sia_linkage(mocker, input_file):
@@ -65,16 +69,18 @@ def test_cli_sia_linkage(mocker, input_file):
     result = runner.invoke(cli.cli, [str(input_file), "-s"])
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
-    run_workflow_mock.assert_called_once_with(
-        str(input_file),
-        str(output_path),
-        filter_max_na=0.5,
+    config = dict(
+        input_file=str(input_file),
+        output_file=str(output_path),
+        filter_glycan_max_na=0.5,
         impute_method="min",
         sia_linkage=True,
-        user_formula_file=None,
-        filter_invalid=True,
+        formula_file=None,
+        filter_invalid_traits=True,
         group_file=None,
     )
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config
 
 
 def test_cli_user_traits(mocker, input_file, clean_dir):
@@ -85,16 +91,18 @@ def test_cli_user_traits(mocker, input_file, clean_dir):
     result = runner.invoke(cli.cli, [str(input_file), "-f", str(user_file)])
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
-    run_workflow_mock.assert_called_once_with(
-        str(input_file),
-        str(output_path),
-        filter_max_na=0.5,
+    config = dict(
+        input_file=str(input_file),
+        output_file=str(output_path),
+        filter_glycan_max_na=0.5,
         impute_method="min",
         sia_linkage=False,
-        user_formula_file=str(user_file),
-        filter_invalid=True,
+        formula_file=str(user_file),
+        filter_invalid_traits=True,
         group_file=None,
     )
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config
 
 
 def test_cli_glytrait_error(mocker, input_file):
@@ -155,16 +163,18 @@ def test_cli_output_dir_not_exist(mocker, input_file, clean_dir):
     output_file = clean_dir / "output_dir" / "output.xlsx"
     result = runner.invoke(cli.cli, [str(input_file), "-o", str(output_file)])
     assert result.exit_code == 0
-    run_workflow_mock.assert_called_once_with(
-        str(input_file),
-        str(output_file),
-        filter_max_na=0.5,
+    config = dict(
+        input_file=str(input_file),
+        output_file=str(output_file),
+        filter_glycan_max_na=0.5,
         impute_method="min",
         sia_linkage=False,
-        user_formula_file=None,
-        filter_invalid=True,
+        formula_file=None,
+        filter_invalid_traits=True,
         group_file=None,
     )
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config
 
 
 def test_cli_formula_file_not_exist(mocker, input_file, clean_dir):
@@ -182,16 +192,18 @@ def test_cli_filter_off(mocker, input_file):
     result = runner.invoke(cli.cli, [str(input_file), "--no-filter"])
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
-    run_workflow_mock.assert_called_once_with(
-        str(input_file),
-        str(output_path),
-        filter_max_na=0.5,
+    config = dict(
+        input_file=str(input_file),
+        output_file=str(output_path),
+        filter_glycan_max_na=0.5,
         impute_method="min",
         sia_linkage=False,
-        user_formula_file=None,
-        filter_invalid=False,
-        group_file=None
+        formula_file=None,
+        filter_invalid_traits=False,
+        group_file=None,
     )
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config
 
 
 def test_cli_group_file(mocker, input_file, clean_dir):
@@ -202,16 +214,18 @@ def test_cli_group_file(mocker, input_file, clean_dir):
     result = runner.invoke(cli.cli, [str(input_file), "-g", str(group_file)])
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
-    run_workflow_mock.assert_called_once_with(
-        str(input_file),
-        str(output_path),
-        filter_max_na=0.5,
+    config = dict(
+        input_file=str(input_file),
+        output_file=str(output_path),
+        filter_glycan_max_na=0.5,
         impute_method="min",
         sia_linkage=False,
-        user_formula_file=None,
-        filter_invalid=True,
-        group_file=str(group_file)
+        formula_file=None,
+        filter_invalid_traits=True,
+        group_file=str(group_file),
     )
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config
 
 
 def test_cli_filter_glycans(mocker, input_file):
@@ -220,16 +234,18 @@ def test_cli_filter_glycans(mocker, input_file):
     result = runner.invoke(cli.cli, [str(input_file), "-r", 0.2])
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
-    run_workflow_mock.assert_called_once_with(
-        str(input_file),
-        str(output_path),
-        filter_max_na=0.2,
+    config = dict(
+        input_file=str(input_file),
+        output_file=str(output_path),
+        filter_glycan_max_na=0.2,
         impute_method="min",
         sia_linkage=False,
-        user_formula_file=None,
-        filter_invalid=True,
+        formula_file=None,
+        filter_invalid_traits=True,
         group_file=None,
     )
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config
 
 
 def test_cli_impute(mocker, input_file):
@@ -238,13 +254,15 @@ def test_cli_impute(mocker, input_file):
     result = runner.invoke(cli.cli, [str(input_file), "-i", "median"])
     output_path = input_file.with_name(input_file.stem + "_glytrait.xlsx")
     assert result.exit_code == 0
-    run_workflow_mock.assert_called_once_with(
-        str(input_file),
-        str(output_path),
-        filter_max_na=0.5,
+    config = dict(
+        input_file=str(input_file),
+        output_file=str(output_path),
+        filter_glycan_max_na=0.5,
         impute_method="median",
         sia_linkage=False,
-        user_formula_file=None,
-        filter_invalid=True,
+        formula_file=None,
+        filter_invalid_traits=True,
         group_file=None,
     )
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config

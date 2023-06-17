@@ -3,6 +3,7 @@ from pathlib import Path
 import click
 import emoji
 
+from glytrait.config import Config
 from glytrait.core import run_workflow
 from glytrait.exception import GlyTraitError
 from glytrait.trait import save_trait_formula_template
@@ -122,16 +123,17 @@ def cli(
     else:
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     try:
-        run_workflow(
-            input_file,
-            output_file,
-            filter_max_na=filter_glycan_ratio,
+        config = Config(dict(
+            input_file=input_file,
+            output_file=output_file,
+            filter_glycan_max_na=filter_glycan_ratio,
             impute_method=impute_method,
             sia_linkage=sia_linkage,
-            user_formula_file=formula_file,
-            filter_invalid=filter,
+            formula_file=formula_file,
+            filter_invalid_traits=filter,
             group_file=group_file,
-        )
+        ))
+        run_workflow(config)
     except GlyTraitError as e:
         raise click.UsageError(str(e) + emoji.emojize(" :thumbs_down:"))
     msg = f"Done :thumbs_up:! Output written to {output_file}."

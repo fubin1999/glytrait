@@ -64,14 +64,17 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
     )
     pd_concat_mock = mocker.patch("pandas.concat", return_value=combined_traits_mock)
 
-    glytrait.core.run_workflow(
-        "input_file",
-        "output_file",
+    config = dict(
+        input_file="input_file",
+        output_file="output_file",
+        filter_glycan_max_na=0.5,
+        impute_method="min",
         sia_linkage=sia_linkage,
-        user_formula_file="user_formula_file",
-        filter_invalid=filter_invalid,
+        formula_file="user_formula_file",
+        filter_invalid_traits=filter_invalid,
         group_file="group_file",
     )
+    glytrait.core.run_workflow(config)
 
     read_input_mock.assert_called_once_with("input_file")
     preprocess_pipeline_mock.assert_called_once_with(raw_abund_df_mock, 0.5, "min")
@@ -117,7 +120,7 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
         )
 
     write_output_mock.assert_called_once_with(
-        "output_file",
+        config,
         derived_trait_df,
         abund_df_mock,
         meta_prop_df_mock,

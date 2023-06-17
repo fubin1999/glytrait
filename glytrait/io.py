@@ -7,6 +7,7 @@ from openpyxl.styles import Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.worksheet import Worksheet
 
+from glytrait.config import Config
 from glytrait.exception import InputError, StructureParseError
 from glytrait.glycan import NGlycan
 from glytrait.trait import TraitFormula
@@ -88,7 +89,7 @@ def _check_input(df: pd.DataFrame) -> NoReturn:
 
 
 def write_output(
-    file: str,
+    config: Config,
     derived_traits: pd.DataFrame,
     direct_traits: pd.DataFrame,
     meta_prop_df: pd.DataFrame,
@@ -98,7 +99,7 @@ def write_output(
     """Write the output file.
 
     Args:
-        file (str): The output csv or xlsx file.
+        config (Config): The configuration.
         derived_traits (pd.DataFrame): The trait values, with samples as index and trait names as
             columns.
         direct_traits (pd.DataFrame): The normalized abundance table, with samples as index and
@@ -166,4 +167,4 @@ def write_output(
         for cell in ws4[1]:
             cell.font = cell.font.copy(bold=True)
 
-    wb.save(file)
+    wb.save(config.get("output_file"))
