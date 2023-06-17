@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "glytrait"
-version = "0.3.3"
+version = "0.3.4"
 description = ""
 authors = ["fubin1999 <65430559+fubin1999@users.noreply.github.com>"]
 readme = "README.md"

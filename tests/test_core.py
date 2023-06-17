@@ -125,5 +125,6 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
         abund_df_mock,
         meta_prop_df_mock,
         formulas_mock,
+        group_series_mock,
         hypo_test_result_mock
     )

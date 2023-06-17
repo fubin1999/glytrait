@@ -37,7 +37,8 @@ def run_workflow(config: Config) -> None:
         combined_traits = pd.concat([abund_df, derived_traits], axis=1)
         hypo_result = auto_hypothesis_test(combined_traits, groups)
     else:
+        groups = None
         hypo_result = None
     write_output(
-        config, derived_traits, abund_df, meta_prop_df, formulas, hypo_result
+        config, derived_traits, abund_df, meta_prop_df, formulas, groups, hypo_result
     )
