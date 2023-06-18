@@ -6,6 +6,11 @@ from glytrait import stats
 from glytrait.exception import HypothesisTestingError
 
 
+@pytest.fixture(autouse=True)
+def patch_filter(monkeypatch):
+    monkeypatch.setattr(stats, "filter_derived_trait", lambda x: x)
+
+
 def test_mwu():
     trait_df = pd.DataFrame(
         {

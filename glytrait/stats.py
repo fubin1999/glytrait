@@ -4,6 +4,7 @@ import pandas as pd
 import pingouin as pg
 
 from .exception import HypothesisTestingError
+from .trait import filter_derived_trait
 
 
 def mwu(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
@@ -93,6 +94,7 @@ def auto_hypothesis_test(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFr
         HypothesisTestingError: If only one group is provided, or when the index of
             `groups` and `trait_df` are not the same.
     """
+    trait_df = filter_derived_trait(trait_df)
     if set(groups.index) != set(trait_df.index):
         raise HypothesisTestingError(
             "The index of groups and trait_df must be the same."
