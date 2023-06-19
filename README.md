@@ -65,9 +65,15 @@ glytrait data.csv
 ```
 
 That's it! If everything goes well, a xlsx file named "data_glytrait.xlsx" will be saved to the
-same directory with data.csv. Inside the xlsx file are three sheets, the trait values for each
-sample, the trait descriptions, and the meta properties GlyTrait generated to calculated derived
-traits. You don't need the third one for common situations, but a peek of it might help you better
+same directory with data.csv. Inside the xlsx file are four (five) sheets:
+
+1. The summary;
+2. The trait values for each sample;
+3. The trait descriptions;
+4. The meta properties GlyTrait generated to calculated derived traits;
+5. The hypergeometric test results for each trait, if group information is provided.
+
+You don't need the forth one for common situations, but a peek of it might help you better
 understand how GlyTrait works.
 
 ### Input file format
@@ -101,13 +107,14 @@ This file contains 3 glycans (H3N3F1, N3N4 and N3N4F1) and three samples (Sample
 
 ### Preprocessing
 
-GlyTrait will carry out a preprocessing step before calculating derived traits. The following 
+GlyTrait will carry out a preprocessing step before calculating derived traits. The following
 steps will be done:
+
 - Remove glycans with missing values in more than a certain proportion of samples.
 - Impute missing values.
 - Perform Total Abundance Normalization.
 
-In the glycan-filtering step, the proportion threshold could be specified by the "-r" or the 
+In the glycan-filtering step, the proportion threshold could be specified by the "-r" or the
 "--filter_glycan_ratio" option. The default value is 0.5, which means if a glycan has missing
 values in more than 50% of samples, it will be removed. You can change this value to 0.3 by:
 
@@ -116,13 +123,22 @@ glytrait data.csv -r 0.3
 ```
 
 The imputation method could be specified by the "-i" or the "--impute_method" option. The default
-method is "min", which means missing values will be imputed by the minimum value of a glycan. 
-Other supported methods are "mean", "median", "zero", "lod". You can change imputation method to 
+method is "min", which means missing values will be imputed by the minimum value of a glycan.
+Other supported methods are "mean", "median", "zero", "lod". You can change imputation method to
 "mean" by:
 
 ```shell
 glytrait data.csv -i mean
 ```
+
+A full list of supported imputation methods are:
+
+- "min": impute missing values by the minimum value of a glycan within all samples.
+- "mean": impute missing values by the mean value of a glycan within all samples.
+- "median": impute missing values by the median value of a glycan within all samples.
+- "zero": impute missing values by 0.
+- "lod": impute missing values by the limit of detection (LOD) of the equipment. The LOD of a
+  glycan is defined as the minimum value of the glycan within all samples divided by 5.
 
 ### Sialic-acid-linkage traits
 
@@ -179,7 +195,7 @@ glytrait data.csv -g group.csv
 ```
 
 GlyTrait will carry out Mann-Whitney U Test for two groups, and Kruskal-Wallis H Test for more
-than two groups. The Benjamini-Hochberg procedure is used to correct the p-values. For 
+than two groups. The Benjamini-Hochberg procedure is used to correct the p-values. For
 more-than-two-groups situations, the Mann-Whitney U Test will be used for post-hoc test. GlyTraits
 uses non-parametric tests for the sake of robustness.
 
