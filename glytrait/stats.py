@@ -31,6 +31,7 @@ def mwu(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
         ttest_results.append(ttest_result)
     result_df = pd.concat(ttest_results, axis=0)
     _, result_df["p-val-adjusted"] = pg.multicomp(result_df["p-val"], method="fdr_bh")
+    result_df = result_df.drop(["alternative", "RBC", "CLES"], axis=1)
     return result_df
 
 
@@ -73,6 +74,7 @@ def kruskal(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
                 posthoc_result["A"] + "-" + posthoc_result["B"]
             )
 
+    result_df = result_df.drop(["reject", "ddof1"], axis=1)
     return result_df
 
 

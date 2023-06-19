@@ -23,10 +23,7 @@ def test_mwu():
     result = stats.mwu(trait_df, groups)
     expected_columns = [
         "U-val",
-        "alternative",
         "p-val",
-        "RBC",
-        "CLES",
         "p-val-adjusted",
     ]
     assert result.columns.tolist() == expected_columns
@@ -51,10 +48,8 @@ def test_kruskal(mocker):
 
     result = stats.kruskal(trait_df, groups)
     expected_columns = [
-        "ddof1",
         "H",
         "p-val",
-        "reject",
         "p-val-adjusted",
         "posthoc",
     ]
