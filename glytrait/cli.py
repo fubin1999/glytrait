@@ -69,7 +69,7 @@ def file_validator(suffix: str, file_name: str):
     help="Method to impute missing values.",
 )
 @click.option(
-    "-s", "--sia_linkage", is_flag=True, help="Include sialic acid linkage traits."
+    "--sia_linkage", is_flag=True, help="Include sialic acid linkage traits."
 )
 @click.option(
     "-f",
@@ -100,6 +100,12 @@ def file_validator(suffix: str, file_name: str):
     help="Group file for hypothesis test.",
     callback=file_validator(".csv", "group file"),
 )
+@click.option(
+    "-s",
+    "--structure_file",
+    type=click.Path(exists=True),
+    help="Structure file for hypothesis test.",
+)
 def cli(
     input_file,
     output_file,
@@ -109,6 +115,7 @@ def cli(
     formula_file,
     filter,
     group_file,
+    structure_file,
 ):
     """Run the glytrait workflow.
 
@@ -132,6 +139,7 @@ def cli(
             formula_file=formula_file,
             filter_invalid_traits=filter,
             group_file=group_file,
+            structure_file=structure_file,
         ))
         run_workflow(config)
     except GlyTraitError as e:

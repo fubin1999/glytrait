@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import NoReturn, Optional
 
 import numpy as np
@@ -14,44 +15,45 @@ from glytrait.glycan import NGlycan
 from glytrait.trait import TraitFormula
 
 
-def read_input(file: str) -> tuple[list[NGlycan], pd.DataFrame]:
+def read_input(file: str) -> tuple[list[NGlycan] | None, pd.DataFrame]:
     """Read the input file.
 
-    The first column should be the glycan IDs. The composotion will do. The second column should
-    be the glycan structure strings. The rest columns should be the abundance of the glycans in
-    different samples.
-
-    An example of the input file:
-    ```
-    Glycan ID, Structure, Sample1, Sample2, Sample3
-    H3N4S1, some_glycoct, 2.3, 1.2, 3.4
-    H5N4S1, another_glycoct, 1.2, 2.3, 3.4
-    ```
+    The first column should be "Composition", with condensed glycan composition notations.
+    The second column should be "Structure", with glycan structure strings like glycoCT.
+    The rest columns should be the abundance of the glycans in different samples.
+    The "Structure" column is optional.
 
     Args:
         file (str): The input csv or xlsx file.
 
     Returns:
-        glycans (list[NGlycan]): The glycans.
-        abundance_table (pd.DataFrame): The abundance table, with samples as index and glycan IDs
-            as columns.
+        tuple[list[NGlycan], pd.DataFrame]: The glycans and the abundance table. The glycans are
+            represented by NGlycan objects. The abundance table has the glycans as columns and
+            samples as rows. If "Structure" column is not provided, the glycans will be None.
 
     Raises:
         InputError: If the input file format is wrong.
     """
     df = pd.read_csv(file)
     df = df.dropna(how="all")
-    _check_input(df)
-    df = df.set_index("Glycan ID")
-    glycans: list[NGlycan] = []
-    for glycan_id, structure in zip(df.index, df["Structure"]):
-        try:
-            glycan = NGlycan.from_glycoct(structure)
-        except StructureParseError as e:
-            raise StructureParseError(glycan_id + ": " + str(e))
-        else:
-            glycans.append(glycan)
-    abundance_table = df.drop(columns=["Structure"]).T
+    has_structure = "Structure" in df.columns
+    _check_input(df, has_structure)
+    df = df.set_index("Composition")
+
+    if has_structure:
+        glycans = []
+        for glycan_id, structure in zip(df.index, df["Structure"]):
+            try:
+                glycan = NGlycan.from_glycoct(structure)
+            except StructureParseError as e:
+                raise StructureParseError(glycan_id + ": " + str(e))
+            else:
+                glycans.append(glycan)
+        abundance_table = df.drop(columns=["Structure"]).T
+    else:
+        glycans = None
+        abundance_table = df.T
+
     return glycans, abundance_table
 
 
@@ -73,18 +75,58 @@ def read_group(file: str) -> pd.Series:
     return groups
 
 
-def _check_input(df: pd.DataFrame) -> NoReturn:
+def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
+    """Read the structure file.
+
+    The first column should be the glycan compositions, and the second column should be the
+    glycan structures.
+    Only the structures of the glycans in `compositions` will be read, and the order of the
+    structures will be the same as that of `compositions`.
+
+    Args:
+        file (str): The structure file.
+        compositions (Iterable[str]): The compositions of the glycans to be read.
+
+    Returns:
+        list[NGlycan]: The glycans.
+
+    Raises:
+        InputError: If the input file format is wrong, or some compositions are not found in the
+            structure file.
+    """
+    df = pd.read_csv(file, index_col=0)
+    if df.shape[1] != 1:
+        raise InputError("The structure file should only have two columns.")
+    structures = df.squeeze()
+    glycans = []
+    for composition in compositions:
+        try:
+            glycan = NGlycan.from_glycoct(structures[composition])
+        except StructureParseError as e:
+            raise StructureParseError(composition + ": " + str(e))
+        except KeyError:
+            raise InputError(composition + " is not found in the structure file.")
+        else:
+            glycans.append(glycan)
+    return glycans
+
+
+def _check_input(df: pd.DataFrame, has_structure: bool) -> NoReturn:
     """Check the input dataframe."""
-    if df.columns[0] != "Glycan ID":
-        raise InputError("The first column of the input file should be Glycan ID.")
-    if df.columns[1] != "Structure":
-        raise InputError("The second column of the input file should be Structure.")
-    if df["Glycan ID"].duplicated().sum() > 0:
-        raise InputError("There are duplicated glycan IDs in the input file.")
-    if df["Structure"].duplicated().sum() > 0:
-        raise InputError("There are duplicated structures in the input file.")
-    if np.any(df.iloc[:, 2:].dtypes != "float64"):
+    if df.columns[0] != "Composition":
+        raise InputError("The first column of the input file should be Composition.")
+    if df["Composition"].duplicated().sum() > 0:
+        raise InputError("There are duplicated Compositions in the input file.")
+
+    if has_structure:
+        if df.columns[1] != "Structure":
+            raise InputError("The second column of the input file should be Structure.")
+        if df["Structure"].duplicated().sum() > 0:
+            raise InputError("There are duplicated Structures in the input file.")
+
+    if np.any(df.iloc[:, 2 if has_structure else 1:].dtypes != "float64"):
         raise InputError("The abundance columns in the input file should be numeric.")
+
     if df.isna().sum().sum() > 0:
         raise InputError("There are missing values in the input file.")
 
@@ -151,7 +193,7 @@ def _write_summary(
     ws["A2"] = "Options"
     ws.merge_cells("A2:B2")
     ws["A2"].font = ws["A2"].font.copy(bold=True)
-    ws['A2'].alignment = Alignment(horizontal='center', vertical='center')
+    ws["A2"].alignment = Alignment(horizontal="center", vertical="center")
     ws["A3"] = "Input file"
     ws["B3"] = config.get("input_file")
     ws["A4"] = "Output file"
@@ -172,7 +214,7 @@ def _write_summary(
     ws["A11"] = "Result Overview"
     ws.merge_cells("A11:B11")
     ws["A11"].font = ws["A11"].font.copy(bold=True)
-    ws['A11'].alignment = Alignment(horizontal='center', vertical='center')
+    ws["A11"].alignment = Alignment(horizontal="center", vertical="center")
     ws["A12"] = "Num. of derict traits"
     ws["B12"] = len(direct_triats.columns)
     ws["A13"] = "Num. of derived traits"
@@ -184,7 +226,7 @@ def _write_summary(
         ws["A15"] = "Statistical Analysis"
         ws.merge_cells("A15:B15")
         ws["A15"].font = ws["A15"].font.copy(bold=True)
-        ws['A15'].alignment = Alignment(horizontal='center', vertical='center')
+        ws["A15"].alignment = Alignment(horizontal="center", vertical="center")
         ws["A16"] = "Num. of groups"
         ws["B16"] = len(groups.unique())
         ws["A17"] = "Hypothesis testing method"
@@ -194,9 +236,9 @@ def _write_summary(
             else "Kruskal-Wallis H Test"
         )
 
-    ws.column_dimensions['A'].width = 27
-    for cell in ws['B']:
-        cell.alignment = Alignment(horizontal='left')
+    ws.column_dimensions["A"].width = 27
+    for cell in ws["B"]:
+        cell.alignment = Alignment(horizontal="left")
 
 
 def _write_trait_values(

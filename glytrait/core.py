@@ -1,7 +1,7 @@
 import pandas as pd
 
 from glytrait.config import Config
-from glytrait.io import read_input, write_output, read_group
+from glytrait.io import read_input, write_output, read_group, read_structure
 from glytrait.preprocessing import preprocess_pipeline
 from glytrait.stats import auto_hypothesis_test
 from glytrait.trait import (
@@ -19,6 +19,10 @@ def run_workflow(config: Config) -> None:
         config: Configuration for the workflow.
     """
     glycans, abund_df = read_input(config.get("input_file"))
+    if glycans is None:
+        if config.get("structure_file") is None:
+            raise ValueError("No glycan structures provided.")
+        glycans = read_structure(config.get("structure_file"), abund_df.columns)
     abund_df = preprocess_pipeline(
         abund_df, config.get("filter_glycan_max_na"), config.get("impute_method")
     )

@@ -13,13 +13,26 @@ default_config = {
     "formula_file": None,
     "filter_invalid_traits": True,
     "group_file": None,
+    "structure_file": None
 }
 
 must_have = {"input_file", "output_file"}
 
 
 class Config:
-    """Configuration for a GlyTrait workflow."""
+    """Configuration for a GlyTrait workflow.
+
+    Valid config keys:
+        - input_file: Path to the input file. Must provide.
+        - output_file: Path to the output file. Must provide.
+        - filter_glycan_max_na: Maximum NA percentage for a glycan to be kept.
+        - impute_method: Method for imputing missing values.
+        - sia_linkage: Whether to include sialic acid linkage in the analysis.
+        - formula_file: Path to the formula file.
+        - filter_invalid_traits: Whether to filter out invalid traits.
+        - group_file: Path to the group file.
+        - structure_file: Path to the structure file.
+    """
 
     validators: ClassVar[dict[str, Callable]] = {}
 
@@ -146,3 +159,9 @@ def valid_filter_invalid_traits(value: bool) -> NoReturn:
 def valid_group_file(value: str) -> NoReturn:
     """Check if a value is a valid group_file."""
     valid_file(value, "Group file", ".csv", check_exist=True)
+
+
+@Config.register_validator
+def valid_structure_file(value: str) -> NoReturn:
+    """Check if a value is a valid structure_file."""
+    valid_file(value, "Structure file", ".csv", check_exist=True)

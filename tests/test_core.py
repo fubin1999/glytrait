@@ -6,14 +6,16 @@ import glytrait.core
 
 
 @pytest.mark.parametrize(
-    "sia_linkage, filter_invalid",
+    "sia_linkage, filter_invalid, has_structure",
+    # "has_structure" is True if the input file has the "Structure" column.
     [
-        (True, True),
-        (False, True),
-        (True, False),
+        (True, True, True),
+        (False, True, True),
+        (True, False, True),
+        (False, True, False),
     ],
 )
-def test_run_workflow(mocker, sia_linkage, filter_invalid):
+def test_run_workflow(mocker, sia_linkage, filter_invalid, has_structure):
     raw_abund_df_mock = Mock(name="raw_abund_df_mock")
     abund_df_mock = Mock(name="abund_df_mock")
     abund_df_mock.columns = ["col1", "col2"]
@@ -36,8 +38,15 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
     formula_3_mock.name = "trait3"
     formulas_mock = [formula_1_mock, formula_2_mock, formula_3_mock]
 
+    if has_structure:
+        read_input_return_value = ("glycans", raw_abund_df_mock)
+    else:
+        read_input_return_value = (None, raw_abund_df_mock)
     read_input_mock = mocker.patch(
-        "glytrait.core.read_input", return_value=("glycans", raw_abund_df_mock)
+        "glytrait.core.read_input", return_value=read_input_return_value
+    )
+    read_structure_mock = mocker.patch(
+        "glytrait.core.read_structure", return_value="glycans"
     )
     preprocess_pipeline_mock = mocker.patch(
         "glytrait.core.preprocess_pipeline", return_value=abund_df_mock
@@ -74,9 +83,19 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
         filter_invalid_traits=filter_invalid,
         group_file="group_file",
     )
+    if has_structure:
+        config["structure_file"] = None
+    else:
+        config["structure_file"] = "structure_file"
     glytrait.core.run_workflow(config)
 
     read_input_mock.assert_called_once_with("input_file")
+    if has_structure:
+        read_structure_mock.assert_not_called()
+    else:
+        read_structure_mock.assert_called_once_with(
+            "structure_file", raw_abund_df_mock.columns
+        )
     preprocess_pipeline_mock.assert_called_once_with(raw_abund_df_mock, 0.5, "min")
     load_formulas_mock.assert_called_once_with("user_formula_file")
     build_meta_property_table_mock.assert_called_once_with(
@@ -126,5 +145,5 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid):
         meta_prop_df_mock,
         formulas_mock,
         group_series_mock,
-        hypo_test_result_mock
+        hypo_test_result_mock,
     )

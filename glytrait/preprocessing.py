@@ -16,7 +16,7 @@ def preprocess_pipeline(
         - Normalize the abundance table by dividing the sum of each sample.
 
     Args:
-        abundance_df (pd.DataFrame): The abundance table, with samples as index and glycan IDs
+        abundance_df (pd.DataFrame): The abundance table, with samples as index and Compositions
             as columns.
         filter_max_na (float): The maximum proportion of missing values allowed for a glycan.
         impute_method (str): The imputation method. Can be "zero", "min", "1/5min", "mean",
@@ -35,7 +35,7 @@ def filter_glycans(abundance_df: pd.DataFrame, max_na: float) -> pd.DataFrame:
     """Filter glycans with too many missing values.
 
     Args:
-        abundance_df (pd.DataFrame): The abundance table, with samples as index and glycan IDs
+        abundance_df (pd.DataFrame): The abundance table, with samples as index and Compositions
             as columns.
         max_na (float): The maximum proportion of missing values allowed for a glycan.
 
@@ -61,7 +61,7 @@ def impute(
         - "median": Replace the missing values with the median value of the corresponding glycan.
 
     Args:
-        abundance_df (pd.DataFrame): The abundance table, with samples as index and glycan IDs
+        abundance_df (pd.DataFrame): The abundance table, with samples as index and Compositions
             as columns.
         method (str): The imputation method. Can be "zero", "min", "1/5min", "mean", "median".
 
@@ -87,7 +87,7 @@ def normalization(abundance_df: pd.DataFrame) -> pd.DataFrame:
     """Normalize the abundance table by dividing the sum of each sample.
 
     Args:
-        abundance_df (pd.DataFrame): The abundance table, with samples as index and glycan IDs
+        abundance_df (pd.DataFrame): The abundance table, with samples as index and Compositions
             as columns.
 
     Returns:
