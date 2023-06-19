@@ -14,8 +14,8 @@ from numpy.typing import NDArray
 from .exception import FormulaError
 from .glycan import NGlycan
 
-DEFAULT_FORMULA_FILE = "trait_forluma.txt"
-FORMULA_TEMPLATE_FILE = "trait_formula_template.txt"
+default_formula_file = files("glytrait.resources").joinpath("trait_formula.txt")
+formula_template_file = files("glytrait.resources").joinpath("trait_formula_template.txt")
 
 basic_meta_properties = [
     ".",
@@ -54,7 +54,7 @@ meta_properties = basic_meta_properties + sia_linkage_meta_properties
 
 
 def build_meta_property_table(
-    glycan_ids: Iterable[str], glycans: Iterable[NGlycan], sia_linkage: bool = False
+        glycan_ids: Iterable[str], glycans: Iterable[NGlycan], sia_linkage: bool = False
 ) -> pd.DataFrame:
     """Build a table of meta properties for glycans.
 
@@ -202,7 +202,7 @@ class TraitFormula:
 
     def __attrs_post_init__(self):
         for prop in itertools.chain(
-            self.numerator_properties, self.denominator_properties
+                self.numerator_properties, self.denominator_properties
         ):
             if prop in sia_linkage_meta_properties:
                 self._sia_linkage = True
@@ -230,7 +230,7 @@ class TraitFormula:
 
     @staticmethod
     def _initialize(
-        meta_property_table: pd.DataFrame, properties: list[str]
+            meta_property_table: pd.DataFrame, properties: list[str]
     ) -> NDArray:
         if len(properties) == 1 and properties[0] == ".":
             return np.ones_like(meta_property_table.index)
@@ -258,7 +258,7 @@ class TraitFormula:
 
 
 def _load_formulas(
-    formula_file_reader: Iterable[str],
+        formula_file_reader: Iterable[str],
 ) -> Generator[TraitFormula, None, None]:
     """Load the formulas from a file.
 
@@ -312,7 +312,7 @@ def _load_formulas(
 
 def load_default_formulas() -> Generator[TraitFormula, None, None]:
     """Load the default formulas."""
-    file_reader = files("glytrait").joinpath(DEFAULT_FORMULA_FILE).open("r")
+    file_reader = default_formula_file.open("r")
     yield from _load_formulas(file_reader)
 
 
@@ -363,7 +363,7 @@ def save_trait_formula_template(dirpath: str) -> None:
     dirpath = Path(dirpath)
     dirpath.mkdir(parents=True, exist_ok=True)
     file = dirpath / "trait_formula.txt"
-    content = files("glytrait").joinpath(FORMULA_TEMPLATE_FILE).open("r").read()
+    content = formula_template_file.open("r").read()
     with open(file, "w") as f:
         f.write(content)
 
@@ -416,9 +416,9 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
 
 
 def calcu_derived_trait(
-    abund_df: pd.DataFrame,
-    meta_prop_df: pd.DataFrame,
-    formulas: list[TraitFormula],
+        abund_df: pd.DataFrame,
+        meta_prop_df: pd.DataFrame,
+        formulas: list[TraitFormula],
 ) -> pd.DataFrame:
     """Calculate the derived trait values.
 

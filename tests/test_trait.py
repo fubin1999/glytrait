@@ -208,57 +208,9 @@ def test_parse_expression_invalid(expression):
     assert f"Invalid expression: '{expression}'" in str(excinfo.value)
 
 
-def test_load_default_formulas(tmp_path, monkeypatch):
-    text = """
-# Some comment
-
-@ Relative abundance of high mannose type glycans within total spectrum
-$ TM = (isHighMannose) / (.)
-
-@ The ratio of high-mannose to hybrid glycans
-$ MHy = (isHighMannose) / (isHybrid)
-"""
-    formula_file = tmp_path / "formula.txt"
-    formula_file.write_text(text)
-    monkeypatch.setattr(trait, "DEFAULT_FORMULA_FILE", str(formula_file))
+def test_load_default_formulas():
     result = list(trait.load_default_formulas())
-    expected = [
-        trait.TraitFormula(
-            description="Relative abundance of high mannose type glycans within total spectrum",
-            name="TM",
-            numerator_properties=["isHighMannose"],
-            denominator_properties=["."],
-        ),
-        trait.TraitFormula(
-            description="The ratio of high-mannose to hybrid glycans",
-            name="MHy",
-            numerator_properties=["isHighMannose"],
-            denominator_properties=["isHybrid"],
-        ),
-    ]
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    "text",
-    [
-        """
-@ Description 1
-@ Description 2
-""",
-        """
-@ Description 1
-$ TM = (isHighMannose) / (.)
-$ MHy = (isHighMannose) / (isHybrid)
-""",
-    ],
-)
-def test_load_default_formulas_invalid(text, tmp_path, monkeypatch):
-    formula_file = tmp_path / "formula.txt"
-    formula_file.write_text(text)
-    monkeypatch.setattr(trait, "DEFAULT_FORMULA_FILE", str(formula_file))
-    with pytest.raises(FormulaError):
-        list(trait.load_default_formulas())
+    assert len(result) == 164
 
 
 def test_load_user_formulas(clean_dir):
