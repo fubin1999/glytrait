@@ -210,27 +210,33 @@ def _write_summary(
     ws["B9"] = config.get("group_file")
     ws["A10"] = "Formula file"
     ws["B10"] = config.get("formula_file")
+    ws["A11"] = "Structure file"
+    ws["B11"] = config.get("structure_file")
+    ws["A12"] = "Database"
+    ws["B12"] = config.get("database")
+    ws["A13"] = "Input file has structure"
+    ws["B13"] = config.get("_has_struc_col")
 
-    ws["A11"] = "Result Overview"
-    ws.merge_cells("A11:B11")
-    ws["A11"].font = ws["A11"].font.copy(bold=True)
-    ws["A11"].alignment = Alignment(horizontal="center", vertical="center")
-    ws["A12"] = "Num. of derict traits"
-    ws["B12"] = len(direct_triats.columns)
-    ws["A13"] = "Num. of derived traits"
-    ws["B13"] = len(derived_traits.columns)
-    ws["A14"] = "Total num. of traits"
-    ws["B14"] = len(direct_triats.columns) + len(derived_traits.columns)
+    ws["A14"] = "Result Overview"
+    ws.merge_cells("A14:B14")
+    ws["A14"].font = ws["A14"].font.copy(bold=True)
+    ws["A14"].alignment = Alignment(horizontal="center", vertical="center")
+    ws["A15"] = "Num. of derict traits"
+    ws["B15"] = len(direct_triats.columns)
+    ws["A16"] = "Num. of derived traits"
+    ws["B16"] = len(derived_traits.columns)
+    ws["A17"] = "Total num. of traits"
+    ws["B17"] = len(direct_triats.columns) + len(derived_traits.columns)
 
     if groups is not None:
-        ws["A15"] = "Statistical Analysis"
+        ws["A18"] = "Statistical Analysis"
         ws.merge_cells("A15:B15")
-        ws["A15"].font = ws["A15"].font.copy(bold=True)
-        ws["A15"].alignment = Alignment(horizontal="center", vertical="center")
-        ws["A16"] = "Num. of groups"
-        ws["B16"] = len(groups.unique())
-        ws["A17"] = "Hypothesis testing method"
-        ws["B17"] = (
+        ws["A18"].font = ws["A15"].font.copy(bold=True)
+        ws["A18"].alignment = Alignment(horizontal="center", vertical="center")
+        ws["A19"] = "Num. of groups"
+        ws["B19"] = len(groups.unique())
+        ws["A30"] = "Hypothesis testing method"
+        ws["B20"] = (
             "Mann-Whitney U Test"
             if len(groups.unique()) == 2
             else "Kruskal-Wallis H Test"

@@ -13,7 +13,9 @@ default_config = {
     "formula_file": None,
     "filter_invalid_traits": True,
     "group_file": None,
-    "structure_file": None
+    "structure_file": None,
+    "database": None,
+    "_has_struc_col": None,
 }
 
 must_have = {"input_file", "output_file"}
@@ -32,9 +34,11 @@ class Config:
         - filter_invalid_traits: Whether to filter out invalid traits.
         - group_file: Path to the group file.
         - structure_file: Path to the structure file.
+        - database: The name of the built-in structure database to use.
+        - _has_struc_col: Whether the input file has a structure column. Do not set this manually.
     """
 
-    validators: ClassVar[dict[str, Callable]] = {}
+    validators: ClassVar[list[Callable]] = []
 
     def __init__(self, user_config: Mapping[str, Any]):
         for key in must_have:
@@ -46,8 +50,7 @@ class Config:
     @classmethod
     def register_validator(cls, validator: Callable) -> Callable:
         """Register a validator for a config key."""
-        name = validator.__name__.removeprefix("valid_")
-        cls.validators[name] = validator
+        cls.validators.append(validator)
         return validator
 
     def asdict(self) -> dict[str, Any]:
@@ -63,16 +66,16 @@ class Config:
         for key, value in new.items():
             if key not in self._config:
                 raise KeyError(f"Invalid config key: {key}")
-            self.check_validity(key, value)
+        new_config = self._config.copy()
         for key, value in new.items():
-            self._config[key] = value
+            new_config[key] = value
+        self.check_validity(new_config)
+        self._config = new_config
 
-    def check_validity(self, key: str, value: Any) -> NoReturn:
+    def check_validity(self, config_dict: dict[str, Any]) -> NoReturn:
         """Check if a value is valid for a config key."""
-        validator = self.validators.get(key)
-        if validator is None:
-            return
-        validator(value)
+        for validator in self.validators:
+            validator(config_dict)
 
     def __repr__(self):
         return f"Config({self._config!r})"
@@ -106,20 +109,21 @@ def valid_file(
 
 
 @Config.register_validator
-def valid_input_file(value: str) -> NoReturn:
+def valid_input_file(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid input file."""
-    valid_file(value, "Input file", ".csv", check_exist=True)
+    valid_file(config["input_file"], "Input file", ".csv", check_exist=True)
 
 
 @Config.register_validator
-def valid_output_file(value: str) -> NoReturn:
+def valid_output_file(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid output file."""
-    valid_file(value, "Output file", ".xlsx", check_exist=False)
+    valid_file(config["output_file"], "Output file", ".xlsx", check_exist=False)
 
 
 @Config.register_validator
-def valid_filter_glycan_max_na(value: float) -> NoReturn:
+def valid_filter_glycan_max_na(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid filter_glycan_max_na."""
+    value = config["filter_glycan_max_na"]
     if not isinstance(value, (float, int)):
         raise ConfigError("filter_glycan_max_na must be a float.")
     if not 0 <= value <= 1:
@@ -127,8 +131,9 @@ def valid_filter_glycan_max_na(value: float) -> NoReturn:
 
 
 @Config.register_validator
-def valid_impute_method(value: str) -> NoReturn:
+def valid_impute_method(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid impute_method."""
+    value = config["impute_method"]
     if not isinstance(value, str):
         raise ConfigError("impute_method must be a string.")
     if value not in {"min", "mean", "median", "zero", "lod"}:
@@ -136,32 +141,79 @@ def valid_impute_method(value: str) -> NoReturn:
 
 
 @Config.register_validator
-def valid_sia_linkage(value: bool) -> NoReturn:
+def valid_sia_linkage(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid sia_linkage."""
-    if not isinstance(value, bool):
+    if not isinstance(config["sia_linkage"], bool):
         raise ConfigError("sia_linkage must be a boolean.")
 
 
 @Config.register_validator
-def valid_formula_file(value: str) -> NoReturn:
+def valid_formula_file(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid formula_file."""
-    valid_file(value, "Formula file", ".txt", check_exist=True)
+    valid_file(config["formula_file"], "Formula file", ".txt", check_exist=True)
 
 
 @Config.register_validator
-def valid_filter_invalid_traits(value: bool) -> NoReturn:
+def valid_filter_invalid_traits(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid filter_invalid_traits."""
-    if not isinstance(value, bool):
+    if not isinstance(config["filter_invalid_traits"], bool):
         raise ConfigError("filter_invalid_traits must be a boolean.")
 
 
 @Config.register_validator
-def valid_group_file(value: str) -> NoReturn:
+def valid_group_file(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid group_file."""
-    valid_file(value, "Group file", ".csv", check_exist=True)
+    valid_file(config["group_file"], "Group file", ".csv", check_exist=True)
 
 
 @Config.register_validator
-def valid_structure_file(value: str) -> NoReturn:
+def valid_structure_file(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid structure_file."""
-    valid_file(value, "Structure file", ".csv", check_exist=True)
+    valid_file(config["structure_file"], "Structure file", ".csv", check_exist=True)
+
+
+@Config.register_validator
+def valid_database(config: Mapping[str, Any]) -> NoReturn:
+    """Check if a value is a valid database."""
+    value = config["database"]
+    if value is None:
+        return
+    if not isinstance(value, str):
+        raise ConfigError("Database must be a string.")
+    if value not in {"serum", "IgG"}:
+        raise ConfigError("Database must be one of: serum, IgG.")
+
+
+@Config.register_validator
+def valid_database_and_structure_file(config: Mapping[str, Any]) -> NoReturn:
+    """Check if database and structure_file are provided together."""
+    database = config["database"]
+    structure_file = config["structure_file"]
+    if database is not None and structure_file is not None:
+        raise ConfigError("Cannot provide both database and structure_file.")
+
+
+@Config.register_validator
+def valid_struc_col(config: Mapping[str, Any]) -> NoReturn:
+    """Check if the config is valid for _has_struc_col."""
+    if config["_has_struc_col"] is None:
+        return
+    if not isinstance(config["_has_struc_col"], bool):
+        raise ConfigError("_has_struc_col must be a boolean.")
+    if config["_has_struc_col"] is True:
+        if config["structure_file"] is not None:
+            raise ConfigError(
+                "Cannot provide structure_file when the input file already"
+                "has a 'Structure' column."
+            )
+        if config["database"] is not None:
+            raise ConfigError(
+                "Cannot provide database when the input file already"
+                "has a 'Structure' column."
+            )
+    else:  # _has_struc_col is False
+        if config["structure_file"] is None and config["database"] is None:
+            raise ConfigError(
+                "Must provide either structure_file or database when the input file "
+                "does not have a 'Structure' column."
+            )

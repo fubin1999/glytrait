@@ -6,25 +6,43 @@ import glytrait.core
 
 
 @pytest.mark.parametrize(
-    "sia_linkage, filter_invalid, has_structure",
-    # "has_structure" is True if the input file has the "Structure" column.
+    "sia_linkage, filter_invalid, has_structure, database, structure_file, group_file",
+    # sia_linkage means what the sia_linkage option is set
+    # filter_invalid means what the filter_invalid_traits option is set
+    # has_structure means whether the input file has a structure column
+    # database means whether the input file is a database
+    # structure_file means whether the structure file is provided
+    # group_file means whether the group file is provided
+
+    # Note that has_structure, database and structure_file are mutually exclusive
     [
-        (True, True, True),
-        (False, True, True),
-        (True, False, True),
-        (False, True, False),
+        (True, True, True, None, None, None),
+        (False, True, True, None, None, None),
+        (True, False, True, None, None, None),
+        (False, True, False, None, "structure_file", None),
+        (False, True, False, "database", None, None),
+        (False, True, True, None, None, "group_file"),
     ],
 )
-def test_run_workflow(mocker, sia_linkage, filter_invalid, has_structure):
+def test_run_workflow(
+    mocker,
+    sia_linkage,
+    filter_invalid,
+    has_structure,
+    database,
+    structure_file,
+    group_file,
+):
     raw_abund_df_mock = Mock(name="raw_abund_df_mock")
+    raw_abund_df_mock.columns = ["col1", "col2"]
     abund_df_mock = Mock(name="abund_df_mock")
     abund_df_mock.columns = ["col1", "col2"]
     meta_prop_df_mock = Mock(name="meta_prop_df_mock")
     derived_trait_df_mock = Mock(name="derived_trait_df_mock")
     derived_trait_df_filtered_mock = Mock(name="derived_trait_df_filtered_mock")
     derived_trait_df_filtered_mock.columns = ["trait1"]
-    group_series_mock = Mock(name="group_series_mock")
-    hypo_test_result_mock = Mock(name="hypo_test_result_mock")
+    group_series_mock = Mock(name="group_series_mock") if group_file else None
+    hypo_test_result_mock = Mock(name="hypo_test_result_mock") if group_file else None
     combined_traits_mock = Mock(name="combined_traits_mock")
 
     formula_1_mock = Mock()
@@ -47,6 +65,9 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid, has_structure):
     )
     read_structure_mock = mocker.patch(
         "glytrait.core.read_structure", return_value="glycans"
+    )
+    load_default_mock = mocker.patch(
+        "glytrait.core.load_default", return_value="glycans"
     )
     preprocess_pipeline_mock = mocker.patch(
         "glytrait.core.preprocess_pipeline", return_value=abund_df_mock
@@ -81,21 +102,24 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid, has_structure):
         sia_linkage=sia_linkage,
         formula_file="user_formula_file",
         filter_invalid_traits=filter_invalid,
-        group_file="group_file",
+        group_file=group_file,
+        structure_file=structure_file,
+        database=database,
     )
-    if has_structure:
-        config["structure_file"] = None
-    else:
-        config["structure_file"] = "structure_file"
     glytrait.core.run_workflow(config)
 
     read_input_mock.assert_called_once_with("input_file")
     if has_structure:
         read_structure_mock.assert_not_called()
-    else:
+        load_default_mock.assert_not_called()
+    elif structure_file:
         read_structure_mock.assert_called_once_with(
-            "structure_file", raw_abund_df_mock.columns
+            "structure_file", abund_df_mock.columns
         )
+        load_default_mock.assert_not_called()
+    else:  # database
+        read_structure_mock.assert_not_called()
+        load_default_mock.assert_called_once_with("database", abund_df_mock.columns)
     preprocess_pipeline_mock.assert_called_once_with(raw_abund_df_mock, 0.5, "min")
     load_formulas_mock.assert_called_once_with("user_formula_file")
     build_meta_property_table_mock.assert_called_once_with(
@@ -127,16 +151,12 @@ def test_run_workflow(mocker, sia_linkage, filter_invalid, has_structure):
     else:
         derived_trait_df = derived_trait_df_mock
 
-    read_group_mock.assert_called_once_with("group_file")
-    hypo_test_mock.assert_called_once_with(combined_traits_mock, group_series_mock)
-    if filter_invalid:
-        pd_concat_mock.assert_called_once_with(
-            [abund_df_mock, derived_trait_df_filtered_mock], axis=1
-        )
+    if group_file:
+        read_group_mock.assert_called_once_with("group_file")
+        hypo_test_mock.assert_called_once_with(combined_traits_mock, group_series_mock)
     else:
-        pd_concat_mock.assert_called_once_with(
-            [abund_df_mock, derived_trait_df_mock], axis=1
-        )
+        read_group_mock.assert_not_called()
+        hypo_test_mock.assert_not_called()
 
     write_output_mock.assert_called_once_with(
         config,

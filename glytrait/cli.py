@@ -106,6 +106,12 @@ def file_validator(suffix: str, file_name: str):
     type=click.Path(exists=True),
     help="Structure file for hypothesis test.",
 )
+@click.option(
+    "-d",
+    "--database",
+    type=click.STRING,
+    help="Built-in database to use, either 'serum' or 'IgG'."
+)
 def cli(
     input_file,
     output_file,
@@ -116,13 +122,9 @@ def cli(
     filter,
     group_file,
     structure_file,
+    database,
 ):
-    """Run the glytrait workflow.
-
-    You can use the `--save_template` option to save the formula template
-    to the specified directory, then edit the template and
-    use it to provide additional traits to glyTrait.
-    """
+    """Run the glytrait workflow."""
     if output_file is None:
         output_file = str(
             Path(input_file).with_name(Path(input_file).stem + "_glytrait.xlsx")
@@ -140,6 +142,7 @@ def cli(
             filter_invalid_traits=filter,
             group_file=group_file,
             structure_file=structure_file,
+            database=database,
         ))
         run_workflow(config)
     except GlyTraitError as e:
