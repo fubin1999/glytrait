@@ -119,7 +119,7 @@ def write_output(
 
     # The trait table
     ws1 = wb.create_sheet("Trait values")
-    _write_trait_values(ws1, derived_traits, direct_traits)
+    _write_trait_values(ws1, direct_traits, derived_traits)
 
     # The trait definitions
     ws2 = wb.create_sheet("Trait definitions")
