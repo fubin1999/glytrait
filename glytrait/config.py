@@ -7,6 +7,7 @@ from .exception import ConfigError
 default_config = {
     "input_file": None,
     "output_file": None,
+    "mode": None,
     "filter_glycan_max_na": 0.5,
     "impute_method": "min",
     "sia_linkage": False,
@@ -18,7 +19,7 @@ default_config = {
     "_has_struc_col": None,
 }
 
-must_have = {"input_file", "output_file"}
+must_have = {"input_file", "output_file", "mode"}
 
 
 class Config:
@@ -27,6 +28,7 @@ class Config:
     Valid config keys:
         - input_file: Path to the input file. Must provide.
         - output_file: Path to the output file. Must provide.
+        - mode: The mode of the workflow. Either "structure" or "composition".
         - filter_glycan_max_na: Maximum NA percentage for a glycan to be kept.
         - impute_method: Method for imputing missing values.
         - sia_linkage: Whether to include sialic acid linkage in the analysis.
@@ -121,6 +123,16 @@ def valid_output_file(config: Mapping[str, Any]) -> NoReturn:
 
 
 @Config.register_validator
+def valid_mode(config: Mapping[str, Any]) -> NoReturn:
+    """Check if a value is a valid mode."""
+    value = config["mode"]
+    if not isinstance(value, str):
+        raise ConfigError("mode must be a string.")
+    if value not in {"structure", "composition"}:
+        raise ConfigError("mode must be one of: structure, composition.")
+
+
+@Config.register_validator
 def valid_filter_glycan_max_na(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid filter_glycan_max_na."""
     value = config["filter_glycan_max_na"]
@@ -200,6 +212,8 @@ def valid_struc_col(config: Mapping[str, Any]) -> NoReturn:
         return
     if not isinstance(config["_has_struc_col"], bool):
         raise ConfigError("_has_struc_col must be a boolean.")
+    if config["mode"] == "composition":
+        return
     if config["_has_struc_col"] is True:
         if config["structure_file"] is not None:
             raise ConfigError(
@@ -217,3 +231,14 @@ def valid_struc_col(config: Mapping[str, Any]) -> NoReturn:
                 "Must provide either structure_file or database when the input file "
                 "does not have a 'Structure' column."
             )
+
+
+@Config.register_validator
+def valid_composition_mode(config: Mapping[str, Any]) -> NoReturn:
+    """Check if the config is valid for composition mode."""
+    if config["mode"] == "structure":
+        return
+    if config["database"] is not None:
+        raise ConfigError("Database is incompatible with 'Composition' mode.")
+    if config["structure_file"] is not None:
+        raise ConfigError("Structure file is incompatible with 'Composition' mode.")

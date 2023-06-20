@@ -17,14 +17,18 @@ class TestConfig:
 
     @pytest.fixture
     def base_config(self, input_file, output_file):
-        return {"input_file": input_file, "output_file": output_file}
+        return {
+            "input_file": input_file,
+            "output_file": output_file,
+            "mode": "structure",
+        }
 
     def test_init(self, base_config):
         cfg = config.Config(base_config)
         assert cfg.asdict() == config.default_config | base_config
 
     def test_init_without_input_file(self, output_file):
-        new = {"output_file": output_file}
+        new = {"output_file": output_file, "mode": "structure"}
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
         assert "Missing config key: input_file" in str(excinfo.value)
@@ -33,14 +37,22 @@ class TestConfig:
         input_file = clean_dir / "test.txt"
         input_file.touch()
         input_file = str(input_file)
-        new = {"input_file": input_file, "output_file": output_file}
+        new = {
+            "input_file": input_file,
+            "output_file": output_file,
+            "mode": "structure",
+        }
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
         assert "Input file must be a CSV file" in str(excinfo.value)
 
     def test_input_file_not_exists(self, clean_dir, output_file):
         input_file = str(clean_dir / "test.csv")
-        new = {"input_file": input_file, "output_file": output_file}
+        new = {
+            "input_file": input_file,
+            "output_file": output_file,
+            "mode": "structure",
+        }
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
         assert "Input file does not exist" in str(excinfo.value)
@@ -49,20 +61,28 @@ class TestConfig:
         input_file = clean_dir / "test.csv"
         input_file.mkdir()
         input_file = str(input_file)
-        new = {"input_file": input_file, "output_file": output_file}
+        new = {
+            "input_file": input_file,
+            "output_file": output_file,
+            "mode": "structure",
+        }
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
         assert "Input file must be a file, not directory" in str(excinfo.value)
 
     def test_input_file_not_str(self, output_file):
-        new = {"input_file": 1, "output_file": output_file}
+        new = {"input_file": 1, "output_file": output_file, "mode": "structure"}
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
         assert "Input file must be a string" in str(excinfo.value)
 
     def test_output_file_not_xlsx(self, clean_dir, input_file):
         output_file = str(clean_dir / "test.txt")
-        new = {"input_file": input_file, "output_file": output_file}
+        new = {
+            "input_file": input_file,
+            "output_file": output_file,
+            "mode": "structure",
+        }
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
         assert "Output file must be a XLSX file" in str(excinfo.value)
@@ -268,8 +288,35 @@ class TestConfig:
             config.Config(new)
         assert "_has_struc_col must be a boolean" in str(excinfo.value)
 
-    def test_no_struc_col_no_database_no_structure_file(self, base_config):
+    def test_no_struc_col_struc_mode_no_database_no_structure_file(self, base_config):
         new = base_config | {"_has_struc_col": False}
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
         assert "Must provide either structure_file or database" in str(excinfo.value)
+
+    @pytest.mark.parametrize("has_struc_col", [True, False])
+    def test_comp_mode(self, base_config, has_struc_col):
+        new = base_config | {"_has_struc_col": has_struc_col, "mode": "composition"}
+        cfg = config.Config(new)
+        assert cfg.get("_has_struc_col") is has_struc_col
+
+    def test_comp_mode_database_provided(self, base_config):
+        new = base_config | {
+            "database": "serum",
+            "mode": "composition",
+        }
+        with pytest.raises(config.ConfigError) as excinfo:
+            config.Config(new)
+        assert "Database is incompatible with 'Composition' mode." in str(excinfo.value)
+
+    def test_comp_mode_structure_file_provided(self, base_config, clean_dir):
+        structure_file = clean_dir / "structure.csv"
+        structure_file.touch()
+        new = base_config | {
+            "structure_file": str(structure_file),
+            "mode": "composition",
+        }
+        with pytest.raises(config.ConfigError) as excinfo:
+            config.Config(new)
+        msg = "Structure file is incompatible with 'Composition' mode."
+        assert msg in str(excinfo.value)

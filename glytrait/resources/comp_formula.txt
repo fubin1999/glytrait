@@ -1,0 +1,241 @@
+# Branching (N > 4 is high-branching, N <= 4 is low-branching)
+
+@ Relative abundance of high-branching (N > 4) glycans within all glycans
+$ Hb = (isHighBranching) / (.)
+
+@ Relative abundance of low-branching (N <= 4) glycans within all glycans
+$ Lb = (isLowBranching) / (.)
+
+
+# Fucoyslation
+
+@ Fucosylation within all glycans
+$ F = (hasFuc) / (.)
+
+@ Fucosylation within high-branching glycans
+$ HbF = (hasFuc) // (isHighBranching)
+
+@ Fucosylation within low-branching glycans
+$ LbF = (hasFuc) // (isLowBranching)
+
+@ Fucosylation within sialylated high-branching glycans
+$ HbSF = (hasFuc) // (isHighBranching * hasSia)
+
+@ Fucosylation within sialylated low-branching glycans
+$ LbSF = (hasFuc) // (isLowBranching * hasSia)
+
+@ Fucosylation within non-sialylated high-branching glycans
+$ HbS0F = (hasFuc) // (isHighBranching * noSia)
+
+@ Fucosylation within non-sialylated low-branching glycans
+$ LbS0F = (hasFuc) // (isLowBranching * noSia)
+
+@ Fucosylation within high-branching glycans with a2,6-linked sialic acids
+$ HbEF = (hasFuc) // (isHighBranching * hasa26Sia)
+
+@ Fucosylation within low-branching glycans with a2,6-linked sialic acids
+$ LbEF = (hasFuc) // (isLowBranching * hasa26Sia)
+
+@ Fucosylation within high-branching glycans without a2,6-linked sialic acids
+$ HbE0F = (hasFuc) // (isHighBranching * noa26Sia)
+
+@ Fucosylation within low-branching glycans without a2,6-linked sialic acids
+$ LbE0F = (hasFuc) // (isLowBranching * noa26Sia)
+
+@ Fucosylation within high-branching glycans with a2,3-linked sialic acids
+$ HbLF = (hasFuc) // (isHighBranching * hasa23Sia)
+
+@ Fucosylation within low-branching glycans with a2,3-linked sialic acids
+$ LbLF = (hasFuc) // (isLowBranching * hasa23Sia)
+
+@ Fucosylation within high-branching glycans without a2,3-linked sialic acids
+$ HbL0F = (hasFuc) // (isHighBranching * noa23Sia)
+
+@ Fucosylation within low-branching glycans without a2,3-linked sialic acids
+$ LbL0F = (hasFuc) // (isLowBranching * noa23Sia)
+
+
+# Galactosylation
+
+@ Galactosylation within all glycans
+$ G = (totalGal) / (.)
+
+@ Galactosylation within high-branching glycans
+$ HbG = (totalGal) // (isHighBranching)
+
+@ Galactosylation within low-branching glycans
+$ LbG = (totalGal) // (isLowBranching)
+
+@ Galactosylation within fucoyslated high-branching glycans
+$ HbFG = (totalGal) // (isHighBranching * hasFuc)
+
+@ Galactosylation within fucoyslated low-branching glycans
+$ LbFG = (totalGal) // (isLowBranching * hasFuc)
+
+@ Galactosylation within non-fucoyslated high-branching glycans
+$ HbF0G = (totalGal) // (isHighBranching * noFuc)
+
+@ Galactosylation within non-fucoyslated low-branching glycans
+$ LbF0G = (totalGal) // (isLowBranching * noFuc)
+
+@ Galactosylation within sialylated high-branching glycans
+$ HbSG = (totalGal) // (isHighBranching * hasSia)
+
+@ Galactosylation within sialylated low-branching glycans
+$ LbSG = (totalGal) // (isLowBranching * hasSia)
+
+@ Galactosylation within non-sialylated high-branching glycans
+$ HbS0G = (totalGal) // (isHighBranching * noSia)
+
+@ Galactosylation within non-sialylated low-branching glycans
+$ LbS0G = (totalGal) // (isLowBranching * noSia)
+
+@ Galactosylation within fucosylated sialylated high-branching glycans
+$ HbFSG = (totalGal) // (isHighBranching * hasFuc * hasSia)
+
+@ Galactosylation within fucosylated sialylated low-branching glycans
+$ LbFSG = (totalGal) // (isLowBranching * hasFuc * hasSia)
+
+@ Galactosylation within non-fucosylated sialylated high-branching glycans
+$ HbF0SG = (totalGal) // (isHighBranching * noFuc * hasSia)
+
+@ Galactosylation within non-fucosylated sialylated low-branching glycans
+$ LbF0SG = (totalGal) // (isLowBranching * noFuc * hasSia)
+
+@ Galactosylation within fucosylated non-sialylated high-branching glycans
+$ HbFS0G = (totalGal) // (isHighBranching * hasFuc * noSia)
+
+@ Galactosylation within fucosylated non-sialylated low-branching glycans
+$ LbFS0G = (totalGal) // (isLowBranching * hasFuc * noSia)
+
+@ Galactosylation within non-fucosylated non-sialylated high-branching glycans
+$ HbF0S0G = (totalGal) // (isHighBranching * noFuc * noSia)
+
+@ Galactosylation within non-fucosylated non-sialylated low-branching glycans
+$ LbF0S0G = (totalGal) // (isLowBranching * noFuc * noSia)
+
+
+# Sialylation
+
+@ Sialylation within all glycans
+$ S = (totalSia) / (.)
+
+@ Sialylation within high-branching glycans
+$ HbS = (totalSia) // (isHighBranching)
+
+@ Sialylation within low-branching glycans
+$ LbS = (totalSia) // (isLowBranching)
+
+@ Sialylation within fucosylated high-branching glycans
+$ HbFS = (totalSia) // (isHighBranching * hasFuc)
+
+@ Sialylation within fucosylated low-branching glycans
+$ LbFS = (totalSia) // (isLowBranching * hasFuc)
+
+@ Sialylation within non-fucosylated high-branching glycans
+$ HbF0S = (totalSia) // (isHighBranching * noFuc)
+
+@ Sialylation within non-fucosylated low-branching glycans
+$ LbF0S = (totalSia) // (isLowBranching * noFuc)
+
+@ Sialylation per galactose within high-branching glycans
+$ HbGS = (isHighBranching * totalSia) / (isHighBranching * totalGal)
+
+@ Sialylation per galactose within low-branching glycans
+$ LbGS = (isLowBranching * totalSia) / (isLowBranching * totalGal)
+
+@ Sialylation per galactose within fucosylated high-branching glycans
+$ HbFGS = (isHighBranching * hasFuc * totalSia) / (isHighBranching * hasFuc * totalGal)
+
+@ Sialylation per galactose within fucosylated low-branching glycans
+$ LbFGS = (isLowBranching * hasFuc * totalSia) / (isLowBranching * hasFuc * totalGal)
+
+@ Sialylation per galactose within non-fucosylated high-branching glycans
+$ HbF0GS = (isHighBranching * noFuc * totalSia) / (isHighBranching * noFuc * totalGal)
+
+@ Sialylation per galactose within non-fucosylated low-branching glycans
+$ LbF0GS = (isLowBranching * noFuc * totalSia) / (isLowBranching * noFuc * totalGal)
+
+
+# α2,3-linked sialylation
+
+@ α2,3-linked sialylation within all glycans
+$ L = (a23Sia) / (.)
+
+@ α2,3-linked sialylation within high-branching glycans
+$ HbL = (a23Sia) // (isHighBranching)
+
+@ α2,3-linked sialylation within low-branching glycans
+$ LbL = (a23Sia) // (isLowBranching)
+
+@ α2,3-linked sialylation within fucosylated high-branching glycans
+$ HbFL = (a23Sia) // (isHighBranching * hasFuc)
+
+@ α2,3-linked sialylation within fucosylated low-branching glycans
+$ LbFL = (a23Sia) // (isLowBranching * hasFuc)
+
+@ α2,3-linked sialylation within non-fucosylated high-branching glycans
+$ HbF0L = (a23Sia) // (isHighBranching * noFuc)
+
+@ α2,3-linked sialylation within non-fucosylated low-branching glycans
+$ LbF0L = (a23Sia) // (isLowBranching * noFuc)
+
+@ α2,3-linked sialylation per galactose within high-branching glycans
+$ HbGL = (isHighBranching * a23Sia) / (isHighBranching * totalGal)
+
+@ α2,3-linked sialylation per galactose within low-branching glycans
+$ LbGL = (isLowBranching * a23Sia) / (isLowBranching * totalGal)
+
+@ α2,3-linked sialylation per galactose within fucosylated high-branching glycans
+$ HbFGL = (isHighBranching * hasFuc * a23Sia) / (isHighBranching * hasFuc * totalGal)
+
+@ α2,3-linked sialylation per galactose within fucosylated low-branching glycans
+$ LbFGL = (isLowBranching * hasFuc * a23Sia) / (isLowBranching * hasFuc * totalGal)
+
+@ α2,3-linked sialylation per galactose within non-fucosylated high-branching glycans
+$ HbF0GL = (isHighBranching * noFuc * a23Sia) / (isHighBranching * noFuc * totalGal)
+
+@ α2,3-linked sialylation per galactose within non-fucosylated low-branching glycans
+$ LbF0GL = (isLowBranching * noFuc * a23Sia) / (isLowBranching * noFuc * totalGal)
+
+
+# α2,6-linked sialylation
+
+@ α2,6-linked sialylation within all glycans
+$ E = (a26Sia) / (.)
+
+@ α2,6-linked sialylation within high-branching glycans
+$ HbE = (a26Sia) // (isHighBranching)
+
+@ α2,6-linked sialylation within low-branching glycans
+$ LbE = (a26Sia) // (isLowBranching)
+
+@ α2,6-linked sialylation within fucosylated high-branching glycans
+$ HbFE = (a26Sia) // (isHighBranching * hasFuc)
+
+@ α2,6-linked sialylation within fucosylated low-branching glycans
+$ LbFE = (a26Sia) // (isLowBranching * hasFuc)
+
+@ α2,6-linked sialylation within non-fucosylated high-branching glycans
+$ HbF0E = (a26Sia) // (isHighBranching * noFuc)
+
+@ α2,6-linked sialylation within non-fucosylated low-branching glycans
+$ LbF0E = (a26Sia) // (isLowBranching * noFuc)
+
+@ α2,6-linked sialylation per galactose within high-branching glycans
+$ HbGE = (isHighBranching * a26Sia) / (isHighBranching * totalGal)
+
+@ α2,6-linked sialylation per galactose within low-branching glycans
+$ LbGE = (isLowBranching * a26Sia) / (isLowBranching * totalGal)
+
+@ α2,6-linked sialylation per galactose within fucosylated high-branching glycans
+$ HbFGE = (isHighBranching * hasFuc * a26Sia) / (isHighBranching * hasFuc * totalGal)
+
+@ α2,6-linked sialylation per galactose within fucosylated low-branching glycans
+$ LbFGE = (isLowBranching * hasFuc * a26Sia) / (isLowBranching * hasFuc * totalGal)
+
+@ α2,6-linked sialylation per galactose within non-fucosylated high-branching glycans
+$ HbF0GE = (isHighBranching * noFuc * a26Sia) / (isHighBranching * noFuc * totalGal)
+
+@ α2,6-linked sialylation per galactose within non-fucosylated low-branching glycans
+$ LbF0GE = (isLowBranching * noFuc * a26Sia) / (isLowBranching * noFuc * totalGal)

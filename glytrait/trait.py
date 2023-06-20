@@ -3,7 +3,7 @@ import re
 from collections.abc import Iterable, Generator
 from importlib.resources import files
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 
 import attrs.validators
 import numpy as np
@@ -12,14 +12,15 @@ from attrs import define, field
 from numpy.typing import NDArray
 
 from .exception import FormulaError
-from .glycan import NGlycan
+from .glycan import NGlycan, Composition
 
-default_formula_file = files("glytrait.resources").joinpath("trait_formula.txt")
+default_struc_formula_file = files("glytrait.resources").joinpath("struc_formula.txt")
+default_comp_formula_file = files("glytrait.resources").joinpath("comp_formula.txt")
 formula_template_file = files("glytrait.resources").joinpath(
     "trait_formula_template.txt"
 )
 
-basic_meta_properties = [
+basic_struc_meta_properties = {
     ".",
     "isComplex",
     "isHighMannose",
@@ -41,24 +42,76 @@ basic_meta_properties = [
     "noSia",
     "totalMan",
     "totalGal",
-]
+}
 
-sia_linkage_meta_properties = [
+sia_struc_meta_properties = {
     "a23Sia",
     "a26Sia",
     "hasa23Sia",
     "hasa26Sia",
     "noa23Sia",
     "noa26Sia",
-]
+}
 
-meta_properties = basic_meta_properties + sia_linkage_meta_properties
+struc_meta_properties = basic_struc_meta_properties | sia_struc_meta_properties
+
+basic_comp_meta_properties = {
+    ".",
+    "isHighBranching",
+    "isLowBranching",
+    "totalSia",
+    "totalFuc",
+    "totalGal",
+    "hasSia",
+    "hasFuc",
+    "hasGal",
+    "noSia",
+    "noFuc",
+    "noGal",
+}
+
+sia_comp_meta_properties = {
+    "a23Sia",
+    "a26Sia",
+    "hasa23Sia",
+    "hasa26Sia",
+    "noa23Sia",
+    "noa26Sia",
+}
+
+comp_meta_properties = basic_comp_meta_properties | sia_comp_meta_properties
 
 
 def build_meta_property_table(
-    glycan_ids: Iterable[str], glycans: Iterable[NGlycan], sia_linkage: bool = False
+    glycan_ids: Iterable[str],
+    glycans: Iterable[NGlycan | Composition],
+    mode: Literal["composition", "structure"],
+    sia_linkage: bool = False,
 ) -> pd.DataFrame:
     """Build a table of meta properties for glycans.
+
+    Args:
+        glycan_ids (Iterable[str]): The IDs of the glycans.
+        glycans (Iterable[NGlycan]): The glycans.
+        mode (Literal["composition", "structure"]): The calculation mode.
+        sia_linkage (bool, optional): Whether to include the sialic acid linkage
+            meta properties. Defaults to False.
+
+    Returns:
+        pd.DataFrame: The table of meta properties, with Compositions as the index,
+    """
+    if mode == "composition":
+        return _build_comp_meta_property_table(glycan_ids, glycans, sia_linkage)
+    elif mode == "structure":
+        return _build_struc_meta_property_table(glycan_ids, glycans, sia_linkage)
+    else:
+        raise ValueError(f"Invalid type: {mode}")
+
+
+def _build_struc_meta_property_table(
+    glycan_ids: Iterable[str], glycans: Iterable[NGlycan], sia_linkage: bool = False
+) -> pd.DataFrame:
+    """Build a table of structural meta properties for glycans.
 
     The following meta properties are included:
         - isComplex: Whether the glycan is a complex type.
@@ -137,13 +190,81 @@ def build_meta_property_table(
     return meta_property_table
 
 
+def _build_comp_meta_property_table(
+    glycan_ids: Iterable[str], glycans: Iterable[Composition], sia_linkage: bool = False
+) -> pd.DataFrame:
+    """Build a table of compositional meta properties for glycans.
+
+    The following meta properties are included:
+        - isHighBranching: Whether the glycan has a high branching.
+        - isLowBranching: Whether the glycan has a low branching.
+        - totalSia: The total number of sialic acids.
+        - totalFuc: The total number of fucoses.
+        - totalGal: The total number of galactoses.
+        - hasSia: Whether the glycan has any sialic acids.
+        - hasFuc: Whether the glycan has any fucoses.
+        - hasGal: Whether the glycan has any galactoses.
+        - noSia: Whether the glycan has no sialic acids.
+        - noFuc: Whether the glycan has no fucoses.
+        - noGal: Whether the glycan has no galactoses.
+
+    If `sia_linkage` is True, the following meta properties are also included:
+        - a23Sia: The number of sialic acids with an alpha-2,3 linkage.
+        - a26Sia: The number of sialic acids with an alpha-2,6 linkage.
+        - hasa23Sia: Whether the glycan has any sialic acids with an alpha-2,3 linkage.
+        - hasa26Sia: Whether the glycan has any sialic acids with an alpha-2,6 linkage.
+        - noa23Sia: Whether the glycan has no sialic acids with an alpha-2,3 linkage.
+        - noa26Sia: Whether the glycan has no sialic acids with an alpha-2,6 linkage.
+
+    Args:
+        glycan_ids (Iterable[str]): The IDs of the glycans. Could be the
+            accession, or the composition.
+        glycans (Iterable[Composition]): The glycans.
+        sia_linkage (bool, optional): Whether to include the sialic acid linkage
+            meta properties. Defaults to False.
+
+    Returns:
+        pd.DataFrame: The table of meta properties, with Compositions as the index,
+            and the property names as the columns.
+    """
+    meta_property_table = pd.DataFrame(index=list(glycan_ids))
+
+    meta_property_table["isHighBranching"] = [g.is_high_branching() for g in glycans]
+    meta_property_table["isLowBranching"] = [g.is_low_branching() for g in glycans]
+    meta_property_table["totalSia"] = [g.count_sia() for g in glycans]
+    meta_property_table["totalFuc"] = [g.count_fuc() for g in glycans]
+    meta_property_table["totalGal"] = [g.count_gal() for g in glycans]
+    meta_property_table["hasSia"] = [g.count_sia() > 0 for g in glycans]
+    meta_property_table["hasFuc"] = [g.count_fuc() > 0 for g in glycans]
+    meta_property_table["hasGal"] = [g.count_gal() > 0 for g in glycans]
+    meta_property_table["noSia"] = [g.count_sia() == 0 for g in glycans]
+    meta_property_table["noFuc"] = [g.count_fuc() == 0 for g in glycans]
+    meta_property_table["noGal"] = [g.count_gal() == 0 for g in glycans]
+
+    if sia_linkage:
+        meta_property_table["a23Sia"] = [g.count_a23_sia() for g in glycans]
+        meta_property_table["a26Sia"] = [g.count_a26_sia() for g in glycans]
+        meta_property_table["hasa23Sia"] = [g.count_a23_sia() > 0 for g in glycans]
+        meta_property_table["hasa26Sia"] = [g.count_a26_sia() > 0 for g in glycans]
+        meta_property_table["noa23Sia"] = [g.count_a23_sia() == 0 for g in glycans]
+        meta_property_table["noa26Sia"] = [g.count_a26_sia() == 0 for g in glycans]
+
+    return meta_property_table
+
+
 def _check_length(instance, attribute, value):
+    """Validator for `TraitFormula`."""
     if len(value) == 0:
         raise FormulaError(f"`{attribute.name}` cannot be empty.")
 
 
 def _check_meta_properties(instance, attribute, value):
-    invalid_properties = set(value) - set(meta_properties)
+    """Validator for `TraitFormula`."""
+    if instance.type == "composition":
+        valid_meta_properties = comp_meta_properties
+    else:
+        valid_meta_properties = struc_meta_properties
+    invalid_properties = set(value) - set(valid_meta_properties)
     if len(invalid_properties) > 0:
         raise FormulaError(
             f"`{attribute.name}` contains invalid meta properties: "
@@ -152,11 +273,13 @@ def _check_meta_properties(instance, attribute, value):
 
 
 def _check_numerator(instance, attribute, value):
+    """Validator for `TraitFormula`."""
     if "." in value:
         raise FormulaError("'.' should not be used in the numerator.")
 
 
 def _check_denominator(instance, attribute, value):
+    """Validator for `TraitFormula`."""
     if "." in value and len(value) > 1:
         raise FormulaError(
             "'.' should not be used with other meta properties in the denominator."
@@ -170,6 +293,7 @@ class TraitFormula:
     Attributes:
         description (str): The description of the trait.
         name (str): The name of the trait.
+        type (str): The type of the trait. Either "structure" or "composition".
         numerator_properties (tuple[str]): The meta properties in the numerator.
         denominator_properties (tuple[str]): The meta properties in the denominator.
         coefficient (float): The coefficient of the trait.
@@ -179,6 +303,7 @@ class TraitFormula:
         >>> formula = TraitFormula(
         ...     description="The ratio of high-mannose to complex glycans",
         ...     name="MHy",
+        ...     type="structure",
         ...     numerator_properties=["isHighMannose"],
         ...     denominator_properties=["isComplex"],
         ... )
@@ -188,6 +313,7 @@ class TraitFormula:
 
     description: str = field()
     name: str = field()
+    type: str = field(validator=attrs.validators.in_(["structure", "composition"]))
     numerator_properties: list[str] = field(
         converter=list,
         validator=[_check_length, _check_meta_properties, _check_numerator],
@@ -203,12 +329,20 @@ class TraitFormula:
     _denominator = field(init=False, default=None)
 
     def __attrs_post_init__(self):
+        self._sia_linkage = self._init_sia_linkage()
+
+    def _init_sia_linkage(self) -> bool:
+        """Whether the formula contains sia linkage meta properties."""
+        if self.type == "composition":
+            sia_meta_properties = sia_comp_meta_properties
+        else:
+            sia_meta_properties = sia_struc_meta_properties
         for prop in itertools.chain(
             self.numerator_properties, self.denominator_properties
         ):
-            if prop in sia_linkage_meta_properties:
-                self._sia_linkage = True
-                break
+            if prop in sia_meta_properties:
+                return True
+        return False
 
     @property
     def sia_linkage(self) -> bool:
@@ -259,13 +393,84 @@ class TraitFormula:
         return numerator / denominator * self.coefficient
 
 
+def load_formulas(
+    type: Literal["structure", "composition"], user_file: Optional[str] = None
+) -> list[TraitFormula]:
+    """Load both the default formulas and the user-defined formulas.
+
+    Args:
+        type (Literal["structure", "composition"]): The type of the formulas.
+        user_file (Optional[str], optional): The path of the user-defined formula file.
+
+    Returns:
+        list[TraitFormula]: The formulas.
+    """
+    default_formulas = list(_load_default_formulas(type=type))
+    if user_file is None:
+        return default_formulas
+
+    default_formula_names = [f.name for f in default_formulas]
+    user_formulas = list(_load_user_formulas(user_file, type=type))
+
+    formulas: list[TraitFormula] = []
+    formulas.extend(default_formulas)
+    for f in user_formulas:
+        if f.name in default_formula_names:
+            continue
+        formulas.append(f)
+    return formulas
+
+
+def _load_default_formulas(
+    type: Literal["structure", "composition"]
+) -> Generator[TraitFormula, None, None]:
+    """Load the default formulas.
+
+    Args:
+        type (Literal["structure", "composition"]): The type of the formulas.
+
+    Yields:
+        The formulas parsed.
+    """
+    if type == "composition":
+        default_file = default_comp_formula_file
+    else:
+        default_file = default_struc_formula_file
+    file_reader = default_file.open("r")
+    yield from _load_formulas(file_reader, type=type)
+
+
+def _load_user_formulas(
+    file: str, type: Literal["structure", "composition"]
+) -> Generator[TraitFormula, None, None]:
+    """Load the user-defined formulas.
+
+    If the formula name is duplicated, the first one will be used.
+
+    Args:
+        file (str): The path of the user-defined formula file.
+        type (Literal["structure", "composition"]): The type of the formulas.
+
+    Yields:
+        The formulas parsed.
+    """
+    formulas_parsed: set[str] = set()
+    file_reader = Path(file).open("r")
+    for formula in _load_formulas(file_reader, type=type):
+        if formula.name in formulas_parsed:
+            continue
+        yield formula
+        formulas_parsed.add(formula.name)
+
+
 def _load_formulas(
-    formula_file_reader: Iterable[str],
+    formula_file_reader: Iterable[str], type: Literal["structure", "composition"]
 ) -> Generator[TraitFormula, None, None]:
     """Load the formulas from a file.
 
     Args:
         formula_file_reader (Iterable[str]): The path of the formula file.
+        type (Literal["structure", "composition"]): The type of the formulas.
 
     Returns:
         Generator[TraitFormula, None, None]: The generator of the formulas.
@@ -294,6 +499,7 @@ def _load_formulas(
                 yield TraitFormula(
                     description=description,
                     name=name,
+                    type=type,
                     numerator_properties=num_prop,
                     denominator_properties=den_prop,
                     coefficient=coef,
@@ -310,64 +516,6 @@ def _load_formulas(
             f"Invalid line: '{line}'.\n"
             f"One description line must follow a formula line."
         )
-
-
-def load_default_formulas() -> Generator[TraitFormula, None, None]:
-    """Load the default formulas."""
-    file_reader = default_formula_file.open("r")
-    yield from _load_formulas(file_reader)
-
-
-def load_user_formulas(file: str) -> Generator[TraitFormula, None, None]:
-    """Load the user-defined formulas.
-
-    If the formula name is duplicated, the first one will be used.
-
-    Args:
-        file (str): The path of the user-defined formula file.
-
-    Yields:
-        The formulas parsed.
-    """
-    formulas_parsed: set[str] = set()
-    file_reader = Path(file).open("r")
-    for formula in _load_formulas(file_reader):
-        if formula.name in formulas_parsed:
-            continue
-        yield formula
-        formulas_parsed.add(formula.name)
-
-
-def load_formulas(user_file: Optional[str] = None) -> list[TraitFormula]:
-    """Load both the default formulas and the user-defined formulas."""
-    default_formulas = list(load_default_formulas())
-    if user_file is None:
-        return default_formulas
-
-    default_formula_names = [f.name for f in default_formulas]
-    user_formulas = list(load_user_formulas(user_file))
-
-    formulas: list[TraitFormula] = []
-    formulas.extend(default_formulas)
-    for f in user_formulas:
-        if f.name in default_formula_names:
-            continue
-        formulas.append(f)
-    return formulas
-
-
-def save_trait_formula_template(dirpath: str) -> None:
-    """Copy the template of trait formula file to the given path.
-
-    Args:
-        dirpath (str): The path to save the template.
-    """
-    dirpath = Path(dirpath)
-    dirpath.mkdir(parents=True, exist_ok=True)
-    file = dirpath / "trait_formula.txt"
-    content = formula_template_file.open("r").read()
-    with open(file, "w") as f:
-        f.write(content)
 
 
 def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
@@ -417,6 +565,20 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
     return name, num_prop, den_prop, coef
 
 
+def save_trait_formula_template(dirpath: str) -> None:
+    """Copy the template of trait formula file to the given path.
+
+    Args:
+        dirpath (str): The path to save the template.
+    """
+    dirpath = Path(dirpath)
+    dirpath.mkdir(parents=True, exist_ok=True)
+    file = dirpath / "trait_formula.txt"
+    content = formula_template_file.open("r").read()
+    with open(file, "w") as f:
+        f.write(content)
+
+
 def calcu_derived_trait(
     abund_df: pd.DataFrame,
     meta_prop_df: pd.DataFrame,
@@ -449,16 +611,6 @@ def calcu_derived_trait(
     return derived_trait_df
 
 
-def _filter_all_same(trait_df: pd.DataFrame) -> pd.DataFrame:
-    """Rule out the traits that have the same value for all samples."""
-    return trait_df.loc[:, trait_df.nunique() != 1]
-
-
-def _filter_all_nan(trait_df: pd.DataFrame) -> pd.DataFrame:
-    """Rule out the traits that are NaN for all samples."""
-    return trait_df.loc[:, trait_df.notna().any()]
-
-
 def filter_derived_trait(trait_df: pd.DataFrame) -> pd.DataFrame:
     """Rule out the invalid traits.
 
@@ -476,3 +628,13 @@ def filter_derived_trait(trait_df: pd.DataFrame) -> pd.DataFrame:
     trait_df = _filter_all_same(trait_df)
     trait_df = _filter_all_nan(trait_df)
     return trait_df
+
+
+def _filter_all_same(trait_df: pd.DataFrame) -> pd.DataFrame:
+    """Rule out the traits that have the same value for all samples."""
+    return trait_df.loc[:, trait_df.nunique() != 1]
+
+
+def _filter_all_nan(trait_df: pd.DataFrame) -> pd.DataFrame:
+    """Rule out the traits that are NaN for all samples."""
+    return trait_df.loc[:, trait_df.notna().any()]

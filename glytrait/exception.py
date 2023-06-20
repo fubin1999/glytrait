@@ -6,6 +6,10 @@ class StructureParseError(GlyTraitError):
     """Raised when a structure cannot be parsed."""
 
 
+class CompositionParseError(GlyTraitError):
+    """Raised when a composition cannot be parsed."""
+
+
 class InputError(GlyTraitError):
     """The input file format error."""
 

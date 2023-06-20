@@ -37,6 +37,7 @@ def default_config(input_file, output_file) -> dict:
     cfg.update(
         input_file=str(input_file),
         output_file=str(output_file),
+        mode="structure",
     )
     return cfg
 
@@ -214,5 +215,24 @@ def test_cli_databaes(mocker, input_file, default_config):
     result = runner.invoke(cli.cli, [str(input_file), "-d", "serum"])
     assert result.exit_code == 0
     config = default_config | dict(database="serum")
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config
+
+
+@pytest.mark.parametrize(
+    "mode_command, mode",
+    [
+        ("structure", "structure"),
+        ("S", "structure"),
+        ("composition", "composition"),
+        ("C", "composition"),
+    ]
+)
+def test_cli_mode_structure(mocker, input_file, default_config, mode_command, mode):
+    runner = CliRunner()
+    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
+    result = runner.invoke(cli.cli, [str(input_file), "-m", mode_command])
+    assert result.exit_code == 0
+    config = default_config | dict(mode=mode)
     run_workflow_mock.assert_called_once()
     assert run_workflow_mock.call_args[0][0].asdict() == config

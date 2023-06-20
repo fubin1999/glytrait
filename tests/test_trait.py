@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from glytrait import glycan as glyc
 from glytrait import trait
 from glytrait.exception import *
 from . import glycoct
@@ -13,6 +14,7 @@ class TestTraitFormula:
         return trait.TraitFormula(
             description="The ratio of high-mannose to hybrid glycans",
             name="MHy",
+            type="structure",
             numerator_properties=["isHighMannose"],
             denominator_properties=["isHybrid"],
         )
@@ -22,6 +24,7 @@ class TestTraitFormula:
         return trait.TraitFormula(
             description="Relative abundance of high mannose type glycans within total spectrum",
             name="TM",
+            type="structure",
             numerator_properties=["isHighMannose"],
             denominator_properties=["."],
         )
@@ -50,6 +53,7 @@ class TestTraitFormula:
             trait.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
+                type="structure",
                 numerator_properties=["invalid", "isComplex"],
                 denominator_properties=["isComplex"],
             )
@@ -61,6 +65,7 @@ class TestTraitFormula:
             trait.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
+                type="structure",
                 numerator_properties=[],
                 denominator_properties=["isHybrid"],
             )
@@ -71,6 +76,7 @@ class TestTraitFormula:
             trait.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
+                type="structure",
                 numerator_properties=["."],
                 denominator_properties=["isHybrid"],
             )
@@ -81,6 +87,7 @@ class TestTraitFormula:
             trait.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
+                type="structure",
                 numerator_properties=["isHighMannose"],
                 denominator_properties=["isHybrid", "."],
             )
@@ -95,10 +102,52 @@ class TestTraitFormula:
             trait.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
+                type="structure",
                 numerator_properties=["isHighMannose"],
                 denominator_properties=["isHybrid"],
                 coefficient=coef,
             )
+
+    def test_init_invalid_type(self):
+        with pytest.raises(ValueError):
+            trait.TraitFormula(
+                description="The ratio of high-mannose to hybrid glycans",
+                name="MHy",
+                type="invalid",
+                numerator_properties=["isHighMannose"],
+                denominator_properties=["isHybrid"],
+            )
+
+    def test_init_wrong_type(self):
+        with pytest.raises(FormulaError) as excinfo:
+            trait.TraitFormula(
+                description="Should be a composition trait",
+                name="SomeTrait",
+                type="composition",
+                numerator_properties=["isHighMannose"],
+                denominator_properties=["."],
+            )
+        msg = "`numerator_properties` contains invalid meta properties: isHighMannose."
+        assert msg in str(excinfo.value)
+
+    @pytest.mark.parametrize(
+        "type, numerator, denominator, expected",
+        [
+            ("structure", ["isHighMannose"], ["isHybrid"], False),
+            ("structure", ["hasa23Sia"], ["."], True),
+            ("composition", ["isHighBranching"], ["."], False),
+            ("composition", ["hasa23Sia"], ["."], True),
+        ],
+    )
+    def test_sia_linkage(self, type, numerator, denominator, expected):
+        formula = trait.TraitFormula(
+            description="Should be a composition trait",
+            name="SomeTrait",
+            type=type,
+            numerator_properties=numerator,
+            denominator_properties=denominator,
+        )
+        assert formula.sia_linkage == expected
 
     def test_calcu_trait_without_initialization(self, formula1):
         with pytest.raises(RuntimeError):
@@ -208,9 +257,16 @@ def test_parse_expression_invalid(expression):
     assert f"Invalid expression: '{expression}'" in str(excinfo.value)
 
 
-def test_load_default_formulas():
-    result = list(trait.load_default_formulas())
-    assert len(result) == 164
+@pytest.mark.parametrize(
+    "type, expected",
+    [
+        ("structure", 164),
+        ("composition", 75),
+    ],
+)
+def test_load_default_formulas(type, expected):
+    result = list(trait._load_default_formulas(type=type))
+    assert len(result) == expected
 
 
 def test_load_user_formulas(clean_dir):
@@ -221,7 +277,7 @@ $ TC = (isComplex) / (.)
 $ TC = (isComplex) / (isHybrid)"""
     file = clean_dir / "formulas.txt"
     file.write_text(content)
-    result = list(trait.load_user_formulas(file))
+    result = list(trait._load_user_formulas(file, type="structure"))
     assert len(result) == 1
     assert result[0].name == "TC"
     assert (
@@ -238,7 +294,7 @@ $ TC = (isComplex) / (.)
 $ TM = (isHighMannose) / (.)"""
     user_file = clean_dir / "formulas.txt"
     user_file.write_text(content)
-    result = list(trait.load_formulas(user_file))
+    result = list(trait.load_formulas("structure", user_file))
 
     TM = [f for f in result if f.name == "TM"]
     assert len(TM) == 1
@@ -251,7 +307,7 @@ $ TM = (isHighMannose) / (.)"""
 
 
 def test_load_formulas_without_user_file():
-    result = list(trait.load_formulas(None))
+    result = list(trait.load_formulas(type="structure"))
     assert len(result) == 164
 
 
@@ -262,7 +318,7 @@ $ TC = (isComplex) / (. * isComplex)
     user_file = clean_dir / "formulas.txt"
     user_file.write_text(content)
     with pytest.raises(FormulaError) as excinfo:
-        list(trait.load_formulas(user_file))
+        list(trait.load_formulas("structure", user_file))
     assert "Invalid line: '$ TC = (isComplex) / (. * isComplex)'" in str(excinfo.value)
     assert "Error in formula 'TC = (isComplex) / (. * isComplex)'" in str(excinfo.value)
 
@@ -276,7 +332,7 @@ $ TC = (isComplex) / (.)
     user_file = clean_dir / "formulas.txt"
     user_file.write_text(content)
     with pytest.raises(FormulaError) as excinfo:
-        list(trait.load_formulas(user_file))
+        list(trait.load_formulas("structure", user_file))
     assert "Invalid line: '@ A duplicate of TM'" in str(excinfo.value)
     assert "One description line must follow a formula line." in str(excinfo.value)
 
@@ -293,12 +349,14 @@ def test_calcu_trait():
         trait.TraitFormula(
             description="Relative abundance of high mannose type glycans within total spectrum",
             name="TM",
+            type="structure",
             numerator_properties=["isHighMannose"],
             denominator_properties=["."],
         ),
         trait.TraitFormula(
             description="The ratio of high-mannose to hybrid glycans",
             name="MHy",
+            type="structure",
             numerator_properties=["isHighMannose"],
             denominator_properties=["isHybrid"],
         ),
@@ -333,7 +391,7 @@ def test_calcu_trait():
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_build_meta_property_table_no_sia_linkage(make_glycan):
+def test_build_meta_property_table_struc_no_sia_linkage(make_glycan):
     glycoct_strings = {
         k: v for k, v in glycoct.__dict__.items() if k.startswith("test_glycoct")
     }
@@ -342,7 +400,9 @@ def test_build_meta_property_table_no_sia_linkage(make_glycan):
     glycan_ids = list(glycoct_strings.keys())
     glycans = [make_glycan(s) for s in glycoct_strings.values()]
 
-    result = trait.build_meta_property_table(glycan_ids, glycans, sia_linkage=False)
+    result = trait.build_meta_property_table(
+        glycan_ids, glycans, sia_linkage=False, mode="structure"
+    )
     expected = pd.DataFrame(
         {
             "isComplex": [1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1],
@@ -371,7 +431,7 @@ def test_build_meta_property_table_no_sia_linkage(make_glycan):
     pd.testing.assert_frame_equal(result, expected, check_dtype=False)
 
 
-def test_build_meta_property_table_sia_linkage(make_glycan):
+def test_build_meta_property_table_struc_sia_linkage(make_glycan):
     glycoct_strings = {
         k: v
         for k, v in glycoct.__dict__.items()
@@ -381,7 +441,9 @@ def test_build_meta_property_table_sia_linkage(make_glycan):
     glycan_ids = list(glycoct_strings.keys())
     glycans = [make_glycan(s) for s in glycoct_strings.values()]
 
-    result = trait.build_meta_property_table(glycan_ids, glycans, sia_linkage=True)
+    result = trait.build_meta_property_table(
+        glycan_ids, glycans, sia_linkage=True, mode="structure"
+    )
     partial_expected = pd.DataFrame(
         {
             "a23Sia": [0, 2, 1],
@@ -394,6 +456,56 @@ def test_build_meta_property_table_sia_linkage(make_glycan):
         index=glycan_ids,
     )
     assert len(result.columns) == 26
+    partial_result = result[partial_expected.columns]
+    pd.testing.assert_frame_equal(partial_result, partial_expected, check_dtype=False)
+
+
+def test_build_meta_property_table_comp_no_sia_linkage():
+    comps = ["H5N4", "H7N2", "H5N4F1S1", "H5N5F1S2", "H5N4S1", "H5N4F2"]
+    glycans = [glyc.Composition.from_string(s, sia_linkage=False) for s in comps]
+    result = trait.build_meta_property_table(
+        comps, glycans, mode="composition", sia_linkage=False
+    )
+    expected = pd.DataFrame(
+        {
+            "isHighBranching": [0, 0, 0, 1, 0, 0],
+            "isLowBranching": [1, 1, 1, 0, 1, 1],
+            "totalSia": [0, 0, 1, 2, 1, 0],
+            "totalFuc": [0, 0, 1, 1, 0, 2],
+            "totalGal": [2, 0, 2, 2, 2, 2],
+            "hasSia": [0, 0, 1, 1, 1, 0],
+            "hasFuc": [0, 0, 1, 1, 0, 1],
+            "hasGal": [1, 0, 1, 1, 1, 1],
+            "noSia": [1, 1, 0, 0, 0, 1],
+            "noFuc": [1, 1, 0, 0, 1, 0],
+            "noGal": [0, 1, 0, 0, 0, 0],
+        },
+        index=comps,
+    )
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_build_meta_property_table_comp_sia_linkage():
+    comps = ["H5N4", "H5N4E1", "H5N4L1", "H5N4E1L1", "H5N4E1L2"]
+    glycans = [glyc.Composition.from_string(s, sia_linkage=True) for s in comps]
+    result = trait.build_meta_property_table(
+        comps, glycans, mode="composition", sia_linkage=True
+    )
+    partial_expected = pd.DataFrame(
+        {
+            "totalSia": [0, 1, 1, 2, 3],
+            "hasSia": [0, 1, 1, 1, 1],
+            "noSia": [1, 0, 0, 0, 0],
+            "a23Sia": [0, 0, 1, 1, 2],
+            "a26Sia": [0, 1, 0, 1, 1],
+            "hasa23Sia": [0, 0, 1, 1, 1],
+            "hasa26Sia": [0, 1, 0, 1, 1],
+            "noa23Sia": [1, 1, 0, 0, 0],
+            "noa26Sia": [1, 0, 1, 0, 0],
+        },
+        index=comps,
+    )
+    assert len(result.columns) == 17
     partial_result = result[partial_expected.columns]
     pd.testing.assert_frame_equal(partial_result, partial_expected, check_dtype=False)
 

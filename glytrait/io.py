@@ -10,12 +10,12 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 import glytrait
 from glytrait.config import Config
-from glytrait.exception import InputError, StructureParseError
-from glytrait.glycan import NGlycan
+from glytrait.exception import *
+from glytrait.glycan import NGlycan, load_glycans
 from glytrait.trait import TraitFormula
 
 
-def read_input(file: str) -> tuple[list[NGlycan] | None, pd.DataFrame]:
+def read_input(file: str) -> tuple[list, list | None, pd.DataFrame]:
     """Read the input file.
 
     The first column should be "Composition", with condensed glycan composition notations.
@@ -24,37 +24,46 @@ def read_input(file: str) -> tuple[list[NGlycan] | None, pd.DataFrame]:
     The "Structure" column is optional.
 
     Args:
-        file (str): The input csv or xlsx file.
+        file (str): The input csv file.
 
     Returns:
-        tuple[list[NGlycan], pd.DataFrame]: The glycans and the abundance table. The glycans are
-            represented by NGlycan objects. The abundance table has the glycans as columns and
-            samples as rows. If "Structure" column is not provided, the glycans will be None.
-
-    Raises:
-        InputError: If the input file format is wrong.
+        tuple[list, list | None, pd.DataFrame]: The composition Series, the structure
+            Series and the abundance DataFrame. The abundance DataFrame has glycans as columns,
+            and samples as rows. If the "Structure" column is not provided, the structure
+            Series will be None.
     """
     df = pd.read_csv(file)
     df = df.dropna(how="all")
     has_structure = "Structure" in df.columns
     _check_input(df, has_structure)
     df = df.set_index("Composition")
+    comp_s = list(df.index)
+    struc_s = list(df["Structure"]) if has_structure else None
+    if has_structure:
+        abundance_df = df.drop(columns=["Structure"]).T
+    else:
+        abundance_df = df.T
+    return comp_s, struc_s, abundance_df
+
+
+def _check_input(df: pd.DataFrame, has_structure: bool) -> NoReturn:
+    """Check the input dataframe."""
+    if df.columns[0] != "Composition":
+        raise InputError("The first column of the input file should be Composition.")
+    if df["Composition"].duplicated().sum() > 0:
+        raise InputError("There are duplicated Compositions in the input file.")
 
     if has_structure:
-        glycans = []
-        for glycan_id, structure in zip(df.index, df["Structure"]):
-            try:
-                glycan = NGlycan.from_glycoct(structure)
-            except StructureParseError as e:
-                raise StructureParseError(glycan_id + ": " + str(e))
-            else:
-                glycans.append(glycan)
-        abundance_table = df.drop(columns=["Structure"]).T
-    else:
-        glycans = None
-        abundance_table = df.T
+        if df.columns[1] != "Structure":
+            raise InputError("The second column of the input file should be Structure.")
+        if df["Structure"].duplicated().sum() > 0:
+            raise InputError("There are duplicated Structures in the input file.")
 
-    return glycans, abundance_table
+    if np.any(df.iloc[:, 2 if has_structure else 1 :].dtypes != "float64"):
+        raise InputError("The abundance columns in the input file should be numeric.")
+
+    if df.isna().sum().sum() > 0:
+        raise InputError("There are missing values in the input file.")
 
 
 def read_group(file: str) -> pd.Series:
@@ -98,37 +107,13 @@ def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
     if df.shape[1] != 1:
         raise InputError("The structure file should only have two columns.")
     structures = df.squeeze()
-    glycans = []
-    for composition in compositions:
+    struc_strings = []
+    for comp in compositions:
         try:
-            glycan = NGlycan.from_glycoct(structures[composition])
-        except StructureParseError as e:
-            raise StructureParseError(composition + ": " + str(e))
+            struc_strings.append(structures[comp])
         except KeyError:
-            raise InputError(composition + " is not found in the structure file.")
-        else:
-            glycans.append(glycan)
-    return glycans
-
-
-def _check_input(df: pd.DataFrame, has_structure: bool) -> NoReturn:
-    """Check the input dataframe."""
-    if df.columns[0] != "Composition":
-        raise InputError("The first column of the input file should be Composition.")
-    if df["Composition"].duplicated().sum() > 0:
-        raise InputError("There are duplicated Compositions in the input file.")
-
-    if has_structure:
-        if df.columns[1] != "Structure":
-            raise InputError("The second column of the input file should be Structure.")
-        if df["Structure"].duplicated().sum() > 0:
-            raise InputError("There are duplicated Structures in the input file.")
-
-    if np.any(df.iloc[:, 2 if has_structure else 1:].dtypes != "float64"):
-        raise InputError("The abundance columns in the input file should be numeric.")
-
-    if df.isna().sum().sum() > 0:
-        raise InputError("There are missing values in the input file.")
+            raise InputError(f"{comp} is not found in the structure file.")
+    return load_glycans(struc_strings)
 
 
 def write_output(

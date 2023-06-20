@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import re
 from collections.abc import Generator, Iterable
 from enum import Enum, auto
-from typing import Literal
+from typing import Literal, NoReturn
 
 from attrs import frozen, field
 from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError
@@ -14,7 +15,7 @@ from glypy.structure.glycan_composition import (
 )
 from glypy.structure.monosaccharide import Monosaccharide
 
-from glytrait.exception import StructureParseError, SiaLinkageError
+from glytrait.exception import *
 
 N_glycan_core = GlycanComposition.parse("{Man:3; Glc2NAc:2}")
 Glc2NAc = MonosaccharideResidue.from_iupac_lite("Glc2NAc")
@@ -255,3 +256,130 @@ def get_mono_comp(mono: MonosaccharideResidue) -> str:
         GlycanComposition: The composition.
     """
     return MonosaccharideResidue.from_monosaccharide(mono).name()
+
+
+@frozen
+class Composition:
+    """A glycan composition."""
+
+    _comp: dict[str, int] = field(converter=dict)
+    sia_linkage: bool = field(kw_only=True)
+
+    @staticmethod
+    def _valid_monos(sia_linkage: bool):
+        if sia_linkage:
+            return {"H", "N", "F", "L", "E"}
+        else:
+            return {"H", "N", "F", "S"}
+
+    @_comp.validator
+    def _check_comp(self, attribute, value):
+        """Check the composition."""
+        valid_monos = self._valid_monos(self.sia_linkage)
+        if self.sia_linkage and "S" in value:
+            msg = "'S' is not allow for sialic-acid-linkage-specified composition."
+            raise CompositionParseError(msg)
+        if not self.sia_linkage and ("L" in value or "E" in value):
+            msg = "'E' and 'L' is not allow for sialic-acid-linkage-unspecified composition."
+            raise CompositionParseError(msg)
+        for k, v in value.items():
+            if k not in valid_monos:
+                raise CompositionParseError(f"Unknown monosaccharide: {k}.")
+            if v < 0:
+                raise CompositionParseError(f"Monosacharride must be above 0: {k}={v}.")
+
+    @classmethod
+    def from_string(cls, s: str, *, sia_linkage: bool = False) -> Composition:
+        """Create a composition from a string.
+
+        Args:
+            s (str): The string, e.g. H5N4F1S1.
+            sia_linkage (bool): Whether the composition contains sialic acid linkages.
+                Defaults to False.
+
+        Returns:
+            Composition: The composition.
+        """
+        cls._validate_string(s)
+        mono_comp: dict[str, int] = {}
+        pattern = r"([A-Z])(\d+)"
+        for m in re.finditer(pattern, s):
+            mono_comp[m.group(1)] = int(m.group(2))
+        for mono in cls._valid_monos(sia_linkage):
+            mono_comp.setdefault(mono, 0)
+        return cls(mono_comp, sia_linkage=sia_linkage)
+
+    @staticmethod
+    def _validate_string(s: str) -> NoReturn:
+        if s == "":
+            raise CompositionParseError("Empty string.")
+        pattern = r"^([A-Z]\d+)*$"
+        if not re.fullmatch(pattern, s):
+            raise CompositionParseError(f"Invalid composition: {s}.")
+
+    def asdict(self) -> dict[str, int]:
+        """Return the composition as a dict."""
+        return self._comp.copy()
+
+    def is_high_branching(self) -> bool:
+        """Whether the composition is high branching."""
+        return self._comp["N"] > 4
+
+    def is_low_branching(self) -> bool:
+        """Whether the composition is low branching."""
+        return self._comp["N"] <= 4
+
+    def count_sia(self) -> int:
+        """The number of sialic acids."""
+        if self.sia_linkage:
+            return self._comp["E"] + self._comp["L"]
+        else:
+            return self._comp["S"]
+
+    def count_fuc(self) -> int:
+        """The number of fucoses."""
+        return self._comp["F"]
+
+    def count_gal(self) -> int:
+        """The number of galactoses.
+
+        Note that this algorithm doesn't consider hybrid type N-glycans.
+        """
+        if self._comp["H"] >= 4 and self._comp["N"] >= self._comp["H"] - 1:
+            return self._comp["H"] - 3
+        return 0
+
+    def count_a23_sia(self) -> int:
+        """The number of a2,3-linked sialic acids."""
+        return self._comp["L"]
+
+    def count_a26_sia(self) -> int:
+        """The number of a2,6-linked sialic acids."""
+        return self._comp["E"]
+
+
+def load_glycans(structures: Iterable[str]) -> list[NGlycan]:
+    """Load glycans from a list of structures.
+
+    Args:
+        structures (Iterable[str]): The structures.
+
+    Returns:
+        list[NGlycan]: The glycans.
+    """
+    return [NGlycan.from_string(s) for s in structures]
+
+
+def load_compositions(
+    compositions: Iterable[str], *, sia_linkage: bool
+) -> list[Composition]:
+    """Load compositions from a list of strings.
+
+    Args:
+        compositions (Iterable[str]): The compositions.
+        sia_linkage (bool): Whether the compositions contain sialic acid linkages.
+
+    Returns:
+        list[Composition]: The compositions.
+    """
+    return [Composition.from_string(s, sia_linkage=sia_linkage) for s in compositions]

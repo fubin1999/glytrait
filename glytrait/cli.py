@@ -112,6 +112,15 @@ def file_validator(suffix: str, file_name: str):
     type=click.STRING,
     help="Built-in database to use, either 'serum' or 'IgG'."
 )
+@click.option(
+    "-m",
+    "--mode",
+    type=click.Choice(["structure", "composition", "S", "C"]),
+    default="structure",
+    help="Mode to run glyTrait, either 'structure' or 'composition'. "
+         "You can also use 'S' or 'C' for short. "
+         "Default is 'structure'.",
+)
 def cli(
     input_file,
     output_file,
@@ -123,6 +132,7 @@ def cli(
     group_file,
     structure_file,
     database,
+    mode
 ):
     """Run the glytrait workflow."""
     if output_file is None:
@@ -131,10 +141,12 @@ def cli(
         )
     else:
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+    mode = "composition" if mode.lower() in ["c", "composition"] else "structure"
     try:
         config = Config(dict(
             input_file=input_file,
             output_file=output_file,
+            mode=mode,
             filter_glycan_max_na=filter_glycan_ratio,
             impute_method=impute_method,
             sia_linkage=sia_linkage,
