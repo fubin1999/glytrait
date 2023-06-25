@@ -9,6 +9,25 @@ lacks a tool for automatically calculating derived traits, while mannual calcula
 cumbersome, time-consuming and error-prone. GlyTrait is a tool designed for calculation N-glycan
 traits merely from abundance information and glycan structures.
 
+## Contents
+
+- [Installation](#installation)
+    - [Requirement](#requirement)
+    - [Using pipx (recommended)](#using-pipx-recommended)
+- [Usage](#usage)
+    - [Quick start](#quick-start)
+    - [Mode](#mode)
+    - [Input file format](#input-file-format)
+    - [Specify output path](#specify-output-path)
+    - [Structure file](#structure-file)
+    - [Built-in database](#built-in-database)
+    - [Preprocessing](#preprocessing)
+    - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
+    - [Filtering](#filtering)
+    - [Hypothesis testing](#hypothesis-testing)
+    - [The GlyTrait Formula](#the-glytrait-formula-advanced)
+- [License](#license)
+
 ## Installation
 
 ### Requirement
@@ -76,34 +95,142 @@ same directory with data.csv. Inside the xlsx file are four (five) sheets:
 You don't need the forth one for common situations, but a peek of it might help you better
 understand how GlyTrait works.
 
+The detailed format of the input file will be introduced in the **Input file format** section.
+
+### Mode
+
+GlyTrait has two modes: the **structure** mode and the **composition** mode. In the structure
+mode, GlyTrait will calculate derived traits based on the topology properties of glycan
+structures. In the composition mode, GlyTrait will calculate derived traits based on the
+compositions.
+
+Note that the composition mode has uncertainties to some extent. Specifically:
+
+1. Estimating the number of Gal based on composition is not possible for hybrid glycans, so
+   GlyTrait will calculate the number of Gal assuming there are no hybrid glycans. Luckily, hybrid
+   glycans are usually in low abundance, so the algorithm is a good approximation for most cases.
+2. Estimating the number of branches is not possible based on composition, so GlyTrait will
+   roughly classify glycans into 2 categories: low-branching and high-branching. Glycans with
+   N > 4 (including bisecting diantenary glycans) are considered as high-branching, while others
+   as low-branching.
+3. Telling hybrid glycans from mono-antenary complex glycans is not possible based on composition,
+   so GlyTrait will not classify glycans into complex, hybrid and high-mannose.
+
+Due to the ambiguities above, we recommend using the structure mode if possible. If structure
+information is not available but your samples are serum or plasma, you can use the built-in
+structure database. (See the [Built-in database](#built-in-database) section for more
+information.)
+
+The default mode is the structure mode, as in the quick start example. You can specify the mode
+by the "-m" or the "--mode" option:
+
+```shell
+glytrait data.csv -m composition
+```
+
+Or in short:
+
+```shell
+glytrait data.csv -m C
+```
+
+Using `glytrait -m structure` or `glytrait -m S` is equivalent to `glytrait` alone.
+
 ### Input file format
 
 The input csv file should have at least 3 columns:
 
-1. The **first** column with header "Glycan ID" is the identifier of the glycans. Glycan ID could
-   theoretically be any string, but we recommend using condense compostion for clarity, e.g. "
-   H5N2", "H5N4F1S2".
+1. The **first** column with header "Composition" is the condensed composition representation of
+   the glycans, e.g. "H5N4F1S2".
 2. The **second** column with header "Structure" is the structure string of the glycans. We only
    support condensed GlycoCT now as it can be exported from GlycoWorkbench. A complete structure
    with all linkage specified is not necessary, because GlyTrait actually use the topology
    properties of glycan structures regardless of the linkage information. However, sialic acid
-   linkage is needed if you want to calculate the sialic-acid-linkage traits. See below for more
-   information.
+   linkage is needed if you want to calculate the sialic-acid-linkage traits. (See the
+   [Sialic-acid-linkage traits](#sialic-acid-linkage-traits) section for more information.)
 3. **From the third column on** is the glycan abundance for different samples, with sample names
    as the headers. Normalization is not necessary because GllyTrait will carry out a Total
    Abundance Normalization for all samples before calculating derived traits.
 
-**Note that Glycan ID and Structures should all be unique!**
+**Note that Compositions and Structures should all be unique!** If glycans with the same
+composition but different structures are present, please modify the "Composition" to make them
+unique, e.g. "H5N4F1S2_1" and "H5N4F1S2_2", as in the structure mode GlyTrait will use the
+"Composition" column perely as glycan identifiers.
 
 An example input file would be like:
 
-| Glycan ID | Structrue | Sample1 | Sample2 | Sample3 |
-|-----------|-----------|---------|---------|---------|
-| H3N3F1    | RES...    | 0.0417  | 0.0503  | 0.0354  |
-| H3N4      | RES...    | 0.0233  | 0.0533  | 0.0593  |
-| H3N4F1    | RES...    | 0.0123  | 0.0133  | 0.0194  |
+| Composition | Structrue | Sample1 | Sample2 | Sample3 |
+|-------------|-----------|---------|---------|---------|
+| H3N3F1      | RES...    | 0.0417  | 0.0503  | 0.0354  |
+| H3N4        | RES...    | 0.0233  | 0.0533  | 0.0593  |
+| H3N4F1      | RES...    | 0.0123  | 0.0133  | 0.0194  |
 
 This file contains 3 glycans (H3N3F1, N3N4 and N3N4F1) and three samples (Sample 1, 2, and 3).
+
+The "Structure" column is not necessary in the composition mode, and also not necessary if you
+use the built-in structure database (see [Built-in database](#built-in-database) section) or
+provide a structure file (see [Structure file](#structure-file) section) in the structure mode. In
+these cases, the input file would be like:
+
+| Composition | Sample1 | Sample2 | Sample3 |
+|-------------|---------|---------|---------|
+| H3N3F1      | 0.0417  | 0.0503  | 0.0354  |
+| H3N4        | 0.0233  | 0.0533  | 0.0593  |
+| H3N4F1      | 0.0123  | 0.0133  | 0.0194  |
+
+### Specify output path
+
+You might noticed before that GlyTrait save the output file to the same directory as the input
+file with a "_glytrait" suffix. You can specify the output file path by using the "-o" or "
+--output_file" option:
+
+```shell
+glytrait data.csv -o output.xlsx
+```
+
+Note that a ".xlsx" suffix is needed.
+
+### Structure file
+
+You could provide glycan structures in a separate "structure file" using the "-s" or the
+"--structure_file" option:
+
+```shell
+glytrait data.csv -s structure.csv
+```
+
+The format of structure.csv is:
+
+| Composition | Structure |
+|-------------|-----------|
+| H3N3F1      | RES...    |
+| ...         | ...       |
+
+If a structure file is provided, the "Structure" column in the input file is not necessary.
+
+If the abundance file has compositions without corresponding structure in the structure
+file, an error will be raised. However, the structure file could contain glycans not in the
+abundance file, and GlyTrait will just ignore these glycans. This feature is useful if you have
+a pre-defined structure database and want to calculate derived traits for many sets of samples.
+
+### Built-in database
+
+N-glycans of some common sample types are well-studied, e.g. serum and plasma. If your samples
+are serum or plasma, you can use the built-in structure database by the "-d" or the "--database"
+option:
+
+```shell
+glytrait data.csv -d serum
+```
+
+If a built-in database is used, the "Structure" column in the input file is not necessary.
+
+The supported database
+names are:
+
+- serum: for serum or plasma N-glycans.
+  ([Song, T. Anal. Chem. 2015](https://pubs.acs.org/doi/10.1021/acs.analchem.5b01340))
+- IgG: for N-glycans on serum or plasma IgG.
 
 ### Preprocessing
 
@@ -143,28 +270,29 @@ A full list of supported imputation methods are:
 ### Sialic-acid-linkage traits
 
 Sialic acids can have different linkages for N-glycans (e.g. α2,3 and α2,6). Different sialic acid
-linkage might have different biological functions. GlyTrait supports calculating derived traits
-regarding to these linkages. To get these traits, you have to provide sialic acid linkage
-information in the Structures for **all** glycans in the input file, and use the `-s`
-or `--sia_linkage` flag:
+linkage has different biological functions. GlyTrait supports calculating derived traits
+regarding these linkages. To use this feature, you need to have siaic acid linkage information.
+
+In the structure mode, the "Structure" column or the structure file should contain the linkage
+information. Only linkage information about sialic acids is needed. This can be easily done using
+GlycoWorkbench.
+
+In the composition mode, the "Composition" column must contain the linkage information. GlyTrait
+uses a common notation for sialic acid with different linkages: "E" for a2,6-linked sialic acids,
+and "L" a2,3-linked sialic acids. For example, "H5N4F1E1L1" contains 2 sialic acids, one is
+a2,6-linked and the other is a2,3-linked.
+
+You can use the "--sia_linkage" option to include sialic-acid-linkage traits:
 
 ```shell
-glytrait data.csv -s
+glytrait data.csv --sia_linkage
 ```
 
-### Specified output path
+Note that if you use this option, all glycans with sialic acids should have linkage information.
+That is to say all structure strings should have structure information in the structure mode and
+no "S" in composition strings in the composition mode.
 
-You might noticed before that GlyTrait save the output file to the same directory as the input
-file with a "_glytrait" suffix. You can specify the output file path by using the "-o" or "
---output_file" option:
-
-```shell
-glytrait data.csv -o output.xlsx
-```
-
-Note that a ".xlsx" suffix is needed.
-
-### Filtering
+### Post-Filtering
 
 Some derived traits might not be useful for your analysis. For example, some traits might all have
 the same value for all samples, or be NaN due to zero being in the denominator. GlyTrait rules out
@@ -198,6 +326,9 @@ GlyTrait will carry out Mann-Whitney U Test for two groups, and Kruskal-Wallis H
 than two groups. The Benjamini-Hochberg procedure is used to correct the p-values. For
 more-than-two-groups situations, the Mann-Whitney U Test will be used for post-hoc test. GlyTraits
 uses non-parametric tests for the sake of robustness.
+
+A post-filtering step will be carried out before hypothesis testing, even if the "--no-filter"
+option is used. (See [Post-Filtering](#post-filtering) for details.)
 
 ### The GlyTrait Formula (Advanced)
 
@@ -250,7 +381,7 @@ Once you have editing the template file with new formulas in, you can try them o
 incoperating the custom formulas, use the "-f" or "--formula_file" option:
 
 ```shell
-glytrait -f custom_formulas.txt
+glytrait data.csv -f custom_formulas.txt
 ```
 
 That will do, GlyTrait will calculate the default traits, plus your cumtom traits.
