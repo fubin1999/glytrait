@@ -28,31 +28,16 @@ def save_template_callback(ctx, param, value):
         ctx.exit()
 
 
-def file_validator(suffix: str, file_name: str):
-    """Validate file suffix."""
-
-    def validator(ctx, param, value):
-        if value is not None and Path(value).suffix != suffix:
-            raise click.BadParameter(
-                f"{file_name.capitalize()} must be a {suffix} file."
-            )
-        return value
-
-    return validator
-
-
 @click.command()
 @click.argument(
     "input_file",
     type=click.Path(exists=True),
     required=False,
-    callback=file_validator(".csv", "input file"),
 )
 @click.option(
     "-o",
     "--output_file",
     type=click.Path(),
-    callback=file_validator(".xlsx", "output file"),
 )
 @click.option(
     "-r",
@@ -76,7 +61,6 @@ def file_validator(suffix: str, file_name: str):
     "--formula_file",
     type=click.Path(exists=True),
     help="User formula file.",
-    callback=file_validator(".txt", "formula file"),
 )
 @click.option(
     "-t",
@@ -98,7 +82,6 @@ def file_validator(suffix: str, file_name: str):
     "--group_file",
     type=click.Path(exists=True),
     help="Group file for hypothesis test.",
-    callback=file_validator(".csv", "group file"),
 )
 @click.option(
     "-s",

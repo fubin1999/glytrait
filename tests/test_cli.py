@@ -94,37 +94,6 @@ def test_cli_glytrait_error(mocker, input_file):
     assert "👎" in result.output
 
 
-def test_cli_input_not_csv(mocker, clean_dir):
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
-    runner = CliRunner()
-    input_file = clean_dir / "file.not_csv"
-    input_file.write_text("")
-    result = runner.invoke(cli.cli, [str(input_file)])
-    run_workflow_mock.assert_not_called()
-    assert result.exit_code != 0
-    assert "Input file must be a .csv file." in result.output
-
-
-def test_cli_output_not_xlsx(mocker, input_file):
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
-    runner = CliRunner()
-    result = runner.invoke(cli.cli, [str(input_file), "-o", "output_path.not_xlsx"])
-    run_workflow_mock.assert_not_called()
-    assert result.exit_code != 0
-    assert "Output file must be a .xlsx file." in result.output
-
-
-def test_cli_formula_not_txt(mocker, input_file, clean_dir):
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
-    runner = CliRunner()
-    formula_file = clean_dir / "formula.not_txt"
-    formula_file.write_text("")
-    result = runner.invoke(cli.cli, [str(input_file), "-f", str(formula_file)])
-    run_workflow_mock.assert_not_called()
-    assert result.exit_code != 0
-    assert "Formula file must be a .txt file." in result.output
-
-
 def test_cli_input_file_not_exist(mocker, clean_dir):
     run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
     runner = CliRunner()
