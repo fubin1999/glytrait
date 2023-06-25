@@ -182,7 +182,7 @@ these cases, the input file would be like:
 
 You might noticed before that GlyTrait save the output file to the same directory as the input
 file with a "_glytrait" suffix. You can specify the output file path by using the "-o" or "
---output_file" option:
+--output-file" option:
 
 ```shell
 glytrait data.csv -o output.xlsx
@@ -193,7 +193,7 @@ Note that a ".xlsx" suffix is needed.
 ### Structure file
 
 You could provide glycan structures in a separate "structure file" using the "-s" or the
-"--structure_file" option:
+"--structure-file" option:
 
 ```shell
 glytrait data.csv -s structure.csv
@@ -242,14 +242,14 @@ steps will be done:
 - Perform Total Abundance Normalization.
 
 In the glycan-filtering step, the proportion threshold could be specified by the "-r" or the
-"--filter_glycan_ratio" option. The default value is 0.5, which means if a glycan has missing
+"--filter-glycan-ratio" option. The default value is 0.5, which means if a glycan has missing
 values in more than 50% of samples, it will be removed. You can change this value to 0.3 by:
 
 ```shell
 glytrait data.csv -r 0.3
 ```
 
-The imputation method could be specified by the "-i" or the "--impute_method" option. The default
+The imputation method could be specified by the "-i" or the "--impute-method" option. The default
 method is "min", which means missing values will be imputed by the minimum value of a glycan.
 Other supported methods are "mean", "median", "zero", "lod". You can change imputation method to
 "mean" by:
@@ -282,10 +282,10 @@ uses a common notation for sialic acid with different linkages: "E" for a2,6-lin
 and "L" a2,3-linked sialic acids. For example, "H5N4F1E1L1" contains 2 sialic acids, one is
 a2,6-linked and the other is a2,3-linked.
 
-You can use the "--sia_linkage" option to include sialic-acid-linkage traits:
+You can use the "-l" or "--sia-linkage" option to include sialic-acid-linkage traits:
 
 ```shell
-glytrait data.csv --sia_linkage
+glytrait data.csv -l
 ```
 
 Note that if you use this option, all glycans with sialic acids should have linkage information.
@@ -316,7 +316,7 @@ group file would be like:
 | Sample3 | Group2 |
 | Sample4 | Group2 |
 
-Then use the "-g" or "--group_file" option to specify the group file:
+Then use the "-g" or "--group-file" option to specify the group file:
 
 ```shell
 glytrait data.csv -g group.csv
@@ -378,7 +378,7 @@ write trait formulas is in that file.
 #### Using the custom formulas
 
 Once you have editing the template file with new formulas in, you can try them out. For
-incoperating the custom formulas, use the "-f" or "--formula_file" option:
+incoperating the custom formulas, use the "-f" or "--formula-file" option:
 
 ```shell
 glytrait data.csv -f custom_formulas.txt

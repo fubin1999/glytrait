@@ -30,70 +30,16 @@ def save_template_callback(ctx, param, value):
 
 @click.command()
 @click.argument(
-    "input_file",
+    "input-file",
     type=click.Path(exists=True),
     required=False,
 )
 @click.option(
     "-o",
-    "--output_file",
+    "--output-file",
     type=click.Path(),
-)
-@click.option(
-    "-r",
-    "--filter_glycan_ratio",
-    type=click.FLOAT,
-    default=0.5,
-    help="Glycans with missing value ratio greater than this value will be filtered out.",
-)
-@click.option(
-    "-i",
-    "--impute_method",
-    type=click.Choice(["zero", "min", "lod", "mean", "median"]),
-    default="min",
-    help="Method to impute missing values.",
-)
-@click.option(
-    "--sia_linkage", is_flag=True, help="Include sialic acid linkage traits."
-)
-@click.option(
-    "-f",
-    "--formula_file",
-    type=click.Path(exists=True),
-    help="User formula file.",
-)
-@click.option(
-    "-t",
-    "--save_template",
-    type=click.Path(),
-    callback=save_template_callback,
-    is_eager=True,
-    expose_value=False,
-    default=UNDIFINED,
-    help="Save a template for the user to fill in.",
-)
-@click.option(
-    "--filter/--no-filter",
-    default=True,
-    help="Filter out invalid derived traits.",
-)
-@click.option(
-    "-g",
-    "--group_file",
-    type=click.Path(exists=True),
-    help="Group file for hypothesis test.",
-)
-@click.option(
-    "-s",
-    "--structure_file",
-    type=click.Path(exists=True),
-    help="Structure file for hypothesis test.",
-)
-@click.option(
-    "-d",
-    "--database",
-    type=click.STRING,
-    help="Built-in database to use, either 'serum' or 'IgG'."
+    help="Output file path. Default is the input file name with '_glytrait.xlsx' "
+    "suffix.",
 )
 @click.option(
     "-m",
@@ -101,12 +47,71 @@ def save_template_callback(ctx, param, value):
     type=click.Choice(["structure", "composition", "S", "C"]),
     default="structure",
     help="Mode to run glyTrait, either 'structure' or 'composition'. "
-         "You can also use 'S' or 'C' for short. "
-         "Default is 'structure'.",
+    "You can also use 'S' or 'C' for short. "
+    "Default is 'structure'.",
 )
+@click.option(
+    "-r",
+    "--filter-glycan-ratio",
+    type=click.FLOAT,
+    default=0.5,
+    help="Glycans with missing value ratio greater than this value will be filtered out.",
+)
+@click.option(
+    "-i",
+    "--impute-method",
+    type=click.Choice(["zero", "min", "lod", "mean", "median"]),
+    default="min",
+    help="Method to impute missing values.",
+)
+@click.option(
+    "-l", "--sia-linkage", is_flag=True, help="Include sialic acid linkage traits."
+)
+@click.option(
+    "-f",
+    "--formula-file",
+    type=click.Path(exists=True),
+    help="User formula file.",
+)
+@click.option(
+    "-t",
+    "--save-template",
+    type=click.Path(),
+    callback=save_template_callback,
+    is_eager=True,
+    expose_value=False,
+    default=UNDIFINED,
+    help="The directory path to save the formular template file.",
+)
+@click.option(
+    "--filter/--no-filter",
+    default=True,
+    help="Filter out invalid derived traits. Default is filtering."
+    "Use --no-filter to disable filtering.",
+)
+@click.option(
+    "-g",
+    "--group-file",
+    type=click.Path(exists=True),
+    help="Group file for hypothesis test.",
+)
+@click.option(
+    "-s",
+    "--structure-file",
+    type=click.Path(exists=True),
+    help="Structure file for hypothesis test.",
+)
+@click.option(
+    "-d",
+    "--database",
+    type=click.STRING,
+    help="Built-in database to use, either 'serum' or 'IgG'.",
+)
+@click.version_option()
 def cli(
     input_file,
     output_file,
+    mode,
     filter_glycan_ratio,
     impute_method,
     sia_linkage,
@@ -115,7 +120,6 @@ def cli(
     group_file,
     structure_file,
     database,
-    mode
 ):
     """Run the glytrait workflow."""
     if output_file is None:
@@ -126,19 +130,21 @@ def cli(
         Path(output_file).parent.mkdir(parents=True, exist_ok=True)
     mode = "composition" if mode.lower() in ["c", "composition"] else "structure"
     try:
-        config = Config(dict(
-            input_file=input_file,
-            output_file=output_file,
-            mode=mode,
-            filter_glycan_max_na=filter_glycan_ratio,
-            impute_method=impute_method,
-            sia_linkage=sia_linkage,
-            formula_file=formula_file,
-            filter_invalid_traits=filter,
-            group_file=group_file,
-            structure_file=structure_file,
-            database=database,
-        ))
+        config = Config(
+            dict(
+                input_file=input_file,
+                output_file=output_file,
+                mode=mode,
+                filter_glycan_max_na=filter_glycan_ratio,
+                impute_method=impute_method,
+                sia_linkage=sia_linkage,
+                formula_file=formula_file,
+                filter_invalid_traits=filter,
+                group_file=group_file,
+                structure_file=structure_file,
+                database=database,
+            )
+        )
         run_workflow(config)
     except GlyTraitError as e:
         raise click.UsageError(str(e) + emoji.emojize(" :thumbs_down:"))

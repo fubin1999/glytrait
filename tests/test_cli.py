@@ -9,7 +9,7 @@ from glytrait import config as gt_config
 
 def test_cli_save_template(clean_dir):
     runner = CliRunner()
-    result = runner.invoke(cli.cli, ["--save_template", str(clean_dir)])
+    result = runner.invoke(cli.cli, ["--save-template", str(clean_dir)])
     assert result.exit_code == 0
     assert "Template saved to" in result.output
     file = clean_dir / "trait_formula.txt"
@@ -64,7 +64,7 @@ def test_cli_output_path(mocker, input_file, default_config):
 def test_cli_sia_linkage(mocker, input_file, default_config):
     runner = CliRunner()
     run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
-    result = runner.invoke(cli.cli, [str(input_file), "--sia_linkage"])
+    result = runner.invoke(cli.cli, [str(input_file), "-l"])
     assert result.exit_code == 0
     config = default_config | dict(sia_linkage=True)
     run_workflow_mock.assert_called_once()
