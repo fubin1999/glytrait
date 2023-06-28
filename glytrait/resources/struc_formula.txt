@@ -28,109 +28,271 @@ $ CA4 = (is4Antennary) // (isComplex)
 # Fucosylation
 
 @ Fucosylation within complex type glycans
-$ CF = (hasFuc) // (isComplex)
+$ CF = (totalFuc) // (isComplex)
 
 @ Fucosylation within monoantennary glycans
-$ A1F = (hasFuc) // (isComplex * is1Antennary)
+$ A1F = (totalFuc) // (isComplex * is1Antennary)
 
 @ Fucosylation within diantennary glycans
-$ A2F = (hasFuc) // (isComplex * is2Antennary)
+$ A2F = (totalFuc) // (isComplex * is2Antennary)
 
 @ Fucosylation within triantennary glycans
-$ A3F = (hasFuc) // (isComplex * is3Antennary)
+$ A3F = (totalFuc) // (isComplex * is3Antennary)
 
 @ Fucosylation within tetra-antennary glycans
-$ A4F = (hasFuc) // (isComplex * is4Antennary)
+$ A4F = (totalFuc) // (isComplex * is4Antennary)
 
 @ Fucosylation within sialylated monoantennary glycans
-$ A1SF = (hasFuc) // (isComplex * is1Antennary * hasSia)
+$ A1SF = (totalFuc) // (isComplex * is1Antennary * hasSia)
 
 @ Fucosylation within sialylated diantennary glycans
-$ A2SF = (hasFuc) // (isComplex * is2Antennary * hasSia)
+$ A2SF = (totalFuc) // (isComplex * is2Antennary * hasSia)
 
 @ Fucosylation within sialylated triantennary glycans
-$ A3SF = (hasFuc) // (isComplex * is3Antennary * hasSia)
+$ A3SF = (totalFuc) // (isComplex * is3Antennary * hasSia)
 
 @ Fucosylation within sialylated tetra-antennary glycans
-$ A4SF = (hasFuc) // (isComplex * is4Antennary * hasSia)
+$ A4SF = (totalFuc) // (isComplex * is4Antennary * hasSia)
 
 @ Fucosylation within non-sialylated monoantennary glycans
-$ A1S0F = (hasFuc) // (isComplex * is1Antennary * noSia)
+$ A1S0F = (totalFuc) // (isComplex * is1Antennary * noSia)
 
 @ Fucosylation within non-sialylated diantennary glycans
-$ A2S0F = (hasFuc) // (isComplex * is2Antennary * noSia)
+$ A2S0F = (totalFuc) // (isComplex * is2Antennary * noSia)
 
 @ Fucosylation within non-sialylated triantennary glycans
-$ A3S0F = (hasFuc) // (isComplex * is3Antennary * noSia)
+$ A3S0F = (totalFuc) // (isComplex * is3Antennary * noSia)
 
 @ Fucosylation within non-sialylated tetra-antennary glycans
-$ A4S0F = (hasFuc) // (isComplex * is4Antennary * noSia)
+$ A4S0F = (totalFuc) // (isComplex * is4Antennary * noSia)
 
 @ Fucosylation within monoantennary glycans with α2,6-linked sialic acid
-$ A1EF = (hasFuc) // (isComplex * is1Antennary * hasa26Sia)
+$ A1EF = (totalFuc) // (isComplex * is1Antennary * hasa26Sia)
 
 @ Fucosylation within diantennary glycans with α2,6-linked sialic acid
-$ A2EF = (hasFuc) // (isComplex * is2Antennary * hasa26Sia)
+$ A2EF = (totalFuc) // (isComplex * is2Antennary * hasa26Sia)
 
 @ Fucosylation within triantennary glycans with α2,6-linked sialic acid
-$ A3EF = (hasFuc) // (isComplex * is3Antennary * hasa26Sia)
+$ A3EF = (totalFuc) // (isComplex * is3Antennary * hasa26Sia)
 
 @ Fucosylation within tetra-antennary glycans with α2,6-linked sialic acid
-$ A4EF = (hasFuc) // (isComplex * is4Antennary * hasa26Sia)
+$ A4EF = (totalFuc) // (isComplex * is4Antennary * hasa26Sia)
 
 @ Fucosylation within monoantennary glycans without α2,6-linked sialic acid
-$ A1E0F = (hasFuc) // (isComplex * is1Antennary * noa26Sia)
+$ A1E0F = (totalFuc) // (isComplex * is1Antennary * noa26Sia)
 
 @ Fucosylation within diantennary glycans without α2,6-linked sialic acid
-$ A2E0F = (hasFuc) // (isComplex * is2Antennary * noa26Sia)
+$ A2E0F = (totalFuc) // (isComplex * is2Antennary * noa26Sia)
 
 @ Fucosylation within triantennary glycans without α2,6-linked sialic acid
-$ A3E0F = (hasFuc) // (isComplex * is3Antennary * noa26Sia)
+$ A3E0F = (totalFuc) // (isComplex * is3Antennary * noa26Sia)
 
 @ Fucosylation within tetra-antennary glycans without α2,6-linked sialic acid
-$ A4E0F = (hasFuc) // (isComplex * is4Antennary * noa26Sia)
+$ A4E0F = (totalFuc) // (isComplex * is4Antennary * noa26Sia)
 
 @ Fucosylation within monoantennary glycans with α2,3-linked sialic acid
-$ A1LF = (hasFuc) // (isComplex * is1Antennary * hasa23Sia)
+$ A1LF = (totalFuc) // (isComplex * is1Antennary * hasa23Sia)
 
 @ Fucosylation within diantennary glycans with α2,3-linked sialic acid
-$ A2LF = (hasFuc) // (isComplex * is2Antennary * hasa23Sia)
+$ A2LF = (totalFuc) // (isComplex * is2Antennary * hasa23Sia)
 
 @ Fucosylation within triantennary glycans with α2,3-linked sialic acid
-$ A3LF = (hasFuc) // (isComplex * is3Antennary * hasa23Sia)
+$ A3LF = (totalFuc) // (isComplex * is3Antennary * hasa23Sia)
 
 @ Fucosylation within tetra-antennary glycans with α2,3-linked sialic acid
-$ A4LF = (hasFuc) // (isComplex * is4Antennary * hasa23Sia)
+$ A4LF = (totalFuc) // (isComplex * is4Antennary * hasa23Sia)
 
 @ Fucosylation within monoantennary glycans without α2,3-linked sialic acid
-$ A1L0F = (hasFuc) // (isComplex * is1Antennary * noa23Sia)
+$ A1L0F = (totalFuc) // (isComplex * is1Antennary * noa23Sia)
 
 @ Fucosylation within diantennary glycans without α2,3-linked sialic acid
-$ A2L0F = (hasFuc) // (isComplex * is2Antennary * noa23Sia)
+$ A2L0F = (totalFuc) // (isComplex * is2Antennary * noa23Sia)
 
 @ Fucosylation within triantennary glycans without α2,3-linked sialic acid
-$ A3L0F = (hasFuc) // (isComplex * is3Antennary * noa23Sia)
+$ A3L0F = (totalFuc) // (isComplex * is3Antennary * noa23Sia)
 
 @ Fucosylation within tetra-antennary glycans without α2,3-linked sialic acid
-$ A4L0F = (hasFuc) // (isComplex * is4Antennary * noa23Sia)
+$ A4L0F = (totalFuc) // (isComplex * is4Antennary * noa23Sia)
+
+
+# Core Fucosylation
+
+@ Core fucosylation within complex type glycans
+$ CFc = (coreFuc) // (isComplex)
+
+@ Core fucosylation within monoantennary glycans
+$ A1Fc = (coreFuc) // (isComplex * is1Antennary)
+
+@ Core fucosylation within diantennary glycans
+$ A2Fc = (coreFuc) // (isComplex * is2Antennary)
+
+@ Core fucosylation within triantennary glycans
+$ A3Fc = (coreFuc) // (isComplex * is3Antennary)
+
+@ Core fucosylation within tetra-antennary glycans
+$ A4Fc = (coreFuc) // (isComplex * is4Antennary)
+
+@ Core fucosylation within sialylated monoantennary glycans
+$ A1SFc = (coreFuc) // (isComplex * is1Antennary * hasSia)
+
+@ Core fucosylation within sialylated diantennary glycans
+$ A2SFc = (coreFuc) // (isComplex * is2Antennary * hasSia)
+
+@ Core fucosylation within sialylated triantennary glycans
+$ A3SFc = (coreFuc) // (isComplex * is3Antennary * hasSia)
+
+@ Core fucosylation within sialylated tetra-antennary glycans
+$ A4SFc = (coreFuc) // (isComplex * is4Antennary * hasSia)
+
+@ Core fucosylation within non-sialylated monoantennary glycans
+$ A1S0Fc = (coreFuc) // (isComplex * is1Antennary * noSia)
+
+@ Core fucosylation within non-sialylated diantennary glycans
+$ A2S0Fc = (coreFuc) // (isComplex * is2Antennary * noSia)
+
+@ Core fucosylation within non-sialylated triantennary glycans
+$ A3S0Fc = (coreFuc) // (isComplex * is3Antennary * noSia)
+
+@ Core fucosylation within non-sialylated tetra-antennary glycans
+$ A4S0Fc = (coreFuc) // (isComplex * is4Antennary * noSia)
+
+@ Core fucosylation within monoantennary glycans with α2,6-linked sialic acid
+$ A1EFc = (coreFuc) // (isComplex * is1Antennary * hasa26Sia)
+
+@ Core fucosylation within diantennary glycans with α2,6-linked sialic acid
+$ A2EFc = (coreFuc) // (isComplex * is2Antennary * hasa26Sia)
+
+@ Core fucosylation within triantennary glycans with α2,6-linked sialic acid
+$ A3EFc = (coreFuc) // (isComplex * is3Antennary * hasa26Sia)
+
+@ Core fucosylation within tetra-antennary glycans with α2,6-linked sialic acid
+$ A4EFc = (coreFuc) // (isComplex * is4Antennary * hasa26Sia)
+
+@ Core fucosylation within monoantennary glycans without α2,6-linked sialic acid
+$ A1E0Fc = (coreFuc) // (isComplex * is1Antennary * noa26Sia)
+
+@ Core fucosylation within diantennary glycans without α2,6-linked sialic acid
+$ A2E0Fc = (coreFuc) // (isComplex * is2Antennary * noa26Sia)
+
+@ Core fucosylation within triantennary glycans without α2,6-linked sialic acid
+$ A3E0Fc = (coreFuc) // (isComplex * is3Antennary * noa26Sia)
+
+@ Core fucosylation within tetra-antennary glycans without α2,6-linked sialic acid
+$ A4E0Fc = (coreFuc) // (isComplex * is4Antennary * noa26Sia)
+
+@ Core fucosylation within monoantennary glycans with α2,3-linked sialic acid
+$ A1LFc = (coreFuc) // (isComplex * is1Antennary * hasa23Sia)
+
+@ Core fucosylation within diantennary glycans with α2,3-linked sialic acid
+$ A2LFc = (coreFuc) // (isComplex * is2Antennary * hasa23Sia)
+
+@ Core fucosylation within triantennary glycans with α2,3-linked sialic acid
+$ A3LFc = (coreFuc) // (isComplex * is3Antennary * hasa23Sia)
+
+@ Core fucosylation within tetra-antennary glycans with α2,3-linked sialic acid
+$ A4LFc = (coreFuc) // (isComplex * is4Antennary * hasa23Sia)
+
+@ Core fucosylation within monoantennary glycans without α2,3-linked sialic acid
+$ A1L0Fc = (coreFuc) // (isComplex * is1Antennary * noa23Sia)
+
+@ Core fucosylation within diantennary glycans without α2,3-linked sialic acid
+$ A2L0Fc = (coreFuc) // (isComplex * is2Antennary * noa23Sia)
+
+@ Core fucosylation within triantennary glycans without α2,3-linked sialic acid
+$ A3L0Fc = (coreFuc) // (isComplex * is3Antennary * noa23Sia)
+
+@ Core fucosylation within tetra-antennary glycans without α2,3-linked sialic acid
+$ A4L0Fc = (coreFuc) // (isComplex * is4Antennary * noa23Sia)
 
 
 # Antennary fucosylation
 
-@ Relative abundance of species with at least one antennary fucose within all complex type glycans
-$ CFa = (hasAntennaryFuc) // (isComplex)
+@ Antennary fucosylation within complex type glycans
+$ CFa = (antennaryFuc) // (isComplex)
 
-@ Relative abundance of species with at least one antennary fucose within monoantennary glycans
-$ A1Fa = (hasAntennaryFuc) // (isComplex * is1Antennary)
+@ Antennary fucosylation within monoantennary glycans
+$ A1Fa = (antennaryFuc) // (isComplex * is1Antennary)
 
-@ Relative abundance of species with at least one antennary fucose within diantennary glycans
-$ A2Fa = (hasAntennaryFuc) // (isComplex * is2Antennary)
+@ Antennary fucosylation within diantennary glycans
+$ A2Fa = (antennaryFuc) // (isComplex * is2Antennary)
 
-@ Relative abundance of species with at least one antennary fucose within triantennary glycans
-$ A3Fa = (hasAntennaryFuc) // (isComplex * is3Antennary)
+@ Antennary fucosylation within triantennary glycans
+$ A3Fa = (antennaryFuc) // (isComplex * is3Antennary)
 
-@ Relative abundance of species with at least one antennary fucose within tetra-antennary glycans
-$ A4Fa = (hasAntennaryFuc) // (isComplex * is4Antennary)
+@ Antennary fucosylation within tetra-antennary glycans
+$ A4Fa = (antennaryFuc) // (isComplex * is4Antennary)
+
+@ Antennary fucosylation within sialylated monoantennary glycans
+$ A1SFa = (antennaryFuc) // (isComplex * is1Antennary * hasSia)
+
+@ Antennary fucosylation within sialylated diantennary glycans
+$ A2SFa = (antennaryFuc) // (isComplex * is2Antennary * hasSia)
+
+@ Antennary fucosylation within sialylated triantennary glycans
+$ A3SFa = (antennaryFuc) // (isComplex * is3Antennary * hasSia)
+
+@ Antennary fucosylation within sialylated tetra-antennary glycans
+$ A4SFa = (antennaryFuc) // (isComplex * is4Antennary * hasSia)
+
+@ Antennary fucosylation within non-sialylated monoantennary glycans
+$ A1S0Fa = (antennaryFuc) // (isComplex * is1Antennary * noSia)
+
+@ Antennary fucosylation within non-sialylated diantennary glycans
+$ A2S0Fa = (antennaryFuc) // (isComplex * is2Antennary * noSia)
+
+@ Antennary fucosylation within non-sialylated triantennary glycans
+$ A3S0Fa = (antennaryFuc) // (isComplex * is3Antennary * noSia)
+
+@ Antennary fucosylation within non-sialylated tetra-antennary glycans
+$ A4S0Fa = (antennaryFuc) // (isComplex * is4Antennary * noSia)
+
+@ Antennary fucosylation within monoantennary glycans with α2,6-linked sialic acid
+$ A1EFa = (antennaryFuc) // (isComplex * is1Antennary * hasa26Sia)
+
+@ Antennary fucosylation within diantennary glycans with α2,6-linked sialic acid
+$ A2EFa = (antennaryFuc) // (isComplex * is2Antennary * hasa26Sia)
+
+@ Antennary fucosylation within triantennary glycans with α2,6-linked sialic acid
+$ A3EFa = (antennaryFuc) // (isComplex * is3Antennary * hasa26Sia)
+
+@ Antennary fucosylation within tetra-antennary glycans with α2,6-linked sialic acid
+$ A4EFa = (antennaryFuc) // (isComplex * is4Antennary * hasa26Sia)
+
+@ Antennary fucosylation within monoantennary glycans without α2,6-linked sialic acid
+$ A1E0Fa = (antennaryFuc) // (isComplex * is1Antennary * noa26Sia)
+
+@ Antennary fucosylation within diantennary glycans without α2,6-linked sialic acid
+$ A2E0Fa = (antennaryFuc) // (isComplex * is2Antennary * noa26Sia)
+
+@ Antennary fucosylation within triantennary glycans without α2,6-linked sialic acid
+$ A3E0Fa = (antennaryFuc) // (isComplex * is3Antennary * noa26Sia)
+
+@ Antennary fucosylation within tetra-antennary glycans without α2,6-linked sialic acid
+$ A4E0Fa = (antennaryFuc) // (isComplex * is4Antennary * noa26Sia)
+
+@ Antennary fucosylation within monoantennary glycans with α2,3-linked sialic acid
+$ A1LFa = (antennaryFuc) // (isComplex * is1Antennary * hasa23Sia)
+
+@ Antennary fucosylation within diantennary glycans with α2,3-linked sialic acid
+$ A2LFa = (antennaryFuc) // (isComplex * is2Antennary * hasa23Sia)
+
+@ Antennary fucosylation within triantennary glycans with α2,3-linked sialic acid
+$ A3LFa = (antennaryFuc) // (isComplex * is3Antennary * hasa23Sia)
+
+@ Antennary fucosylation within tetra-antennary glycans with α2,3-linked sialic acid
+$ A4LFa = (antennaryFuc) // (isComplex * is4Antennary * hasa23Sia)
+
+@ Antennary fucosylation within monoantennary glycans without α2,3-linked sialic acid
+$ A1L0Fa = (antennaryFuc) // (isComplex * is1Antennary * noa23Sia)
+
+@ Antennary fucosylation within diantennary glycans without α2,3-linked sialic acid
+$ A2L0Fa = (antennaryFuc) // (isComplex * is2Antennary * noa23Sia)
+
+@ Antennary fucosylation within triantennary glycans without α2,3-linked sialic acid
+$ A3L0Fa = (antennaryFuc) // (isComplex * is3Antennary * noa23Sia)
+
+@ Antennary fucosylation within tetra-antennary glycans without α2,3-linked sialic acid
+$ A4L0Fa = (antennaryFuc) // (isComplex * is4Antennary * noa23Sia)
 
 
 # Bisection
@@ -164,6 +326,42 @@ $ A2FS0B = (isBisecting) // (isComplex * is2Antennary * hasFuc * noSia)
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-sialylated diantennary glycans
 $ A2F0S0B = (isBisecting) // (isComplex * is2Antennary * noFuc * noSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within a2,3-sialylated diantennary glycans
+$ A2LB = (isBisecting) // (isComplex * is2Antennary * hasa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-a2,3-sialylated diantennary glycans
+$ A2L0B = (isBisecting) // (isComplex * is2Antennary * noa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,3-sialylated diantennary glycans
+$ A2FLB = (isBisecting) // (isComplex * is2Antennary * hasFuc * hasa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,3-sialylated diantennary glycans
+$ A2F0LB = (isBisecting) // (isComplex * is2Antennary * noFuc * hasa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,3-sialylated diantennary glycans
+$ A2FL0B = (isBisecting) // (isComplex * is2Antennary * hasFuc * noa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,3-sialylated diantennary glycans
+$ A2F0L0B = (isBisecting) // (isComplex * is2Antennary * noFuc * noa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within a2,6-sialylated diantennary glycans
+$ A2EB = (isBisecting) // (isComplex * is2Antennary * hasa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-a2,6-sialylated diantennary glycans
+$ A2E0B = (isBisecting) // (isComplex * is2Antennary * noa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,6-sialylated diantennary glycans
+$ A2FEB = (isBisecting) // (isComplex * is2Antennary * hasFuc * hasa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,6-sialylated diantennary glycans
+$ A2F0EB = (isBisecting) // (isComplex * is2Antennary * noFuc * hasa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,6-sialylated diantennary glycans
+$ A2FE0B = (isBisecting) // (isComplex * is2Antennary * hasFuc * noa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,6-sialylated diantennary glycans
+$ A2F0E0B = (isBisecting) // (isComplex * is2Antennary * noFuc * noa26Sia)
 
 
 # Galactosylaiton
@@ -278,6 +476,150 @@ $ A3F0S0G = (totalGal) // (isComplex * is3Antennary * noFuc * noSia) * 1/3
 
 @ Galactosylation per antenna within non-fucosylated, non-sialylated tetra-antennary glycans
 $ A4F0S0G = (totalGal) // (isComplex * is4Antennary * noFuc * noSia) * 1/4
+
+@ Galactosylation per antenna within a2,3-sialylated monoantennary glycans
+$ A1LG = (totalGal) // (isComplex * is1Antennary * hasa23Sia) * 1/1
+
+@ Galactosylation per antenna within a2,3-sialylated diantennary glycans
+$ A2LG = (totalGal) // (isComplex * is2Antennary * hasa23Sia) * 1/2
+
+@ Galactosylation per antenna within a2,3-sialylated triantennary glycans
+$ A3LG = (totalGal) // (isComplex * is3Antennary * hasa23Sia) * 1/3
+
+@ Galactosylation per antenna within a2,3-sialylated tetra-antennary glycans
+$ A4LG = (totalGal) // (isComplex * is4Antennary * hasa23Sia) * 1/4
+
+@ Galactosylation per antenna within non-a2,3-sialylated monoantennary glycans
+$ A1L0G = (totalGal) // (isComplex * is1Antennary * noa23Sia) * 1/1
+
+@ Galactosylation per antenna within non-a2,3-sialylated diantennary glycans
+$ A2L0G = (totalGal) // (isComplex * is2Antennary * noa23Sia) * 1/2
+
+@ Galactosylation per antenna within non-a2,3-sialylated triantennary glycans
+$ A3L0G = (totalGal) // (isComplex * is3Antennary * noa23Sia) * 1/3
+
+@ Galactosylation per antenna within non-a2,3-sialylated tetra-antennary glycans
+$ A4L0G = (totalGal) // (isComplex * is4Antennary * noa23Sia) * 1/4
+
+@ Galactosylation per antenna within fucosylated a2,3-sialylated monoantennary glycans
+$ A1FLG = (totalGal) // (isComplex * is1Antennary * hasFuc * hasa23Sia) * 1/1
+
+@ Galactosylation per antenna within fucosylated a2,3-sialylated diantennary glycans
+$ A2FLG = (totalGal) // (isComplex * is2Antennary * hasFuc * hasa23Sia) * 1/2
+
+@ Galactosylation per antenna within fucosylated a2,3-sialylated triantennary glycans
+$ A3FLG = (totalGal) // (isComplex * is3Antennary * hasFuc * hasa23Sia) * 1/3
+
+@ Galactosylation per antenna within fucosylated a2,3-sialylated tetra-antennary glycans
+$ A4FLG = (totalGal) // (isComplex * is4Antennary * hasFuc * hasa23Sia) * 1/4
+
+@ Galactosylation per antenna within non-fucosylated a2,3-sialylated monoantennary glycans
+$ A1F0LG = (totalGal) // (isComplex * is1Antennary * noFuc * hasa23Sia) * 1/1
+
+@ Galactosylation per antenna within non-fucosylated a2,3-sialylated diantennary glycans
+$ A2F0LG = (totalGal) // (isComplex * is2Antennary * noFuc * hasa23Sia) * 1/2
+
+@ Galactosylation per antenna within non-fucosylated a2,3-sialylated triantennary glycans
+$ A3F0LG = (totalGal) // (isComplex * is3Antennary * noFuc * hasa23Sia) * 1/3
+
+@ Galactosylation per antenna within non-fucosylated a2,3-sialylated tetra-antennary glycans
+$ A4F0LG = (totalGal) // (isComplex * is4Antennary * noFuc * hasa23Sia) * 1/4
+
+@ Galactosylation per antenna within fucosylated non-a2,3-sialylated monoantennary glycans
+$ A1FL0G = (totalGal) // (isComplex * is1Antennary * hasFuc * noa23Sia) * 1/1
+
+@ Galactosylation per antenna within fucosylated non-a2,3-sialylated diantennary glycans
+$ A2FL0G = (totalGal) // (isComplex * is2Antennary * hasFuc * noa23Sia) * 1/2
+
+@ Galactosylation per antenna within fucosylated non-a2,3-sialylated triantennary glycans
+$ A3FL0G = (totalGal) // (isComplex * is3Antennary * hasFuc * noa23Sia) * 1/3
+
+@ Galactosylation per antenna within fucosylated non-a2,3-sialylated tetra-antennary glycans
+$ A4FL0G = (totalGal) // (isComplex * is4Antennary * hasFuc * noa23Sia) * 1/4
+
+@ Galactosylation per antenna within non-fucosylated, non-a2,3-sialylated monoantennary glycans
+$ A1F0L0G = (totalGal) // (isComplex * is1Antennary * noFuc * noa23Sia) * 1/1
+
+@ Galactosylation per antenna within non-fucosylated, non-a2,3-sialylated diantennary glycans
+$ A2F0L0G = (totalGal) // (isComplex * is2Antennary * noFuc * noa23Sia) * 1/2
+
+@ Galactosylation per antenna within non-fucosylated, non-a2,3-sialylated triantennary glycans
+$ A3F0L0G = (totalGal) // (isComplex * is3Antennary * noFuc * noa23Sia) * 1/3
+
+@ Galactosylation per antenna within non-fucosylated, non-a2,3-sialylated tetra-antennary glycans
+$ A4F0L0G = (totalGal) // (isComplex * is4Antennary * noFuc * noa23Sia) * 1/4
+
+@ Galactosylation per antenna within a2,6-sialylated monoantennary glycans
+$ A1EG = (totalGal) // (isComplex * is1Antennary * hasa26Sia) * 1/1
+
+@ Galactosylation per antenna within a2,6-sialylated diantennary glycans
+$ A2EG = (totalGal) // (isComplex * is2Antennary * hasa26Sia) * 1/2
+
+@ Galactosylation per antenna within a2,6-sialylated triantennary glycans
+$ A3EG = (totalGal) // (isComplex * is3Antennary * hasa26Sia) * 1/3
+
+@ Galactosylation per antenna within a2,6-sialylated tetra-antennary glycans
+$ A4EG = (totalGal) // (isComplex * is4Antennary * hasa26Sia) * 1/4
+
+@ Galactosylation per antenna within non-a2,6-sialylated monoantennary glycans
+$ A1E0G = (totalGal) // (isComplex * is1Antennary * noa26Sia) * 1/1
+
+@ Galactosylation per antenna within non-a2,6-sialylated diantennary glycans
+$ A2E0G = (totalGal) // (isComplex * is2Antennary * noa26Sia) * 1/2
+
+@ Galactosylation per antenna within non-a2,6-sialylated triantennary glycans
+$ A3E0G = (totalGal) // (isComplex * is3Antennary * noa26Sia) * 1/3
+
+@ Galactosylation per antenna within non-a2,6-sialylated tetra-antennary glycans
+$ A4E0G = (totalGal) // (isComplex * is4Antennary * noa26Sia) * 1/4
+
+@ Galactosylation per antenna within fucosylated a2,6-sialylated monoantennary glycans
+$ A1FEG = (totalGal) // (isComplex * is1Antennary * hasFuc * hasa26Sia) * 1/1
+
+@ Galactosylation per antenna within fucosylated a2,6-sialylated diantennary glycans
+$ A2FEG = (totalGal) // (isComplex * is2Antennary * hasFuc * hasa26Sia) * 1/2
+
+@ Galactosylation per antenna within fucosylated a2,6-sialylated triantennary glycans
+$ A3FEG = (totalGal) // (isComplex * is3Antennary * hasFuc * hasa26Sia) * 1/3
+
+@ Galactosylation per antenna within fucosylated a2,6-sialylated tetra-antennary glycans
+$ A4FEG = (totalGal) // (isComplex * is4Antennary * hasFuc * hasa26Sia) * 1/4
+
+@ Galactosylation per antenna within non-fucosylated a2,6-sialylated monoantennary glycans
+$ A1F0EG = (totalGal) // (isComplex * is1Antennary * noFuc * hasa26Sia) * 1/1
+
+@ Galactosylation per antenna within non-fucosylated a2,6-sialylated diantennary glycans
+$ A2F0EG = (totalGal) // (isComplex * is2Antennary * noFuc * hasa26Sia) * 1/2
+
+@ Galactosylation per antenna within non-fucosylated a2,6-sialylated triantennary glycans
+$ A3F0EG = (totalGal) // (isComplex * is3Antennary * noFuc * hasa26Sia) * 1/3
+
+@ Galactosylation per antenna within non-fucosylated a2,6-sialylated tetra-antennary glycans
+$ A4F0EG = (totalGal) // (isComplex * is4Antennary * noFuc * hasa26Sia) * 1/4
+
+@ Galactosylation per antenna within fucosylated non-a2,6-sialylated monoantennary glycans
+$ A1FE0G = (totalGal) // (isComplex * is1Antennary * hasFuc * noa26Sia) * 1/1
+
+@ Galactosylation per antenna within fucosylated non-a2,6-sialylated diantennary glycans
+$ A2FE0G = (totalGal) // (isComplex * is2Antennary * hasFuc * noa26Sia) * 1/2
+
+@ Galactosylation per antenna within fucosylated non-a2,6-sialylated triantennary glycans
+$ A3FE0G = (totalGal) // (isComplex * is3Antennary * hasFuc * noa26Sia) * 1/3
+
+@ Galactosylation per antenna within fucosylated non-a2,6-sialylated tetra-antennary glycans
+$ A4FE0G = (totalGal) // (isComplex * is4Antennary * hasFuc * noa26Sia) * 1/4
+
+@ Galactosylation per antenna within non-fucosylated, non-a2,6-sialylated monoantennary glycans
+$ A1F0E0G = (totalGal) // (isComplex * is1Antennary * noFuc * noa26Sia) * 1/1
+
+@ Galactosylation per antenna within non-fucosylated, non-a2,6-sialylated diantennary glycans
+$ A2F0E0G = (totalGal) // (isComplex * is2Antennary * noFuc * noa26Sia) * 1/2
+
+@ Galactosylation per antenna within non-fucosylated, non-a2,6-sialylated triantennary glycans
+$ A3F0E0G = (totalGal) // (isComplex * is3Antennary * noFuc * noa26Sia) * 1/3
+
+@ Galactosylation per antenna within non-fucosylated, non-a2,6-sialylated tetra-antennary glycans
+$ A4F0E0G = (totalGal) // (isComplex * is4Antennary * noFuc * noa26Sia) * 1/4
 
 
 # Sialylation

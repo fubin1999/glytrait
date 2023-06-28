@@ -6,7 +6,7 @@
 
 Glycan derived trait is a more insightful way to analysis glycomics data. However, currently there
 lacks a tool for automatically calculating derived traits, while mannual calculating is
-cumbersome, time-consuming and error-prone. GlyTrait is a tool designed for calculation N-glycan
+cumbersome, time-consuming and error-prone. GlyTrait is a tool designed for calculating N-glycan
 traits merely from abundance information and glycan structures.
 
 ## Contents
@@ -45,7 +45,7 @@ use [Anaconda](https://www.anaconda.com/download/) if you like.
 pipx is a tool to help you install and run end-user applications written in Python. It's roughly
 similar to macOS's brew, JavaScript's npx, and Linux's apt.
 
-#### Insatll pipx
+#### Install pipx
 
 Install pipx following its [Document](https://pypa.github.io/pipx/installation/).
 
@@ -332,7 +332,7 @@ option is used. (See [Post-Filtering](#post-filtering) for details.)
 
 ### The GlyTrait Formula (Advanced)
 
-Currently 164 derived traits (including sialic acid linkage traits) is included in the GlyTrait
+Currently 277 derived traits (including sialic acid linkage traits) is included in the GlyTrait
 tool. This list is curated from literature and covers nearly all derived traits reported. However,
 you may want to add new traits to fulfill your own need. GlyTriat using a meta-properties-oriented
 formula system, the **GlyTrait Formula**, to represent the meaning of a trait. **GlyTrait Formula
