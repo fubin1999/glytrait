@@ -23,8 +23,8 @@ traits merely from abundance information and glycan structures.
     - [Built-in database](#built-in-database)
     - [Preprocessing](#preprocessing)
     - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
-    - [Filtering](#filtering)
-    - [Hypothesis testing](#hypothesis-testing)
+    - [Post-filter](#post-filtering)
+    - [Univariate analysis](#univariate-analysis)
     - [The GlyTrait Formula](#the-glytrait-formula-advanced)
 - [License](#license)
 
@@ -302,9 +302,9 @@ these traits by default. If you want to keep these traits, use the "--no-filter"
 glytrait data.csv --no-filter
 ```
 
-### Hypothesis testing
+### Univariate analysis
 
-GlyTrait supports hypothesis testing for direct and derived traits. To use this feature, you need
+GlyTrait supports univariate analysis for direct and derived traits. To use this feature, you need
 to provide a csv file containing the sample grouping information. The csv file should have two
 columns, the first column is the sample name, and the second column is the group name. An example
 group file would be like:
