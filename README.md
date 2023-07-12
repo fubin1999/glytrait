@@ -16,6 +16,7 @@ traits merely from abundance information and glycan structures.
     - [Using pipx (recommended)](#using-pipx-recommended)
 - [Usage](#usage)
     - [Quick start](#quick-start)
+    - [Options](#options)
     - [Mode](#mode)
     - [Input file format](#input-file-format)
     - [Specify output path](#specify-output-path)
@@ -96,6 +97,27 @@ You don't need the forth one for common situations, but a peek of it might help 
 understand how GlyTrait works.
 
 The detailed format of the input file will be introduced in the **Input file format** section.
+
+### Options
+
+As a glance, GlyTrait supports the following options:
+
+|          Option           | Description                                                                                                     |
+|:-------------------------:|:----------------------------------------------------------------------------------------------------------------|
+|          --help           | Show the help message and exit.                                                                                 |
+|        -m, --mode         | The mode. "S" or "structure" for structure mode, "C" or "composition" for composition mode. Default: structure. |
+|       -o, --output        | The output path. Default: the same directory with the input file.                                               |
+|   -s, --structure-file    | The structure file.                                                                                             |
+|      -d, --database       | The built-in database to use, "serum" or "IgG".                                                                 |
+| -r, --filter-glycan-ratio | The proportion of missing values for a glycan to be ruled out. Default: 0.5.                                    |
+|    -i, --inpute-method    | The imputation method. "min", "mean", "median", "zero", or "lod". Default: "min".                               |
+|     -l, --sia-linkage     | Flag to include the sialic acid linkage traits.                                                                 |
+|        --no-filter        | Flag to turn off post-filtering of derived traits.                                                              |
+|        -g, --group        | The group file.                                                                                                 |
+|    -t, --save-template    | The directory to save the formula trait template file.                                                          |
+|    -f, --formula-file     | The custom formula file to use.                                                                                 |
+
+The following sections will introduce these options in detail.
 
 ### Mode
 
