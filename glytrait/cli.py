@@ -6,7 +6,7 @@ import emoji
 from glytrait.config import Config
 from glytrait.core import run_workflow
 from glytrait.exception import GlyTraitError
-from glytrait.trait import save_trait_formula_template
+from glytrait.trait import save_trait_formula_template, save_builtin_formula
 
 UNDIFINED = "__UNDEFINED__"
 
@@ -20,9 +20,26 @@ def save_template_callback(ctx, param, value):
     else:
         save_trait_formula_template(value)
         msg = (
-            f"Template saved to {value}. :victory_hand:\n"
+            f"Template saved to {value}/trait_formula.txt.\n"
             f"You can edit the template and use `glytrait INPUT_FILE OUTPUT_FILE -f "
             f"TEMPLATE_FILE` to provide additional traits to glyTrait."
+        )
+        click.echo(emoji.emojize(msg))
+        ctx.exit()
+
+
+def save_builtin_formulas_callback(ctx, param, value):
+    """Save a copy of the built-in formulas."""
+    if value == UNDIFINED:
+        return
+    if Path(value).exists() and not Path(value).is_dir():
+        msg = "The path to save the built-in formulas must be a directory."
+        raise click.BadParameter(msg)
+    else:
+        save_builtin_formula(value)
+        msg = (
+            f"Built-in formulas saved to: "
+            f"{value}/struc_builtin_formulas.txt, {value}/comp_builtin_formulas.txt"
         )
         click.echo(emoji.emojize(msg))
         ctx.exit()
@@ -106,6 +123,16 @@ def save_template_callback(ctx, param, value):
     "--database",
     type=click.STRING,
     help="Built-in database to use, either 'serum' or 'IgG'.",
+)
+@click.option(
+    "-b",
+    "--builtin-formulas",
+    type=click.Path(),
+    callback=save_builtin_formulas_callback,
+    is_eager=True,
+    expose_value=False,
+    default=UNDIFINED,
+    help="The directory path to save a copy of the built-in formulas.",
 )
 @click.version_option()
 def cli(

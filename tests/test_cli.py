@@ -205,3 +205,14 @@ def test_cli_mode_structure(mocker, input_file, default_config, mode_command, mo
     config = default_config | dict(mode=mode)
     run_workflow_mock.assert_called_once()
     assert run_workflow_mock.call_args[0][0].asdict() == config
+
+
+def test_cli_save_built_in_formulas(clean_dir):
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, ["-b", str(clean_dir)])
+    assert result.exit_code == 0
+    assert "Built-in formulas saved to" in result.output
+    file1 = clean_dir / "struc_builtin_formulas.txt"
+    file2 = clean_dir / "comp_builtin_formulas.txt"
+    assert file1.exists()
+    assert file2.exists()

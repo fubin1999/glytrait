@@ -344,6 +344,14 @@ def test_save_trait_formula_template(clean_dir):
     assert "Trait Formula Overview" in template_file.read_text()
 
 
+def test_save_builtin_formula(clean_dir):
+    trait.save_builtin_formula(clean_dir)
+    struc_file = clean_dir / "struc_builtin_formulas.txt"
+    comp_file = clean_dir / "comp_builtin_formulas.txt"
+    assert struc_file.exists()
+    assert comp_file.exists()
+
+
 def test_calcu_trait():
     trait_formulas = [
         trait.TraitFormula(

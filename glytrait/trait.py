@@ -575,8 +575,26 @@ def save_trait_formula_template(dirpath: str) -> None:
     dirpath.mkdir(parents=True, exist_ok=True)
     file = dirpath / "trait_formula.txt"
     content = formula_template_file.open("r").read()
-    with open(file, "w") as f:
+    with open(file, "w", encoding="utf8") as f:
         f.write(content)
+
+
+def save_builtin_formula(dirpath: str) -> None:
+    """Copy the builtin formula file to the given path.
+
+    Args:
+        dirpath (str): The path to save the built-in formula file.
+    """
+    dirpath = Path(dirpath)
+    dirpath.mkdir(parents=True, exist_ok=True)
+    struc_file = dirpath / "struc_builtin_formulas.txt"
+    comp_file = dirpath / "comp_builtin_formulas.txt"
+    struc_content = default_struc_formula_file.open("r").read()
+    comp_content = default_comp_formula_file.open("r").read()
+    with open(struc_file, "w", encoding="utf8") as f:
+        f.write(struc_content)
+    with open(comp_file, "w", encoding="utf8") as f:
+        f.write(comp_content)
 
 
 def calcu_derived_trait(
