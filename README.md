@@ -397,6 +397,15 @@ An template txt file will be saved in the given "some_dir" directory. "some_dir"
 GlyTrait will create this folder for you if it doesn't exist. A detailed instruction on how to
 write trait formulas is in that file.
 
+#### Built-in formulas
+
+To see all the built-in formulas for inspiration, use the "-b" or "--built-in" option to save a 
+copy of the built-in formula file:
+
+```shell
+glytrait -b some_dir
+```
+
 #### Using the custom formulas
 
 Once you have editing the template file with new formulas in, you can try them out. For
