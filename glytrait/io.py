@@ -124,6 +124,7 @@ def write_output(
     formulas: list[TraitFormula],
     groups: Optional[pd.Series] = None,
     hypothesis_test: Optional[pd.DataFrame] = None,
+    roc_result: Optional[pd.DataFrame] = None,
 ) -> None:
     """Write the output file.
 
@@ -138,6 +139,7 @@ def write_output(
         formulas (list[TraitFormula]): The trait formulas.
         groups (pd.Series): The group names, with sample IDs as index. Optional.
         hypothesis_test (Optional[pd.DataFrame], optional): The hypothesis test results. Optional.
+        roc_result (Optional[pd.DataFrame], optional): The ROC results. Optional.
     """
     wb = Workbook()
     ws0: Worksheet = wb.active
@@ -160,6 +162,10 @@ def write_output(
     if hypothesis_test is not None:
         ws4 = wb.create_sheet("Hypothesis test results")
         _write_hypothesis_test(ws4, hypothesis_test)
+
+    if roc_result is not None:
+        ws5 = wb.create_sheet("ROC results")
+        _write_roc_results(ws5, roc_result)
 
     wb.save(config.get("output_file"))
 
@@ -285,6 +291,14 @@ def _write_meta_properties(ws: Worksheet, meta_prop_df: pd.DataFrame) -> None:
 
 def _write_hypothesis_test(ws: Worksheet, hypothesis_test: pd.DataFrame) -> None:
     for row in dataframe_to_rows(hypothesis_test, index=True, header=True):
+        ws.append(row)
+    ws.delete_rows(2)
+    for cell in ws[1]:
+        cell.font = cell.font.copy(bold=True)
+
+
+def _write_roc_results(ws: Worksheet, roc_result: pd.DataFrame) -> None:
+    for row in dataframe_to_rows(roc_result, index=False, header=True):
         ws.append(row)
     ws.delete_rows(2)
     for cell in ws[1]:

@@ -5,7 +5,7 @@ from glytrait.database import load_default
 from glytrait.glycan import load_glycans, load_compositions
 from glytrait.io import read_input, write_output, read_group, read_structure
 from glytrait.preprocessing import preprocess_pipeline
-from glytrait.stats import auto_hypothesis_test
+from glytrait.stats import auto_hypothesis_test, calcu_roc_auc
 from glytrait.trait import (
     load_formulas,
     build_meta_property_table,
@@ -17,9 +17,30 @@ from glytrait.trait import (
 __all__ = ["run_workflow"]
 
 
-# --------------------------------------------------
-# Helper functions directly called by `run_workflow`
-# --------------------------------------------------
+def run_workflow(config: Config) -> None:
+    """Run the whole GlyTrait workflow.
+
+    Args:
+        config: Configuration for the workflow.
+    """
+    glycans, abund_df = _load_and_preprocess_data(config)
+    formulas = _load_formulas(config)
+    meta_prop_df, derived_traits = _calcu_derived_traits(
+        config, abund_df, glycans, formulas
+    )
+    derived_traits, formulas = _filter_invalid_traits(config, derived_traits, formulas)
+    trait_table = _combine_data(abund_df, derived_traits)
+    groups, hypo_test_result, roc_result = _statistical_analysis(config, trait_table)
+    write_output(
+        config,
+        derived_traits,
+        abund_df,
+        meta_prop_df,
+        formulas,
+        groups,
+        hypo_test_result,
+        roc_result,
+    )
 
 
 def _load_and_preprocess_data(config: Config) -> tuple[list, pd.DataFrame]:
@@ -76,40 +97,31 @@ def _filter_invalid_traits(
     return derived_traits, formulas
 
 
-def _perform_hypothesis_test(
-    config: Config,
-    abund_df: pd.DataFrame,
-    derived_traits: pd.DataFrame,
-) -> tuple[pd.DataFrame | None, pd.Series | None]:
-    """Perform hypothesis test."""
+def _get_groups(config: Config) -> pd.Series:
+    """Get group information."""
     if config.get("group_file") is not None:
         groups = read_group(config.get("group_file"))
-        combined_traits = pd.concat([abund_df, derived_traits], axis=1)
-        hypo_result = auto_hypothesis_test(combined_traits, groups)
     else:
         groups = None
+    return groups
+
+
+def _combine_data(abund_df: pd.DataFrame, derived_traits: pd.DataFrame) -> pd.DataFrame:
+    """Combine abundance table and derived traits."""
+    return pd.concat([abund_df, derived_traits], axis=1)
+
+
+def _statistical_analysis(
+    config: Config, trait_table: pd.DataFrame
+) -> tuple[pd.Series | None, pd.DataFrame | None, pd.DataFrame | None]:
+    """Perform statistical analysis."""
+    if (groups := _get_groups(config)) is not None:
+        hypo_result = auto_hypothesis_test(trait_table, groups)
+        if groups.nunique() == 2:
+            roc_result = calcu_roc_auc(trait_table, groups)
+        else:
+            roc_result = None
+    else:
         hypo_result = None
-    return hypo_result, groups
-
-
-# ---------------------------------------------------------
-# End of helper functions directly called by `run_workflow`
-# ---------------------------------------------------------
-
-
-def run_workflow(config: Config) -> None:
-    """Run the whole GlyTrait workflow.
-
-    Args:
-        config: Configuration for the workflow.
-    """
-    glycans, abund_df = _load_and_preprocess_data(config)
-    formulas = _load_formulas(config)
-    meta_prop_df, derived_traits = _calcu_derived_traits(
-        config, abund_df, glycans, formulas
-    )
-    derived_traits, formulas = _filter_invalid_traits(config, derived_traits, formulas)
-    hypo_result, groups = _perform_hypothesis_test(config, abund_df, derived_traits)
-    write_output(
-        config, derived_traits, abund_df, meta_prop_df, formulas, groups, hypo_result
-    )
+        roc_result = None
+    return groups, hypo_result, roc_result

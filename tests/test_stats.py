@@ -101,3 +101,29 @@ def test_auto_hypothesis_test_index_not_same_order(mocker):
     groups = pd.Series(["a", "a", "b"], index=[1, 2, 3])
     stats.auto_hypothesis_test(trait_df, groups)
     mwu_mock.assert_called_once_with(trait_df, groups)
+
+
+def test_calcu_roc_auc(mocker):
+    trait_df = pd.DataFrame(
+        {
+            "trait_1": [1, 2, 3, 4, 5],
+            "trait_2": [6, 7, 8, 9, 10],
+        }
+    )
+    groups = pd.Series(["group_1", "group_1", "group_1", "group_2", "group_2"])
+    roc_auc_score_mock = mocker.patch(
+        "glytrait.stats.roc_auc_score", side_effect=[0.7, 0.8]
+    )
+    result = stats.calcu_roc_auc(trait_df, groups)
+    expected = pd.DataFrame({"trait": ["trait_1", "trait_2"], "roc_auc": [0.7, 0.8]})
+    pd.testing.assert_frame_equal(result, expected)
+
+    first_args = [args[0][0] for args in roc_auc_score_mock.call_args_list]
+    first_args_expected = [groups, groups]
+    for arg1, arg2 in zip(first_args, first_args_expected):
+        pd.testing.assert_series_equal(arg1, arg2)
+
+    second_args = [args[0][1] for args in roc_auc_score_mock.call_args_list]
+    second_args_expected = [trait_df["trait_1"], trait_df["trait_2"]]
+    for arg1, arg2 in zip(second_args, second_args_expected):
+        pd.testing.assert_series_equal(arg1, arg2)

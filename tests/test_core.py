@@ -60,9 +60,15 @@ def test_load_and_preprocess_data(
     )
     load_glycans_mock = mocker.patch("glytrait.core.load_glycans", return_value=glycans)
     load_default_mock = mocker.patch("glytrait.core.load_default", return_value=glycans)
-    read_structure_mock = mocker.patch("glytrait.core.read_structure", return_value=glycans)
-    load_compositions_mock = mocker.patch("glytrait.core.load_compositions", return_value=glycans)
-    preprocess_mock = mocker.patch("glytrait.core.preprocess_pipeline", return_value=abund_df)
+    read_structure_mock = mocker.patch(
+        "glytrait.core.read_structure", return_value=glycans
+    )
+    load_compositions_mock = mocker.patch(
+        "glytrait.core.load_compositions", return_value=glycans
+    )
+    preprocess_mock = mocker.patch(
+        "glytrait.core.preprocess_pipeline", return_value=abund_df
+    )
 
     result = glytrait.core._load_and_preprocess_data(config)
 
@@ -176,41 +182,37 @@ def test_filter_invalid_traits(
 
 
 @pytest.mark.parametrize(
-    "group_file",
-    ["group_file", None],
+    "has_groups, n_groups",
+    [
+        (True, 2),
+        (True, 3),
+        (False, 0),
+    ],
 )
-def test_perform_hypothesis_test(mocker, default_config, group_file):
-    # ------------ SET UP ------------
+def test_statistical_analysis(mocker, default_config, has_groups, n_groups):
     config = default_config.copy()
-    config["group_file"] = group_file
+    if has_groups is True:
+        config["group_file"] = "group_file"
+    else:
+        config["group_file"] = None
 
-    abund_df_mock = mocker.Mock(name="abund_df_mock")
-    abund_df_mock.columns = ["col1", "col2"]
-    derived_trait_df_mock = mocker.Mock(name="derived_trait_df_mock")
-    group_series_mock = mocker.Mock(name="group_series_mock") if group_file else None
-    hypo_test_result_mock = (
-        mocker.Mock(name="hypo_test_result_mock") if group_file else None
-    )
-    combined_traits_mock = mocker.Mock(name="combined_traits_mock")
-
-    read_group_mock = mocker.patch(
-        "glytrait.core.read_group", return_value=group_series_mock
+    group_mock = mocker.Mock()
+    group_mock.nunique.return_value = n_groups
+    get_groups_mock = mocker.patch(
+        "glytrait.core._get_groups", return_value=group_mock if has_groups else None
     )
     hypo_test_mock = mocker.patch(
-        "glytrait.core.auto_hypothesis_test", return_value=hypo_test_result_mock
+        "glytrait.core.auto_hypothesis_test", return_value="hypo_test_result"
     )
-    mocker.patch("pandas.concat", return_value=combined_traits_mock)
+    roc_mock = mocker.patch("glytrait.core.calcu_roc_auc", return_value="roc_result")
 
-    # ------------ RUN ------------
-    glytrait.core._perform_hypothesis_test(config, abund_df_mock, derived_trait_df_mock)
-
-    # ------------ ASSERT ------------
-    if group_file:
-        read_group_mock.assert_called_once_with("group_file")
-        hypo_test_mock.assert_called_once_with(combined_traits_mock, group_series_mock)
+    if has_groups and n_groups == 2:
+        return_value = (group_mock, "hypo_test_result", "roc_result")
+    elif has_groups and n_groups > 2:
+        return_value = (group_mock, "hypo_test_result", None)
     else:
-        read_group_mock.assert_not_called()
-        hypo_test_mock.assert_not_called()
+        return_value = (None, None, None)
+    assert glytrait.core._statistical_analysis(config, "trait_df") == return_value
 
 
 def test_run_workflow(mocker):
@@ -228,9 +230,13 @@ def test_run_workflow(mocker):
         "glytrait.core._filter_invalid_traits",
         return_value=("derived_trait_df", "formulas"),
     )
-    perform_hypothesis_test_mock = mocker.patch(
-        "glytrait.core._perform_hypothesis_test",
-        return_value=("hypo_test_result", "groups"),
+    combine_data_mock = mocker.patch(
+        "glytrait.core._combine_data",
+        return_value="trait_df",
+    )
+    statistical_analysis_mock = mocker.patch(
+        "glytrait.core._statistical_analysis",
+        return_value=("groups", "hypo_test_result", "roc_result"),
     )
     write_output_mock = mocker.patch("glytrait.core.write_output")
 
@@ -244,9 +250,8 @@ def test_run_workflow(mocker):
     filter_invalid_traits_mock.assert_called_once_with(
         "config", "derived_trait_df", "formulas"
     )
-    perform_hypothesis_test_mock.assert_called_once_with(
-        "config", "abund_df", "derived_trait_df"
-    )
+    combine_data_mock.assert_called_once_with("abund_df", "derived_trait_df")
+    statistical_analysis_mock.assert_called_once_with("config", "trait_df")
     write_output_mock.assert_called_once_with(
         "config",
         "derived_trait_df",
@@ -255,4 +260,5 @@ def test_run_workflow(mocker):
         "formulas",
         "groups",
         "hypo_test_result",
+        "roc_result",
     )
