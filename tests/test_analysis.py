@@ -2,13 +2,13 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from glytrait import stats
+from glytrait import analysis
 from glytrait.exception import HypothesisTestingError
 
 
 @pytest.fixture(autouse=True)
 def patch_filter(monkeypatch):
-    monkeypatch.setattr(stats, "filter_derived_trait", lambda x: x)
+    monkeypatch.setattr(analysis, "filter_derived_trait", lambda x: x)
 
 
 def test_mwu():
@@ -20,7 +20,7 @@ def test_mwu():
         }
     )
     groups = pd.Series(["group_1", "group_1", "group_1", "group_2", "group_2"])
-    result = stats.mwu(trait_df, groups)
+    result = analysis.mwu(trait_df, groups)
     expected_columns = [
         "U-val",
         "p-val",
@@ -43,10 +43,10 @@ def test_kruskal(mocker):
     reject = np.array([True, False, True])
     p_val_adjusted = np.array([0.01, 0.1, 0.01])
     multicomp_mock = mocker.patch(
-        "glytrait.stats.pg.multicomp", return_value=(reject, p_val_adjusted)
+        "glytrait.analysis.pg.multicomp", return_value=(reject, p_val_adjusted)
     )
 
-    result = stats.kruskal(trait_df, groups)
+    result = analysis.kruskal(trait_df, groups)
     expected_columns = [
         "H",
         "p-val",
@@ -61,18 +61,18 @@ def test_kruskal(mocker):
 def test_auto_hypothesis_test_2_groups(mocker):
     trait_df = mocker.Mock()
     trait_df.index = pd.Index([1, 2, 3, 4])
-    mwu_mock = mocker.patch("glytrait.stats.mwu")
+    mwu_mock = mocker.patch("glytrait.analysis.mwu")
     groups = pd.Series(["a", "a", "b", "b"], index=[1, 2, 3, 4])
-    stats.auto_hypothesis_test(trait_df, groups)
+    analysis.auto_hypothesis_test(trait_df, groups)
     mwu_mock.assert_called_once_with(trait_df, groups)
 
 
 def test_auto_hypothesis_test_3_groups(mocker):
     trait_df = mocker.Mock()
     trait_df.index = pd.Index([1, 2, 3, 4, 5, 6])
-    kruskal_mock = mocker.patch("glytrait.stats.kruskal")
+    kruskal_mock = mocker.patch("glytrait.analysis.kruskal")
     groups = pd.Series(["a", "a", "b", "b", "c", "c"], index=[1, 2, 3, 4, 5, 6])
-    stats.auto_hypothesis_test(trait_df, groups)
+    analysis.auto_hypothesis_test(trait_df, groups)
     kruskal_mock.assert_called_once_with(trait_df, groups)
 
 
@@ -81,7 +81,7 @@ def test_auto_hypothesis_test_1_group(mocker):
     trait_df.index = pd.Index([1, 2, 3])
     groups = pd.Series(["a", "a", "a"], index=[1, 2, 3])
     with pytest.raises(HypothesisTestingError) as excinfo:
-        stats.auto_hypothesis_test(trait_df, groups)
+        analysis.auto_hypothesis_test(trait_df, groups)
     assert "Only one group is provided." in str(excinfo.value)
 
 
@@ -90,16 +90,16 @@ def test_auto_hypothesis_test_index_not_same(mocker):
     trait_df.index = pd.Index([1, 2, 3])
     groups = pd.Series(["a", "a", "b"], index=[1, 2, 4])
     with pytest.raises(HypothesisTestingError) as excinfo:
-        stats.auto_hypothesis_test(trait_df, groups)
+        analysis.auto_hypothesis_test(trait_df, groups)
     assert "The index of groups and trait_df must be the same." in str(excinfo.value)
 
 
 def test_auto_hypothesis_test_index_not_same_order(mocker):
     trait_df = mocker.Mock()
     trait_df.index = pd.Index([1, 3, 2])
-    mwu_mock = mocker.patch("glytrait.stats.mwu")
+    mwu_mock = mocker.patch("glytrait.analysis.mwu")
     groups = pd.Series(["a", "a", "b"], index=[1, 2, 3])
-    stats.auto_hypothesis_test(trait_df, groups)
+    analysis.auto_hypothesis_test(trait_df, groups)
     mwu_mock.assert_called_once_with(trait_df, groups)
 
 
@@ -112,9 +112,9 @@ def test_calcu_roc_auc(mocker):
     )
     groups = pd.Series(["group_1", "group_1", "group_1", "group_2", "group_2"])
     roc_auc_score_mock = mocker.patch(
-        "glytrait.stats.roc_auc_score", side_effect=[0.7, 0.8]
+        "glytrait.analysis.roc_auc_score", side_effect=[0.7, 0.8]
     )
-    result = stats.calcu_roc_auc(trait_df, groups)
+    result = analysis.calcu_roc_auc(trait_df, groups)
     expected = pd.DataFrame({"trait": ["trait_1", "trait_2"], "ROC AUC": [0.7, 0.8]})
     pd.testing.assert_frame_equal(result, expected)
 

@@ -3,8 +3,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from glytrait import cli
-from glytrait import config as gt_config
+from glytrait import cli, config as gt_config
 
 
 def test_cli_save_template(clean_dir):

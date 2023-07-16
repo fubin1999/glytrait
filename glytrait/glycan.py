@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Generator, Iterable
+from collections.abc import Generator
 from enum import Enum, auto
-from typing import Literal, NoReturn
+from typing import Literal, NoReturn, Iterable
 
 from attrs import frozen, field
 from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError

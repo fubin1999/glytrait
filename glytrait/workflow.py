@@ -1,18 +1,16 @@
 import pandas as pd
 
 from glytrait.config import Config
-from glytrait.database import load_default
 from glytrait.glycan import load_glycans, load_compositions
-from glytrait.io import read_input, write_output, read_group, read_structure
+from glytrait.io import read_input, write_output, read_group, read_structure, load_default_structures
 from glytrait.preprocessing import preprocess_pipeline
-from glytrait.stats import auto_hypothesis_test, calcu_roc_auc
+from glytrait.analysis import auto_hypothesis_test, calcu_roc_auc
 from glytrait.trait import (
-    load_formulas,
-    build_meta_property_table,
     calcu_derived_trait,
     filter_derived_trait,
-    TraitFormula,
 )
+from glytrait.meta_property import build_meta_property_table
+from glytrait.formula import TraitFormula, load_formulas
 
 __all__ = ["run_workflow"]
 
@@ -51,7 +49,7 @@ def _load_and_preprocess_data(config: Config) -> tuple[list, pd.DataFrame]:
         if strucs is None and config.get("structure_file") is not None:
             glycans = read_structure(config.get("structure_file"), comps)
         elif strucs is None and config.get("database") is not None:
-            glycans = load_default(config.get("database"), comps)
+            glycans = load_default_structures(config.get("database"), comps)
         elif strucs is not None:
             glycans = load_glycans(strucs)
         else:

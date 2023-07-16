@@ -4,8 +4,8 @@ import pandas as pd
 import pingouin as pg
 from sklearn.metrics import roc_auc_score
 
-from .exception import HypothesisTestingError
-from .trait import filter_derived_trait
+from glytrait.exception import HypothesisTestingError
+from glytrait.trait import filter_derived_trait
 
 
 def mwu(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:

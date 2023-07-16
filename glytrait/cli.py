@@ -4,9 +4,9 @@ import click
 import emoji
 
 from glytrait.config import Config
-from glytrait.core import run_workflow
+from glytrait.workflow import run_workflow
 from glytrait.exception import GlyTraitError
-from glytrait.trait import save_trait_formula_template, save_builtin_formula
+from glytrait.formula import save_trait_formula_template, save_builtin_formula
 
 UNDIFINED = "__UNDEFINED__"
 

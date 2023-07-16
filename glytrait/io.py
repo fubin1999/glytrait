@@ -1,5 +1,7 @@
-from collections.abc import Iterable
-from typing import NoReturn, Optional
+from __future__ import annotations
+
+from importlib.resources import files, as_file
+from typing import NoReturn, Optional, Literal, Iterable
 
 import numpy as np
 import pandas as pd
@@ -12,7 +14,7 @@ import glytrait
 from glytrait.config import Config
 from glytrait.exception import *
 from glytrait.glycan import NGlycan, load_glycans
-from glytrait.trait import TraitFormula
+from glytrait.formula import TraitFormula
 
 
 def read_input(file: str) -> tuple[list, list | None, pd.DataFrame]:
@@ -114,6 +116,29 @@ def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
         except KeyError:
             raise InputError(f"{comp} is not found in the structure file.")
     return load_glycans(struc_strings)
+
+
+built_in_db = {
+    "serum": files("glytrait.resources").joinpath("serum_structures.csv"),
+    "IgG": files("glytrait.resources").joinpath("IgG_structures.csv"),
+}
+
+
+def load_default_structures(
+    db: Literal["serum", "IgG"], compositions: Iterable[str]
+) -> list[NGlycan]:
+    """Return a list of default structures.
+
+    Args:
+        db: The database to use. Either "serum" or "IgG".
+        compositions: The glycan compositions to search for.
+
+    Returns:
+        A list of default structures, in the order of the compositions.
+    """
+    db_file = built_in_db[db]
+    with as_file(db_file) as db_filename:
+        return read_structure(str(db_filename), compositions)
 
 
 def write_output(

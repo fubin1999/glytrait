@@ -3,6 +3,7 @@ import pytest
 
 from glytrait import io
 from glytrait.exception import *
+from glytrait.io import load_default_structures
 
 from .glycoct import *
 
@@ -127,3 +128,9 @@ def test_read_structure_with_missing_structure(mocker):
     with pytest.raises(InputError) as excinfo:
         io.read_structure("fake_path", ["glycan2", "glycan1", "glycan4"])
     assert "glycan4 is not found in the structure file." in str(excinfo.value)
+
+
+@pytest.mark.parametrize("db", ["serum", "IgG"])
+def test_load_default(db):
+    result = load_default_structures(db, ["H3N3", "H5N4S2"])
+    assert len(result) == 2
