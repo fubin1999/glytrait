@@ -115,7 +115,7 @@ def test_calcu_roc_auc(mocker):
         "glytrait.stats.roc_auc_score", side_effect=[0.7, 0.8]
     )
     result = stats.calcu_roc_auc(trait_df, groups)
-    expected = pd.DataFrame({"trait": ["trait_1", "trait_2"], "roc_auc": [0.7, 0.8]})
+    expected = pd.DataFrame({"trait": ["trait_1", "trait_2"], "ROC AUC": [0.7, 0.8]})
     pd.testing.assert_frame_equal(result, expected)
 
     first_args = [args[0][0] for args in roc_auc_score_mock.call_args_list]
