@@ -126,6 +126,23 @@ class TestConfig:
             config.Config(new)
         assert "impute_method must be a string" in str(excinfo.value)
 
+    def test_correlation_threshold(self, base_config):
+        new = base_config | {"correlation_threshold": 0.5}
+        cfg = config.Config(new)
+        assert cfg.get("correlation_threshold") == 0.5
+
+    def test_correlation_threshold_out_of_range(self, base_config):
+        new = base_config | {"correlation_threshold": 1.2}
+        with pytest.raises(config.ConfigError) as excinfo:
+            config.Config(new)
+        assert "correlation_threshold must be between 0 and 1" in str(excinfo.value)
+
+    def test_correlation_threshold_str(self, base_config):
+        new = base_config | {"correlation_threshold": "0.5"}
+        with pytest.raises(config.ConfigError) as excinfo:
+            config.Config(new)
+        assert "correlation_threshold must be a float" in str(excinfo.value)
+
     def test_sia_linkage(self, base_config):
         new = base_config | {"sia_linkage": True}
         cfg = config.Config(new)

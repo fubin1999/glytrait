@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 import re
 from importlib.resources import files
@@ -7,7 +9,7 @@ from typing import Literal, Optional, Generator, Iterable
 import attrs
 import numpy as np
 import pandas as pd
-from attrs import define, field
+from attrs import field, frozen
 from numpy.typing import NDArray
 
 import glytrait
@@ -29,7 +31,8 @@ formula_template_file = files("glytrait.resources").joinpath(
 def _check_length(instance, attribute, value):
     """Validator for `TraitFormula`."""
     if len(value) == 0:
-        raise FormulaError(f"`{attribute.name}` cannot be empty.")
+        # The attribute name starts with "_", so we need to remove it.
+        raise FormulaError(f"`{attribute.name[1:]}` cannot be empty.")
 
 
 def _check_meta_properties(instance, attribute, value):
@@ -41,7 +44,8 @@ def _check_meta_properties(instance, attribute, value):
     invalid_properties = set(value) - set(valid_meta_properties)
     if len(invalid_properties) > 0:
         raise FormulaError(
-            f"`{attribute.name}` contains invalid meta properties: "
+            # The attribute name starts with "_", so we need to remove it.
+            f"`{attribute.name[1:]}` contains invalid meta properties: "
             f"{', '.join(invalid_properties)}."
         )
 
@@ -60,7 +64,7 @@ def _check_denominator(instance, attribute, value):
         )
 
 
-@define
+@frozen
 class TraitFormula:
     """The trait formula.
 
@@ -68,9 +72,8 @@ class TraitFormula:
         description (str): The description of the trait.
         name (str): The name of the trait.
         type (str): The type of the trait. Either "structure" or "composition".
-        numerator_properties (tuple[str]): The meta properties in the numerator.
-        denominator_properties (tuple[str]): The meta properties in the denominator.
         coefficient (float): The coefficient of the trait.
+        sia_linkage (bool): Whether the formula contains sia linkage meta properties.
 
     Examples:
         >>> from glytrait.trait import TraitFormula
@@ -88,22 +91,22 @@ class TraitFormula:
     description: str = field()
     name: str = field()
     type: str = field(validator=attrs.validators.in_(["structure", "composition"]))
-    numerator_properties: list[str] = field(
+    _numerator_properties: list[str] = field(
         converter=list,
         validator=[_check_length, _check_meta_properties, _check_numerator],
     )
-    denominator_properties: list[str] = field(
+    _denominator_properties: list[str] = field(
         converter=list,
         validator=[_check_length, _check_meta_properties, _check_denominator],
     )
     coefficient: float = field(default=1.0, validator=attrs.validators.gt(0))
-    _sia_linkage: bool = field(init=False, default=False)
+    sia_linkage: bool = field(init=False, default=False)
     _initialized = field(init=False, default=False)
     _numerator = field(init=False, default=None)
     _denominator = field(init=False, default=None)
 
     def __attrs_post_init__(self):
-        self._sia_linkage = self._init_sia_linkage()
+        object.__setattr__(self, "sia_linkage", self._init_sia_linkage())
 
     def _init_sia_linkage(self) -> bool:
         """Whether the formula contains sia linkage meta properties."""
@@ -119,9 +122,14 @@ class TraitFormula:
         return False
 
     @property
-    def sia_linkage(self) -> bool:
-        """Whether the formula contains sia linkage meta properties."""
-        return self._sia_linkage
+    def numerator_properties(self) -> list[str]:
+        """The meta properties in the numerator."""
+        return self._numerator_properties.copy()
+
+    @property
+    def denominator_properties(self) -> list[str]:
+        """The meta properties in the denominator."""
+        return self._denominator_properties.copy()
 
     def initialize(self, meta_property_table: pd.DataFrame) -> None:
         """Initialize the trait formula.
@@ -130,13 +138,11 @@ class TraitFormula:
             meta_property_table (pd.DataFrame): The table of meta properties generated
                 by `build_meta_property_table`.
         """
-        self._numerator = self._initialize(
-            meta_property_table, self.numerator_properties
-        )
-        self._denominator = self._initialize(
-            meta_property_table, self.denominator_properties
-        )
-        self._initialized = True
+        numerator = self._initialize(meta_property_table, self.numerator_properties)
+        object.__setattr__(self, "_numerator", numerator)
+        denominator = self._initialize(meta_property_table, self.denominator_properties)
+        object.__setattr__(self, "_denominator", denominator)
+        object.__setattr__(self, "_initialized", True)
 
     @staticmethod
     def _initialize(
@@ -165,6 +171,61 @@ class TraitFormula:
         if np.any(denominator == 0):
             return np.array([np.nan] * len(abundance_table))
         return numerator / denominator * self.coefficient
+
+    def is_child_of(self, other: TraitFormula) -> bool:
+        """Whether this formula is a child of the other formula.
+
+        A formula is a child of another formula
+        if both numerator and denominator of this formula have the same additional meta
+        property as the other formula.
+
+        For example,
+        - A2FG is a child of A2G
+        - A2FSG is a child of A2FG, and also a child of A2SG.
+
+        Note that A2FSG is not a child of A2G, for it is a grandchild of A2G.
+        Also, A2FG is not a child of CG.
+        """
+        num1 = set(self.numerator_properties)
+        den1 = set(self.denominator_properties)
+        try:
+            num2 = set(other.numerator_properties)
+            den2 = set(other.denominator_properties)
+        except AttributeError:
+            raise TypeError("The other formula is not a TraitFormula instance.")
+
+        # General case
+        condition_1 = (
+            not (num2 - num1)
+            and not (den2 - den1)
+            and num1 - num2 == den1 - den2
+            and len(num1 - num2) == 1
+        )
+
+        # Fc, Fa are children of F. E, L are children of S.
+        special_mp = {
+            "totalFuc": ["coreFuc", "antennaryFuc"],
+            "totalSia": ["a23Sia", "a26Sia"],
+        }
+        condition_2 = (
+            den1 == den2
+            and len(num2 - num1) == 1
+            and list(num2 - num1)[0] in special_mp
+            and len(num1 - num2) == 1
+            and list(num1 - num2)[0] in special_mp[list(num2 - num1)[0]]
+        )
+
+        # GS is a child of S.
+        condition_3 = (
+            num1 == num2
+            and ("totalSia" in num1 or "a23Sia" in num1 or "a26Sia" in num1)
+            and len(den1 - den2) == 1
+            and list(den1 - den2)[0] == "totalGal"
+        )
+
+        if condition_1 or condition_2 or condition_3:
+            return True
+        return False
 
 
 def load_formulas(

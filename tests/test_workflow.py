@@ -1,5 +1,7 @@
 from typing import Any
 
+import numpy as np
+import pandas as pd
 import pytest
 
 import glytrait.workflow
@@ -185,6 +187,36 @@ def test_filter_invalid_traits(
     assert result_formulas == expected_formulas
 
 
+def test_important_trait_table(mocker, default_config):
+    config = default_config.copy()
+    config["correlation_threshold"] = 0.8
+
+    filter_colinearity_mock = mocker.patch(
+        "glytrait.workflow.filter_colinearity",
+        return_value=np.array([True, False, True]),
+    )
+    derived_trait_df_mock = pd.DataFrame(
+        {
+            "trait1": [1, 2, 3],
+            "trait2": [4, 5, 6],
+            "trait3": [7, 8, 9],
+        }
+    )
+    expected = pd.DataFrame(
+        {
+            "trait1": [1, 2, 3],
+            "trait3": [7, 8, 9],
+        }
+    )
+    result = glytrait.workflow._important_trait_table(
+        config, derived_trait_df_mock, "formulas"
+    )
+    filter_colinearity_mock.assert_called_once_with(
+        "formulas", derived_trait_df_mock, threshold=0.8
+    )
+    pd.testing.assert_frame_equal(result, expected)
+
+
 @pytest.mark.parametrize(
     "has_groups, n_groups",
     [
@@ -237,6 +269,10 @@ def test_run_workflow(mocker):
         "glytrait.workflow._filter_invalid_traits",
         return_value=("derived_trait_df", "formulas"),
     )
+    important_trait_table_mock = mocker.patch(
+        "glytrait.workflow._important_trait_table",
+        return_value="important_trait_table",
+    )
     combine_data_mock = mocker.patch(
         "glytrait.workflow._combine_data",
         return_value="trait_df",
@@ -257,12 +293,16 @@ def test_run_workflow(mocker):
     filter_invalid_traits_mock.assert_called_once_with(
         "config", "derived_trait_df", "formulas"
     )
+    important_trait_table_mock.assert_called_once_with(
+        "config", "derived_trait_df", "formulas"
+    )
     combine_data_mock.assert_called_once_with("abund_df", "derived_trait_df")
     statistical_analysis_mock.assert_called_once_with("config", "trait_df")
     write_output_mock.assert_called_once_with(
         "config",
         "derived_trait_df",
         "abund_df",
+        "important_trait_table",
         "meta_prop_df",
         "formulas",
         "groups",

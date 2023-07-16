@@ -215,3 +215,13 @@ def test_cli_save_built_in_formulas(clean_dir):
     file2 = clean_dir / "comp_builtin_formulas.txt"
     assert file1.exists()
     assert file2.exists()
+
+
+def test_cli_corr_threshold(mocker, clean_dir, input_file, default_config):
+    runner = CliRunner()
+    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow")
+    result = runner.invoke(cli.cli, [str(input_file), "-c", 0.5])
+    assert result.exit_code == 0
+    config = default_config | dict(correlation_threshold=0.5)
+    run_workflow_mock.assert_called_once()
+    assert run_workflow_mock.call_args[0][0].asdict() == config
