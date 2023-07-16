@@ -10,6 +10,7 @@ default_config = {
     "mode": None,
     "filter_glycan_max_na": 0.5,
     "impute_method": "min",
+    "correlation_threshold": 0.9,
     "sia_linkage": False,
     "formula_file": None,
     "filter_invalid_traits": True,
@@ -31,6 +32,7 @@ class Config:
         - mode: The mode of the workflow. Either "structure" or "composition".
         - filter_glycan_max_na: Maximum NA percentage for a glycan to be kept.
         - impute_method: Method for imputing missing values.
+        - correlation_threshold: Threshold for colinearity filtering.
         - sia_linkage: Whether to include sialic acid linkage in the analysis.
         - formula_file: Path to the formula file.
         - filter_invalid_traits: Whether to filter out invalid traits.
@@ -150,6 +152,16 @@ def valid_impute_method(config: Mapping[str, Any]) -> NoReturn:
         raise ConfigError("impute_method must be a string.")
     if value not in {"min", "mean", "median", "zero", "lod"}:
         raise ConfigError("impute_method must be one of: min, mean, median, zero, lod.")
+
+
+@Config.register_validator
+def valid_correlation_threshold(config: Mapping[str, Any]) -> NoReturn:
+    """Check if a value is a valid correlation_threshold."""
+    value = config["correlation_threshold"]
+    if not isinstance(value, (float, int)):
+        raise ConfigError("correlation_threshold must be a float.")
+    if not 0 <= value <= 1:
+        raise ConfigError("correlation_threshold must be between 0 and 1.")
 
 
 @Config.register_validator

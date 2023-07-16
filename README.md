@@ -26,6 +26,7 @@ glycan structures.
     - [Preprocessing](#preprocessing)
     - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
     - [Post-filter](#post-filtering)
+    - [Colinearity filtering](#colinearity-filtering)
     - [Univariate analysis](#univariate-analysis)
     - [The GlyTrait Formula](#the-glytrait-formula-advanced)
 - [License](#license)
@@ -90,17 +91,24 @@ same directory with data.csv.
 Inside the xlsx file are four (five) sheets:
 
 1. The summary;
-2. The trait values for each sample;
-3. The trait descriptions;
-4. The meta properties GlyTrait generated to calculated derived traits;
-5. The hypergeometric test results for each trait, if group information is provided.
+2. The trait values for each sample, including the direct trait
+   (glycan relative abundance) and the derived traits (calculated by GlyTrait);
+3. The definitions for the derived traits;
+4. Important derived trait values, filtered for colinearity;
+5. The meta properties GlyTrait generated to calculated derived traits;
+6. The univariate analysis results for each trait, if group information is provided.
+7. The ROC analysis results for each trait, if group information is provided.
 
-You don't need the forth one for common situations, but a peek of it might help you better
-understand how GlyTrait works.
+You don't need the fifth one for common situations,
+but a peek of it might help you better understand how GlyTrait works.
 
-The detailed format of the input file will be introduced in the **Input file format** section.
+The detailed format of the input file will be introduced in the
+[Input file format](#input-file-format) section.
 
 ### Options
+
+*This section is intended to give an overview of the CLI interface.
+Feel free to skip it right now.*
 
 As a glance, GlyTrait supports the following options:
 
@@ -113,6 +121,7 @@ As a glance, GlyTrait supports the following options:
 |      -d, --database       | The built-in database to use, "serum" or "IgG".                                                                 |
 | -r, --filter-glycan-ratio | The proportion of missing values for a glycan to be ruled out. Default: 0.5.                                    |
 |    -i, --inpute-method    | The imputation method. "min", "mean", "median", "zero", or "lod". Default: "min".                               |
+|   -c, --corr-threshold    | The correlation threshold for colinearity filtering.                                                            |
 |     -l, --sia-linkage     | Flag to include the sialic acid linkage traits.                                                                 |
 |        --no-filter        | Flag to turn off post-filtering of derived traits.                                                              |
 |        -g, --group        | The group file.                                                                                                 |
@@ -273,19 +282,19 @@ The following steps will be done:
 - Perform Total Abundance Normalization.
 
 In the glycan-filtering step, the proportion threshold could be specified by the "-r" or the
-"--filter-glycan-ratio" option. 
-The default value is 0.5, which means if a glycan has missing values in more than 50% of samples, 
-it will be removed. 
+"--filter-glycan-ratio" option.
+The default value is 0.5, which means if a glycan has missing values in more than 50% of samples,
+it will be removed.
 You can change this value to 0.3 by:
 
 ```shell
 glytrait data.csv -r 0.3
 ```
 
-The imputation method could be specified by the "-i" or the "--impute-method" option. 
-The default method is "min", 
+The imputation method could be specified by the "-i" or the "--impute-method" option.
+The default method is "min",
 which means missing values will be imputed by the minimum value of a glycan.
-Other supported methods are "mean", "median", "zero", "lod". 
+Other supported methods are "mean", "median", "zero", "lod".
 You can change imputation method to "mean" by:
 
 ```shell
@@ -303,20 +312,21 @@ A full list of supported imputation methods are:
 
 ### Sialic-acid-linkage traits
 
-Sialic acids can have different linkages for N-glycans (e.g. α2,3 and α2,6). 
-Different sialic acid linkage has different biological functions. 
-GlyTrait supports calculating derived traits regarding these linkages. 
+Sialic acids can have different linkages for N-glycans (e.g. α2,3 and α2,6).
+Different sialic acid linkage has different biological functions.
+GlyTrait supports calculating derived traits regarding these linkages.
 To use this feature, you need to have siaic acid linkage information.
 
 In the structure mode, the "Structure" column or the structure file should contain the linkage
-information. 
-Only linkage information about sialic acids is needed. 
+information.
+Only linkage information about sialic acids is needed.
 This can be easily done using GlycoWorkbench.
 
-In the composition mode, the "Composition" column must contain the linkage information. 
-GlyTrait uses a common notation for sialic acid with different linkages: 
-"E" for a2,6-linked sialic acids, and "L" a2,3-linked sialic acids. 
-For example, "H5N4F1E1L1" contains 2 sialic acids, one is a2,6-linked and the other is a2,3-linked.
+In the composition mode, the "Composition" column must contain the linkage information.
+GlyTrait uses a common notation for sialic acid with different linkages:
+"E" for a2,6-linked sialic acids, and "L" a2,3-linked sialic acids.
+For example, "H5N4F1E1L1" contains 2 sialic acids, one is a2,6-linked and the other is
+a2,3-linked.
 
 You can use the "-l" or "--sia-linkage" option to include sialic-acid-linkage traits:
 
@@ -330,14 +340,42 @@ no "S" in composition strings in the composition mode.
 
 ### Post-Filtering
 
-Some derived traits might not be useful for your analysis. 
-For example, some traits might all have the same value for all samples, 
-or be NaN due to zero being in the denominator. 
-GlyTrait rules out these traits by default. 
+Some derived traits might not be useful for your analysis.
+For example, some traits might all have the same value for all samples,
+or be NaN due to zero being in the denominator.
+GlyTrait rules out these traits by default.
 If you want to keep these traits, use the "--no-filter" option:
 
 ```shell
 glytrait data.csv --no-filter
+```
+
+### Colinearity filtering
+
+Colinearity, or multiple collinearity, is a common problem in statistics.
+It is the phenomenon that some variables are highly correlated with each other.
+Colinearity can cause problems in statistical analysis and machine learning:
+
+- The coefficients of the variables are unstable in linear regression and logistic regression.
+- The p-values are unstable in statistical tests, usually larger.
+- The performance of machine learning models is unstable, suffering overfitting.
+- The feature importance is unstable for nearly all model interpretation methods.
+
+GlyTrait filters out highly correlated traits, using a "trait family tree" filtering method.
+Briefly, for a two correlated traits, the "parent" trait, 
+which normally considers more glycans, will be kept. 
+For example, for the two high correlated traits: A2FG and A2G, the latter will be kept,
+because it is more general, and more robust for considering more glycans.
+Thanks to the dynamic "trait family tree" generated by GlyTrait,
+user-defined traits will also be considered in this filtering process.
+
+This results in a seperated table containing only those important derived traits left.
+
+GlyTrait regards two traits are highly correlated if their correlation coefficient is above 0.9.
+You can change this threshold by the "-c" or "--corr-threshold" option:
+
+```shell
+glytrait data.csv -c 0.8
 ```
 
 ### Statistical analysis
@@ -361,33 +399,33 @@ Then use the "-g" or "--group-file" option to specify the group file:
 glytrait data.csv -g group.csv
 ```
 
-GlyTrait will carry out Mann-Whitney U Test for two groups, 
-and Kruskal-Wallis H Test for more than two groups. 
-The Benjamini-Hochberg procedure is used to correct the p-values. 
-For more-than-two-groups situations, the Mann-Whitney U Test will be used for post-hoc test. 
+GlyTrait will carry out Mann-Whitney U Test for two groups,
+and Kruskal-Wallis H Test for more than two groups.
+The Benjamini-Hochberg procedure is used to correct the p-values.
+For more-than-two-groups situations, the Mann-Whitney U Test will be used for post-hoc test.
 GlyTraits uses non-parametric tests for the sake of robustness.
 
-ROC analysis will only be carried out for binary classification problems, 
+ROC analysis will only be carried out for binary classification problems,
 i.e. if there are only two groups in the group file.
 
-A post-filtering step will be carried out before any statistical analysis, 
-even if the "--no-filter" option is used. 
+A post-filtering step will be carried out before any statistical analysis,
+even if the "--no-filter" option is used.
 (See [Post-Filtering](#post-filtering) for details.)
 
 ### The GlyTrait Formula (Advanced)
 
 Currently 277 derived traits (including sialic acid linkage traits) is included in the GlyTrait
-tool. 
-This list is curated from literature and covers nearly all derived traits reported. 
-However, you may want to add new traits to fulfill your own need. 
-GlyTriat using a meta-properties-oriented formula system, the **GlyTrait Formula**, 
-to represent the meaning of a trait. 
+tool.
+This list is curated from literature and covers nearly all derived traits reported.
+However, you may want to add new traits to fulfill your own need.
+GlyTriat using a meta-properties-oriented formula system, the **GlyTrait Formula**,
+to represent the meaning of a trait.
 **GlyTrait Formula ** is a versatile tool allowing you to add your own traits.
 
 #### GlyTrait Formula overview
 
 **GlyTrait Formula** is a text based formula representing sys allowing you to combine various meta
-properties to get new traits. 
+properties to get new traits.
 As an overview, the formula should be in the format of:
 
 ![formula](img/formula.png)
@@ -418,8 +456,8 @@ To start using **GlyTrait Formula**, you first need to get a formula template fi
 glytrait -t some_dir
 ```
 
-An template txt file will be saved in the given "some_dir" directory. 
-"some_dir" needed to exist, GlyTrait will create this folder for you if it doesn't exist. 
+An template txt file will be saved in the given "some_dir" directory.
+"some_dir" needed to exist, GlyTrait will create this folder for you if it doesn't exist.
 A detailed instruction on how to write trait formulas is in that file.
 
 #### Built-in formulas
@@ -433,7 +471,7 @@ glytrait -b some_dir
 
 #### Using the custom formulas
 
-Once you have editing the template file with new formulas in, you can try them out. 
+Once you have editing the template file with new formulas in, you can try them out.
 For incoperating the custom formulas, use the "-f" or "--formula-file" option:
 
 ```shell

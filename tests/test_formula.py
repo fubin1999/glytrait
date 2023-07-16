@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from attrs import evolve
 
 import glytrait.formula
 from glytrait.exception import FormulaError
@@ -166,9 +167,9 @@ class TestTraitFormula:
     def test_calcu_trait_with_coef(
         self, formula1, meta_property_table, abundance_table
     ):
-        formula1.coefficient = 2
-        formula1.initialize(meta_property_table)
-        result = formula1.calcu_trait(abundance_table)
+        formula = evolve(formula1, coefficient=2)
+        formula.initialize(meta_property_table)
+        result = formula.calcu_trait(abundance_table)
         expected = [10 / 10, 14 / 11, 18 / 12]
         np.testing.assert_array_equal(result, expected)
 
@@ -179,6 +180,74 @@ class TestTraitFormula:
         result = formula1.calcu_trait(abundance_table)
         expected = np.array([np.nan, np.nan, np.nan])
         np.testing.assert_array_equal(result, expected)
+
+    def test_try_to_change_numerator(self, formula1):
+        numerator = formula1.numerator_properties
+        before_change = numerator.copy()
+        numerator.append("new_property")
+        assert formula1.numerator_properties == before_change
+
+    @pytest.mark.parametrize(
+        "num1, den1, num2, den2, expected",
+        [
+            # The basic child-parent relationship
+            (
+                ["isComplex", "is1Antennary", "coreFuc"],
+                ["isComplex", "is1Antennary"],
+                ["isComplex", "coreFuc"],
+                ["isComplex"],
+                True,
+            ),
+            # A2Fc is the child of A2F
+            (
+                ["isComplex", "is2Antennary", "coreFuc"],
+                ["isComplex", "is2Antennary"],
+                ["isComplex", "is2Antennary", "totalFuc"],
+                ["isComplex", "is2Antennary"],
+                True,
+            ),
+            # A2GS is the child of A2S
+            (
+                ["isComplex", "is2Antennary", "totalSia"],
+                ["isComplex", "is2Antennary", "totalGal"],
+                ["isComplex", "is2Antennary", "totalSia"],
+                ["isComplex", "is2Antennary"],
+                True
+            ),
+            # Formula 1 and Formula 2 have one meta property not in common
+            (
+                ["isComplex", "is2Antennary", "hasSia", "coreFuc"],
+                ["isComplex", "is2Antennary", "hasSia"],
+                ["isComplex", "is2Antennary", "noSia", "coreFuc"],
+                ["isComplex", "is2Antennary", "noSia"],
+                False,
+            ),
+            # Formula 1 is the grandchild of Formula 2, not child
+            (
+                ["isComplex", "is2Antennary", "hasSia", "coreFuc"],
+                ["isComplex", "is2Antennary", "hasSia"],
+                ["isComplex", "coreFuc"],
+                ["isComplex"],
+                False,
+            ),
+        ],
+    )
+    def test_is_child_of(self, num1, den1, num2, den2, expected):
+        form1 = glytrait.formula.TraitFormula(
+            description="",
+            name="F1",
+            type="structure",
+            numerator_properties=num1,
+            denominator_properties=den1,
+        )
+        form2 = glytrait.formula.TraitFormula(
+            description="",
+            name="F2",
+            type="structure",
+            numerator_properties=num2,
+            denominator_properties=den2,
+        )
+        assert form1.is_child_of(form2) == expected
 
 
 @pytest.mark.parametrize(
@@ -230,7 +299,9 @@ class TestTraitFormula:
     ],
 )
 def test_parse_expression(expression, name, num_props, den_props, coef):
-    r_name, r_num_props, r_den_props, r_coef = glytrait.formula._parse_expression(expression)
+    r_name, r_num_props, r_den_props, r_coef = glytrait.formula._parse_expression(
+        expression
+    )
     assert r_name == name
     assert sorted(r_num_props) == sorted(num_props)
     assert sorted(r_den_props) == sorted(den_props)

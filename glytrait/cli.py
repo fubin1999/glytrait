@@ -107,6 +107,13 @@ def save_builtin_formulas_callback(ctx, param, value):
     "Use --no-filter to disable filtering.",
 )
 @click.option(
+    "-c",
+    "--corr-threshold",
+    type=click.FLOAT,
+    default=0.9,
+    help="Threshold for correlation between traits. Default is 0.9.",
+)
+@click.option(
     "-g",
     "--group-file",
     type=click.Path(exists=True),
@@ -144,6 +151,7 @@ def cli(
     sia_linkage,
     formula_file,
     filter,
+    corr_threshold,
     group_file,
     structure_file,
     database,
@@ -164,6 +172,7 @@ def cli(
                 mode=mode,
                 filter_glycan_max_na=filter_glycan_ratio,
                 impute_method=impute_method,
+                correlation_threshold=corr_threshold,
                 sia_linkage=sia_linkage,
                 formula_file=formula_file,
                 filter_invalid_traits=filter,

@@ -1,16 +1,23 @@
 import pandas as pd
 
-from glytrait.config import Config
-from glytrait.glycan import load_glycans, load_compositions
-from glytrait.io import read_input, write_output, read_group, read_structure, load_default_structures
-from glytrait.preprocessing import preprocess_pipeline
 from glytrait.analysis import auto_hypothesis_test, calcu_roc_auc
+from glytrait.colinearity import filter_colinearity
+from glytrait.config import Config
+from glytrait.formula import TraitFormula, load_formulas
+from glytrait.glycan import load_glycans, load_compositions
+from glytrait.io import (
+    read_input,
+    write_output,
+    read_group,
+    read_structure,
+    load_default_structures,
+)
+from glytrait.meta_property import build_meta_property_table
+from glytrait.preprocessing import preprocess_pipeline
 from glytrait.trait import (
     calcu_derived_trait,
     filter_derived_trait,
 )
-from glytrait.meta_property import build_meta_property_table
-from glytrait.formula import TraitFormula, load_formulas
 
 __all__ = ["run_workflow"]
 
@@ -27,12 +34,14 @@ def run_workflow(config: Config) -> None:
         config, abund_df, glycans, formulas
     )
     derived_traits, formulas = _filter_invalid_traits(config, derived_traits, formulas)
+    important_traits = _important_trait_table(config, derived_traits, formulas)
     trait_table = _combine_data(abund_df, derived_traits)
     groups, hypo_test_result, roc_result = _statistical_analysis(config, trait_table)
     write_output(
         config,
         derived_traits,
         abund_df,
+        important_traits,
         meta_prop_df,
         formulas,
         groups,
@@ -107,6 +116,18 @@ def _get_groups(config: Config) -> pd.Series:
 def _combine_data(abund_df: pd.DataFrame, derived_traits: pd.DataFrame) -> pd.DataFrame:
     """Combine abundance table and derived traits."""
     return pd.concat([abund_df, derived_traits], axis=1)
+
+
+def _important_trait_table(
+    config: Config, derived_trait_df: pd.DataFrame, formulas: list[TraitFormula]
+) -> pd.DataFrame:
+    """Get important trait table."""
+    important = filter_colinearity(
+        formulas, derived_trait_df, threshold=config.get("correlation_threshold")
+    )
+    important_trait = derived_trait_df.columns[important]
+    important_trait_df = derived_trait_df[important_trait]
+    return important_trait_df
 
 
 def _statistical_analysis(
