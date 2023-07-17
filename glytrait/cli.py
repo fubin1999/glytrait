@@ -4,9 +4,9 @@ import click
 import emoji
 
 from glytrait.config import Config
-from glytrait.workflow import run_workflow
 from glytrait.exception import GlyTraitError
 from glytrait.formula import save_trait_formula_template, save_builtin_formula
+from glytrait.workflow import run_workflow
 
 UNDIFINED = "__UNDEFINED__"
 
@@ -157,6 +157,24 @@ def cli(
     database,
 ):
     """Run the glytrait workflow."""
+    if input_file is None:
+        msg = """
+Welcome to GlyTrait!
+
+   _____ _    _______        _ _   
+  / ____| |  |__   __|      (_) |  
+ | |  __| |_   _| |_ __ __ _ _| |_ 
+ | | |_ | | | | | | '__/ _` | | __|
+ | |__| | | |_| | | | | (_| | | |_ 
+  \_____|_|\__, |_|_|  \__,_|_|\__|
+            __/ |                  
+           |___/                   
+
+Use `glytrait --help` for more information.
+"""
+        click.echo(msg)
+        return
+
     if output_file is None:
         output_file = str(
             Path(input_file).with_name(Path(input_file).stem + "_glytrait.xlsx")
