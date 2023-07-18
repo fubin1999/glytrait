@@ -1,7 +1,6 @@
 import pandas as pd
 
 from glytrait.analysis import auto_hypothesis_test, calcu_roc_auc
-from glytrait.colinearity import filter_colinearity
 from glytrait.config import Config
 from glytrait.formula import TraitFormula, load_formulas
 from glytrait.glycan import load_glycans, load_compositions
@@ -16,7 +15,7 @@ from glytrait.meta_property import build_meta_property_table
 from glytrait.preprocessing import preprocess_pipeline
 from glytrait.trait import (
     calcu_derived_trait,
-    filter_derived_trait,
+    filter_invalid, filter_colinearity,
 )
 
 __all__ = ["run_workflow"]
@@ -99,7 +98,7 @@ def _filter_invalid_traits(
 ) -> tuple[pd.DataFrame, list[TraitFormula]]:
     """Filter invalid traits if needed."""
     if config.get("filter_invalid_traits"):
-        derived_traits = filter_derived_trait(derived_traits)
+        derived_traits = filter_invalid(derived_traits)
         formulas = [f for f in formulas if f.name in derived_traits.columns]
     return derived_traits, formulas
 

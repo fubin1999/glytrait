@@ -169,7 +169,7 @@ def test_filter_invalid_traits(
     derived_trait_filtered_df_mock = mocker.Mock(name="derived_trait_filtered_df_mock")
     derived_trait_filtered_df_mock.columns = ["trait1", "trait2"]
     mocker.patch(
-        "glytrait.workflow.filter_derived_trait",
+        "glytrait.workflow.filter_invalid",
         return_value=derived_trait_filtered_df_mock,
     )
 

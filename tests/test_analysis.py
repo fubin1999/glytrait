@@ -8,7 +8,7 @@ from glytrait.exception import HypothesisTestingError
 
 @pytest.fixture(autouse=True)
 def patch_filter(monkeypatch):
-    monkeypatch.setattr(analysis, "filter_derived_trait", lambda x: x)
+    monkeypatch.setattr(analysis, "filter_invalid", lambda x: x)
 
 
 def test_mwu():
