@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 import glytrait.meta_property
 from glytrait import glycan as glyc
@@ -19,26 +20,27 @@ def test_build_meta_property_table_struc_no_sia_linkage(make_glycan):
     )
     expected = pd.DataFrame(
         {
-            "isComplex": [1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1],
-            "isHighMannose": [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0],
-            "isHybrid": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-            "isBisecting": [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-            "is1Antennary": [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
-            "is2Antennary": [1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
-            "is3Antennary": [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
-            "is4Antennary": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            "totalAntenna": [2, 2, 0, 0, 0, 1, 0, 3, 2, 2, 2, 2],
-            "coreFuc": [0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
-            "antennaryFuc": [0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
-            "hasAntennaryFuc": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-            "totalFuc": [0, 1, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0],
-            "hasFuc": [0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0],
-            "noFuc": [1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1],
-            "totalSia": [2, 1, 0, 1, 0, 1, 0, 1, 1, 2, 2, 2],
-            "hasSia": [1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1],
-            "noSia": [0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0],
-            "totalMan": [3, 3, 5, 5, 3, 3, 6, 3, 3, 3, 3, 3],
-            "totalGal": [2, 2, 0, 1, 0, 1, 0, 3, 1, 2, 2, 2],
+            "isComplex": [1, 1, 0, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+            "isHighMannose": [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+            "isHybrid": [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "isBisecting": [0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            "is1Antennary": [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+            "is2Antennary": [1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0],
+            "is3Antennary": [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+            "is4Antennary": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            "totalAntenna": [2, 2, 0, 0, 0, 1, 0, 3, 2, 2, 2, 2, 4],
+            "coreFuc": [0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1],
+            "antennaryFuc": [0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0],
+            "hasAntennaryFuc": [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+            "totalFuc": [0, 1, 0, 0, 0, 0, 0, 1, 3, 0, 0, 0, 1],
+            "hasFuc": [0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1],
+            "noFuc": [1, 0, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0],
+            "totalSia": [2, 1, 0, 1, 0, 1, 0, 1, 1, 2, 2, 2, 4],
+            "hasSia": [1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1],
+            "noSia": [0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0],
+            "totalMan": [3, 3, 5, 5, 3, 3, 6, 3, 3, 3, 3, 3, 3],
+            "totalGal": [2, 2, 0, 1, 0, 1, 0, 3, 1, 2, 2, 2, 5],
+            "hasPolyLacNAc": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
         },
         index=glycan_ids,
     )
@@ -69,7 +71,7 @@ def test_build_meta_property_table_struc_sia_linkage(make_glycan):
         },
         index=glycan_ids,
     )
-    assert len(result.columns) == 26
+    assert len(result.columns) == 27
     partial_result = result[partial_expected.columns]
     pd.testing.assert_frame_equal(partial_result, partial_expected, check_dtype=False)
 

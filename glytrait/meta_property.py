@@ -26,6 +26,7 @@ basic_struc_meta_properties = {
     "noSia",
     "totalMan",
     "totalGal",
+    "hasPolyLacNAc"
 }
 sia_struc_meta_properties = {
     "a23Sia",
@@ -113,6 +114,7 @@ def _build_struc_meta_property_table(
         - noSia: Whether the glycan has no sialic acids.
         - totalMan: The total number of mannoses.
         - totalGal: The total number of galactoses.
+        - hasPolyLacNAc: Whether the glycan has any poly-LacNAc.
 
     If `sia_linkage` is True, the following meta properties are also included:
         - a23Sia: The number of sialic acids with an alpha-2,3 linkage.
@@ -157,6 +159,7 @@ def _build_struc_meta_property_table(
     meta_property_table["noSia"] = [g.count_sia() == 0 for g in glycans]
     meta_property_table["totalMan"] = [g.count_man() for g in glycans]
     meta_property_table["totalGal"] = [g.count_gal() for g in glycans]
+    meta_property_table["hasPolyLacNAc"] = [g.has_poly_lacnac() for g in glycans]
 
     if sia_linkage:
         meta_property_table["a23Sia"] = [g.count_a23_sia() for g in glycans]

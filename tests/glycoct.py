@@ -526,6 +526,7 @@ LIN
 """
 # endregion
 
+
 # Some O-glycan
 # region test_glycoct_13
 test_glycoct_13 = """RES
@@ -535,5 +536,85 @@ test_glycoct_13 = """RES
 LIN
 1:1d(2+1)2n
 2:1o(3+1)3d
+"""
+# endregion
+
+
+# H8N7F1S4 (poly-LacNAc)
+r"""
+Neu5Ac - Gal - Glc2NAc - Gal - Glc2NAc
+                                        \
+                Neu5Ac - Gal - Glc2NAc - Man                   Fuc
+                                            \                   |
+                                             Man - Glc2NAc - Glc2NAc
+                                            /
+                Neu5Ac - Gal - Glc2NAc - Man
+                                        /
+                Neu5Ac - Gal - Glc2NAc
+"""
+# region test_glycoct_14
+test_glycoct_14 = """RES
+1b:b-dglc-HEX-1:5
+2b:x-lgal-HEX-1:5|6:d
+3s:n-acetyl
+4b:b-dglc-HEX-1:5
+5s:n-acetyl
+6b:b-dman-HEX-1:5
+7b:a-dman-HEX-1:5
+8b:x-dglc-HEX-1:5
+9b:x-dgal-HEX-1:5
+10b:x-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+11s:n-acetyl
+12s:n-acetyl
+13b:x-dglc-HEX-1:5
+14b:x-dgal-HEX-1:5
+15b:x-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+16s:n-acetyl
+17s:n-acetyl
+18b:a-dman-HEX-1:5
+19b:x-dglc-HEX-1:5
+20b:x-dgal-HEX-1:5
+21b:x-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+22s:n-acetyl
+23s:n-acetyl
+24b:x-dglc-HEX-1:5
+25b:x-dgal-HEX-1:5
+26b:x-dglc-HEX-1:5
+27b:x-dgal-HEX-1:5
+28b:x-dgro-dgal-NON-2:6|1:a|2:keto|3:d
+29s:n-acetyl
+30s:n-acetyl
+31s:n-acetyl
+LIN
+1:1o(-1+1)2d
+2:1d(2+1)3n
+3:1o(4+1)4d
+4:4d(2+1)5n
+5:4o(4+1)6d
+6:6o(3+1)7d
+7:7o(-1+1)8d
+8:8o(-1+1)9d
+9:9o(-1+2)10d
+10:10d(5+1)11n
+11:8d(2+1)12n
+12:7o(-1+1)13d
+13:13o(-1+1)14d
+14:14o(-1+2)15d
+15:15d(5+1)16n
+16:13d(2+1)17n
+17:6o(6+1)18d
+18:18o(-1+1)19d
+19:19o(-1+1)20d
+20:20o(-1+2)21d
+21:21d(5+1)22n
+22:19d(2+1)23n
+23:18o(-1+1)24d
+24:24o(-1+1)25d
+25:25o(-1+1)26d
+26:26o(-1+1)27d
+27:27o(-1+2)28d
+28:28d(5+1)29n
+29:26d(2+1)30n
+30:24d(2+1)31n
 """
 # endregion

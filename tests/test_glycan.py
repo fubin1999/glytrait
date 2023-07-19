@@ -48,6 +48,78 @@ class TestGlycan:
     @pytest.mark.parametrize(
         "glycoct, expected",
         [
+            (
+                test_glycoct_1,
+                [
+                    "Glc2NAc",
+                    "Glc2NAc",
+                    "Man",
+                    "Man",
+                    "Man",
+                    "Glc2NAc",
+                    "Glc2NAc",
+                    "Gal",
+                    "Gal",
+                    "Neu5Ac",
+                    "Neu5Ac",
+                ],
+            ),
+        ],
+    )
+    def test_traversal(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        assert (
+            list(glyc.get_mono_comp(mono) for mono in glycan._traversal("bfs"))
+            == expected
+        )
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (
+                test_glycoct_1,
+                [
+                    "Glc2NAc",
+                    "Glc2NAc",
+                    "Man",
+                    "Man",
+                    "Man",
+                    "Glc2NAc",
+                    "Glc2NAc",
+                ],
+            )
+        ],
+    )
+    def test_traversal_skip(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        it = glycan._traversal("bfs", skip=["Gal", "Neu5Ac"])
+        assert list(glyc.get_mono_comp(mono) for mono in it) == expected
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (
+                test_glycoct_1,
+                [
+                    "Glc2NAc",
+                    "Glc2NAc",
+                    "Man",
+                    "Man",
+                    "Man",
+                    "Glc2NAc",
+                    "Glc2NAc",
+                ],
+            )
+        ],
+    )
+    def test_traversal_only(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        it = glycan._traversal("bfs", only=["Glc2NAc", "Man"])
+        assert list(glyc.get_mono_comp(mono) for mono in it) == expected
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
             (test_glycoct_1, False),
             (test_glycoct_2, True),
         ],
@@ -200,6 +272,19 @@ class TestGlycan:
     def test_count_gal(self, glycoct, expected, make_glycan):
         glycan = make_glycan(glycoct)
         assert glycan.count_gal() == expected
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, False),
+            (test_glycoct_2, False),
+            (test_glycoct_8, False),
+            (test_glycoct_14, True),
+        ],
+    )
+    def test_has_poly_lacnac(self, glycoct, expected, make_glycan):
+        glycan = make_glycan(glycoct)
+        assert glycan.has_poly_lacnac() == expected
 
     def test_init_not_Nglycan(self, make_glycan):
         with pytest.raises(StructureParseError) as excinfo:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from collections.abc import Generator
 from enum import Enum, auto
-from typing import Literal, NoReturn, Iterable
+from typing import Literal, NoReturn, Iterable, Optional
 
 from attrs import frozen, field
 from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError
@@ -81,7 +81,7 @@ class NGlycan:
 
     @classmethod
     def from_string(
-        cls, string: str, format: Literal["glycoct"] = "glycoct"
+            cls, string: str, format: Literal["glycoct"] = "glycoct"
     ) -> NGlycan:
         """Build a glycan from a string representation.
 
@@ -113,14 +113,49 @@ class NGlycan:
         """
         return cls.from_string(glycoct, format="glycoct")
 
-    def _breadth_first_traversal(
-        self, skip: Iterable[str] = None
+    def _traversal(
+            self,
+            method: Literal["bfs", "dfs"],
+            skip: Optional[Iterable[str]] = None,
+            only: Optional[Iterable[str]] = None,
     ) -> Generator[MonosaccharideResidue, None, None]:
-        if skip is None:
-            skip = []
-        for node in self._glypy_glycan.breadth_first_traversal():
-            if get_mono_comp(node) not in skip:
-                yield node
+        # set the traversal method
+        if method == "bfs":
+            traversal_func = self._glypy_glycan.breadth_first_traversal
+        elif method == "dfs":
+            traversal_func = self._glypy_glycan.depth_first_traversal
+        else:
+            raise ValueError(f"Unknown traversal method: {method}")
+
+        # check the validation of `skip` and `only`
+        if skip is not None and only is not None:
+            raise ValueError("Cannot specify both `skip` and `only`.")
+
+        # traverse the glycan
+        if skip is None and only is None:
+            yield from traversal_func()
+        elif skip is not None:
+            for node in traversal_func():
+                if get_mono_comp(node) not in skip:
+                    yield node
+        else:  # only is not None
+            for node in traversal_func():
+                if get_mono_comp(node) in only:
+                    yield node
+
+    def _breadth_first_traversal(
+            self,
+            skip: Optional[Iterable[str]] = None,
+            only: Optional[Iterable[str]] = None,
+    ) -> Generator[MonosaccharideResidue, None, None]:
+        yield from self._traversal("bfs", skip=skip, only=only)
+
+    def _depth_first_traversal(
+            self,
+            skip: Optional[Iterable[str]] = None,
+            only: Optional[Iterable[str]] = None,
+    ) -> Generator[MonosaccharideResidue, None, None]:
+        yield from self._traversal("dfs", skip=skip, only=only)
 
     def _get_branch_core_man(self) -> tuple[Monosaccharide, Monosaccharide]:
         # Branch core mannose is defined as:
@@ -241,6 +276,21 @@ class NGlycan:
     def count_gal(self) -> int:
         """The number of galactoses."""
         return self._composition[Gal]
+
+    def has_poly_lacnac(self) -> bool:
+        """Whether the glycan has poly-LacNAc."""
+        # Iterate all Gal residues.
+        # If a Gal residue has a GlcNAc child, and the GlcNAc residue has a Gal child,
+        # then the glycan has poly-LacNAc.
+        gals = self._breadth_first_traversal(only=["Gal"])
+        for gal in gals:
+            for _, child in gal.children():
+                if get_mono_comp(child) == "Glc2NAc":
+                    children_of_glcnac = child.children()
+                    for _, child_of_glcnac in children_of_glcnac:
+                        if get_mono_comp(child_of_glcnac) == "Gal":
+                            return True
+        return False
 
     def __repr__(self) -> str:
         return f"NGlycan({to_iupac_lite(self._composition)})"
@@ -371,7 +421,7 @@ def load_glycans(structures: Iterable[str]) -> list[NGlycan]:
 
 
 def load_compositions(
-    compositions: Iterable[str], *, sia_linkage: bool
+        compositions: Iterable[str], *, sia_linkage: bool
 ) -> list[Composition]:
     """Load compositions from a list of strings.
 
