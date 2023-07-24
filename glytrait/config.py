@@ -193,7 +193,16 @@ def valid_group_file(config: Mapping[str, Any]) -> NoReturn:
 @Config.register_validator
 def valid_structure_file(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid structure_file."""
-    valid_file(config["structure_file"], "Structure file", ".csv", check_exist=True)
+    path = config["structure_file"]
+    if path is None:
+        return
+    if not isinstance(path, str):
+        raise ConfigError("Structure file must be a string.")
+    if not Path(path).exists():
+        raise ConfigError("Structure file does not exist.")
+    if Path(path).is_file():
+        if Path(path).suffix != ".csv":
+            raise ConfigError("Structure file must be a CSV file.")
 
 
 @Config.register_validator

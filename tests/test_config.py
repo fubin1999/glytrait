@@ -337,3 +337,35 @@ class TestConfig:
             config.Config(new)
         msg = "Structure file is incompatible with 'Composition' mode."
         assert msg in str(excinfo.value)
+
+    def test_structure_file_a_directory(self, base_config, clean_dir):
+        new = base_config | {"structure_file": str(clean_dir)}
+        assert clean_dir.is_dir()
+
+    def test_structure_file_not_csv(self, base_config, clean_dir):
+        structure_file = clean_dir / "structure.txt"
+        structure_file.touch()
+        new = base_config | {"structure_file": str(structure_file)}
+        with pytest.raises(config.ConfigError) as excinfo:
+            config.Config(new)
+        assert "Structure file must be a CSV file" in str(excinfo.value)
+
+    def test_structure_file_not_exist_as_csv(self, base_config, clean_dir):
+        structure_file = clean_dir / "structure.csv"
+        new = base_config | {"structure_file": str(structure_file)}
+        with pytest.raises(config.ConfigError) as excinfo:
+            config.Config(new)
+        assert "Structure file does not exist" in str(excinfo.value)
+
+    def test_structure_file_not_exist_as_dir(self, base_config, clean_dir):
+        structure_file = clean_dir / "structure"
+        new = base_config | {"structure_file": str(structure_file)}
+        with pytest.raises(config.ConfigError) as excinfo:
+            config.Config(new)
+        assert "Structure file does not exist" in str(excinfo.value)
+
+    def test_structure_file_not_str(self, base_config):
+        new = base_config | {"structure_file": 1}
+        with pytest.raises(config.ConfigError) as excinfo:
+            config.Config(new)
+        assert "Structure file must be a string" in str(excinfo.value)

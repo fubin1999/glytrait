@@ -91,7 +91,7 @@ def test_read_group_wrong_format(mocker):
     assert "The group file should only have two columns." in str(excinfo.value)
 
 
-def test_read_structure(mocker):
+def test_read_structure_from_fine(mocker):
     structure_df = pd.DataFrame(
         {
             "Structure": [test_glycoct_1, test_glycoct_2, test_glycoct_3],
@@ -100,6 +100,19 @@ def test_read_structure(mocker):
     )
     mocker.patch("pandas.read_csv", return_value=structure_df)
     result = io.read_structure("fake_path", ["glycan2", "glycan1"])
+    assert len(result) == 2
+
+
+def test_read_structure_from_dir(mocker, clean_dir):
+    glycan_1 = clean_dir / "glycan1.glycoct_condensed"
+    glycan_2 = clean_dir / "glycan2.glycoct_condensed"
+    glycan_3 = clean_dir / "glycan3.glycoct_condensed"
+
+    glycan_1.write_text(test_glycoct_1)
+    glycan_2.write_text(test_glycoct_2)
+    glycan_3.write_text(test_glycoct_3)
+
+    result = io.read_structure(clean_dir, ["glycan2", "glycan1"])
     assert len(result) == 2
 
 

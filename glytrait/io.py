@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from importlib.resources import files, as_file
+from pathlib import Path
 from typing import NoReturn, Optional, Literal, Iterable
 
 import numpy as np
@@ -13,8 +14,8 @@ from openpyxl.worksheet.worksheet import Worksheet
 import glytrait
 from glytrait.config import Config
 from glytrait.exception import *
-from glytrait.glycan import NGlycan, load_glycans
 from glytrait.formula import TraitFormula
+from glytrait.glycan import NGlycan, load_glycans
 
 
 def read_input(file: str) -> tuple[list, list | None, pd.DataFrame]:
@@ -64,9 +65,6 @@ def _check_input(df: pd.DataFrame, has_structure: bool) -> NoReturn:
     if np.any(df.iloc[:, 2 if has_structure else 1 :].dtypes != "float64"):
         raise InputError("The abundance columns in the input file should be numeric.")
 
-    if df.isna().sum().sum() > 0:
-        raise InputError("There are missing values in the input file.")
-
 
 def read_group(file: str) -> pd.Series:
     """Read the group file.
@@ -89,13 +87,17 @@ def read_group(file: str) -> pd.Series:
 def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
     """Read the structure file.
 
-    The first column should be the glycan compositions, and the second column should be the
-    glycan structures.
+    `file` could be either a CSV file with all structures,
+    or a directory containing the GLYCOCT files of the structures.
+    If it is a CSV file, the first column should be the glycan compositions,
+    and the second column should be the glycan structures.
+    If it is a directory, the filenames should be the glycan compositions,
+    and the file contents should be the condensed glycoCT strings.
     Only the structures of the glycans in `compositions` will be read, and the order of the
     structures will be the same as that of `compositions`.
 
     Args:
-        file (str): The structure file.
+        file (str): The CSV structure file, or a directory containing the GLYCOCT files.
         compositions (Iterable[str]): The compositions of the glycans to be read.
 
     Returns:
@@ -105,6 +107,14 @@ def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
         InputError: If the input file format is wrong, or some compositions are not found in the
             structure file.
     """
+    if Path(file).is_dir():
+        struc_strings = _read_structure_string_from_directory(file, compositions)
+    else:
+        struc_strings = _read_structure_string_from_csv(file, compositions)
+    return load_glycans(struc_strings)
+
+
+def _read_structure_string_from_csv(file: str, compositions: Iterable[str]) -> list[str]:
     df = pd.read_csv(file, index_col=0)
     if df.shape[1] != 1:
         raise InputError("The structure file should only have two columns.")
@@ -115,7 +125,19 @@ def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
             struc_strings.append(structures[comp])
         except KeyError:
             raise InputError(f"{comp} is not found in the structure file.")
-    return load_glycans(struc_strings)
+    return struc_strings
+
+
+def _read_structure_string_from_directory(path: str, compositions: Iterable[str]) -> list[str]:
+    path = Path(path)
+    struc_strings = []
+    for comp in compositions:
+        try:
+            filename = comp + ".glycoct_condensed"
+            struc_strings.append((path / filename).read_text())
+        except FileNotFoundError:
+            raise InputError(f"{comp} is not provided in the structure directory.")
+    return struc_strings
 
 
 built_in_db = {
