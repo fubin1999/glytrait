@@ -15,7 +15,8 @@ from glytrait.meta_property import build_meta_property_table
 from glytrait.preprocessing import preprocess_pipeline
 from glytrait.trait import (
     calcu_derived_trait,
-    filter_invalid, filter_colinearity,
+    filter_invalid,
+    filter_colinearity,
 )
 
 __all__ = ["run_workflow"]
@@ -52,6 +53,7 @@ def run_workflow(config: Config) -> None:
 def _load_and_preprocess_data(config: Config) -> tuple[list, pd.DataFrame]:
     """Load glycans and the abundance table."""
     comps, strucs, abund_df = read_input(config.get("input_file"))
+    comps, strucs, abund_df = _preprocess(config, comps, strucs, abund_df)
     config.update({"_has_struc_col": strucs is not None})
     if config.get("mode") == "structure":
         if strucs is None and config.get("structure_file") is not None:
@@ -64,11 +66,20 @@ def _load_and_preprocess_data(config: Config) -> tuple[list, pd.DataFrame]:
             raise ValueError("Config error: no structure information.")
     else:
         glycans = load_compositions(comps, sia_linkage=config.get("sia_linkage"))
+    return glycans, abund_df
 
+
+def _preprocess(
+    config: Config, comps, strucs, abund_df
+) -> tuple[list[str], list[str] | None, pd.DataFrame]:
     abund_df = preprocess_pipeline(
         abund_df, config.get("filter_glycan_max_na"), config.get("impute_method")
     )
-    return glycans, abund_df
+    to_keep = [c in abund_df.columns for c in comps]
+    comps = [c for c, k in zip(comps, to_keep) if k]
+    if strucs is not None:
+        strucs = [s for s, k in zip(strucs, to_keep) if k]
+    return comps, strucs, abund_df
 
 
 def _load_formulas(config: Config) -> list[TraitFormula]:

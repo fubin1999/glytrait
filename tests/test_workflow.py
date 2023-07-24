@@ -55,7 +55,11 @@ def test_load_and_preprocess_data(
     config["structure_file"] = structure_file
     config["database"] = database
 
-    comps, strucs, abund_df, glycans = "comps", "strucs", "abund_df", "glycans"
+    comps = ["comp1", "comp2", "comp3"]
+    strucs = ["struc1", "struc2", "struc3"]
+    abund_df = mocker.Mock(name="abund_df_mock")
+    abund_df.columns = comps
+    glycans = ["glycan1", "glycan2", "glycan3"]
     strucs = None if not has_structure else strucs
     read_input_mock = mocker.patch(
         "glytrait.workflow.read_input", return_value=(comps, strucs, abund_df)
@@ -102,6 +106,29 @@ def test_load_and_preprocess_data(
             load_compositions_mock.assert_called_once_with(comps, sia_linkage=False)
     preprocess_mock.assert_called_once_with(abund_df, 0.5, "min")
     assert result == (glycans, abund_df)
+
+
+def test_preprocess(mocker, default_config):
+    config = default_config.copy()
+    config["filter_glycan_max_na"] = 0.5
+    config["impute_method"] = "min"
+
+    before_abund_df = mocker.Mock(name="before_abund_df_mock")
+    before_abund_df.columns = ["comp1", "comp2", "comp3"]
+    before_comps = ["comp1", "comp2", "comp3"]
+    before_strucs = ["struc1", "struc2", "struc3"]
+    after_abund_df = mocker.Mock(name="after_abund_df_mock")
+    after_abund_df.columns = ["comp1", "comp3"]
+    after_comps = ["comp1", "comp3"]
+    after_strucs = ["struc1", "struc3"]
+    mocker.patch("glytrait.workflow.preprocess_pipeline", return_value=after_abund_df)
+
+    result_comps, result_strucs, result_abund_df = glytrait.workflow._preprocess(
+        config, before_comps, before_strucs, before_abund_df
+    )
+    assert result_comps == after_comps
+    assert result_strucs == after_strucs
+    assert result_abund_df == after_abund_df
 
 
 @pytest.mark.parametrize(
