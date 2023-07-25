@@ -188,66 +188,29 @@ class TestTraitFormula:
         assert formula1.numerator_properties == before_change
 
     @pytest.mark.parametrize(
-        "num1, den1, num2, den2, expected",
+        "trait1, trait2, expected",
         [
-            # The basic child-parent relationship
-            (
-                ["isComplex", "is1Antennary", "coreFuc"],
-                ["isComplex", "is1Antennary"],
-                ["isComplex", "coreFuc"],
-                ["isComplex"],
-                True,
-            ),
-            # A2Fc is the child of A2F
-            (
-                ["isComplex", "is2Antennary", "coreFuc"],
-                ["isComplex", "is2Antennary"],
-                ["isComplex", "is2Antennary", "totalFuc"],
-                ["isComplex", "is2Antennary"],
-                True,
-            ),
-            # A2GS is the child of A2S
-            (
-                ["isComplex", "is2Antennary", "totalSia"],
-                ["isComplex", "is2Antennary", "totalGal"],
-                ["isComplex", "is2Antennary", "totalSia"],
-                ["isComplex", "is2Antennary"],
-                True
-            ),
-            # Formula 1 and Formula 2 have one meta property not in common
-            (
-                ["isComplex", "is2Antennary", "hasSia", "coreFuc"],
-                ["isComplex", "is2Antennary", "hasSia"],
-                ["isComplex", "is2Antennary", "noSia", "coreFuc"],
-                ["isComplex", "is2Antennary", "noSia"],
-                False,
-            ),
-            # Formula 1 is the grandchild of Formula 2, not child
-            (
-                ["isComplex", "is2Antennary", "hasSia", "coreFuc"],
-                ["isComplex", "is2Antennary", "hasSia"],
-                ["isComplex", "coreFuc"],
-                ["isComplex"],
-                False,
-            ),
+            ("A2G", "CG", True),
+            ("A2F", "CF", True),
+            ("A2Fa", "CFa", True),
+            ("A2Fc", "CFc", True),
+            ("CFa", "CF", True),
+            ("A2S", "CS", True),
+            ("A2E", "A2S", True),
+            ("A2E", "CE", True),
+            ("A2SG", "A2G", True),
+            ("A2FSG", "A2FG", True),
+            ("A2FSG", "A2SG", True),
+            ("A2F0G", "A2FG", False),
+            ("A2FSG", "A2G", False),
         ],
     )
-    def test_is_child_of(self, num1, den1, num2, den2, expected):
-        form1 = glytrait.formula.TraitFormula(
-            description="",
-            name="F1",
-            type="structure",
-            numerator_properties=num1,
-            denominator_properties=den1,
-        )
-        form2 = glytrait.formula.TraitFormula(
-            description="",
-            name="F2",
-            type="structure",
-            numerator_properties=num2,
-            denominator_properties=den2,
-        )
-        assert form1.is_child_of(form2) == expected
+    def test_is_child_of(self, trait1, trait2, expected):
+        formulas = glytrait.formula.load_formulas("structure")
+        formula_map = {f.name: f for f in formulas}
+        formulas1 = formula_map[trait1]
+        formulas2 = formula_map[trait2]
+        assert formulas1.is_child_of(formulas2) == expected
 
 
 @pytest.mark.parametrize(

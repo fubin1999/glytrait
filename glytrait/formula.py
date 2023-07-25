@@ -186,6 +186,13 @@ class TraitFormula:
         Note that A2FSG is not a child of A2G, for it is a grandchild of A2G.
         Also, A2FG is not a child of CG.
         """
+        if self.name in ("A1S", "A2S", "A3S", "A4S") and other.name == "CS":
+            return True
+        if self.name in ("A1E", "A2E", "A3E", "A4E") and other.name == "CE":
+            return True
+        if self.name in ("A1L", "A2L", "A3L", "A4L") and other.name == "CL":
+            return True
+
         num1 = set(self.numerator_properties)
         den1 = set(self.denominator_properties)
         try:
