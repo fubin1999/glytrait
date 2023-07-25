@@ -923,3 +923,129 @@ $ A2FE0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasFuc * noa26Sia)
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,6-sialylated diantennary glycans
 $ A2F0E0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * noFuc * noa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within triantennary glycans
+$ A3Pl = (hasPolyLacNAc) // (isComplex * is3Antennary)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated triantennary
+$ A3FPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated triantennary glycans
+$ A3F0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc)
+
+@ Relative abundance of species with poly-LacNAc within sialylated triantennary glycans
+$ A3SPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasSia)
+
+@ Relative abundance of species with poly-LacNAc within non-sialylated triantennary glycans
+$ A3S0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noSia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated sialylated triantennary glycans
+$ A3FSPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * hasSia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated sialylated triantennary glycans
+$ A3F0SPl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * hasSia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated non-sialylated triantennary glycans
+$ A3FS0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * noSia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated non-sialylated triantennary glycans
+$ A3F0S0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * noSia)
+
+@ Relative abundance of species with poly-LacNAc within a2,3-sialylated triantennary glycans
+$ A3LPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-a2,3-sialylated triantennary glycans
+$ A3L0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated a2,3-sialylated triantennary glycans
+$ A3FLPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * hasa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated a2,3-sialylated triantennary glycans
+$ A3F0LPl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * hasa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated non-a2,3-sialylated triantennary glycans
+$ A3FL0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * noa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,3-sialylated triantennary glycans
+$ A3F0L0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * noa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within a2,6-sialylated triantennary glycans
+$ A3EPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-a2,6-sialylated triantennary glycans
+$ A3E0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated a2,6-sialylated triantennary glycans
+$ A3FEPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * hasa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated a2,6-sialylated triantennary glycans
+$ A3F0EPl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * hasa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated non-a2,6-sialylated triantennary glycans
+$ A3FE0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * noa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,6-sialylated triantennary glycans
+$ A3F0E0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * noa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within tetra-antennary glycans
+$ A4Pl = (hasPolyLacNAc) // (isComplex * is4Antennary)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated tetra-antennary
+$ A4FPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated tetra-antennary glycans
+$ A4F0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc)
+
+@ Relative abundance of species with poly-LacNAc within sialylated tetra-antennary glycans
+$ A4SPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasSia)
+
+@ Relative abundance of species with poly-LacNAc within non-sialylated tetra-antennary glycans
+$ A4S0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noSia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated sialylated tetra-antennary glycans
+$ A4FSPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * hasSia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated sialylated tetra-antennary glycans
+$ A4F0SPl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * hasSia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated non-sialylated tetra-antennary glycans
+$ A4FS0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * noSia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated non-sialylated tetra-antennary glycans
+$ A4F0S0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * noSia)
+
+@ Relative abundance of species with poly-LacNAc within a2,3-sialylated tetra-antennary glycans
+$ A4LPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-a2,3-sialylated tetra-antennary glycans
+$ A4L0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated a2,3-sialylated tetra-antennary glycans
+$ A4FLPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * hasa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated a2,3-sialylated tetra-antennary glycans
+$ A4F0LPl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * hasa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated non-a2,3-sialylated tetra-antennary glycans
+$ A4FL0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * noa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,3-sialylated tetra-antennary glycans
+$ A4F0L0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * noa23Sia)
+
+@ Relative abundance of species with poly-LacNAc within a2,6-sialylated tetra-antennary glycans
+$ A4EPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-a2,6-sialylated tetra-antennary glycans
+$ A4E0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated a2,6-sialylated tetra-antennary glycans
+$ A4FEPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * hasa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated a2,6-sialylated tetra-antennary glycans
+$ A4F0EPl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * hasa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within fucosylated non-a2,6-sialylated tetra-antennary glycans
+$ A4FE0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * noa26Sia)
+
+@ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,6-sialylated tetra-antennary glycans
+$ A4F0E0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * noa26Sia)

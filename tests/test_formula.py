@@ -292,7 +292,7 @@ def test_parse_expression_invalid(expression):
 @pytest.mark.parametrize(
     "type, expected",
     [
-        ("structure", 299),
+        ("structure", 341),
         ("composition", 75),
     ],
 )
@@ -340,7 +340,7 @@ $ TM = (isHighMannose) / (.)"""
 
 def test_load_formulas_without_user_file():
     result = list(glytrait.formula.load_formulas(type="structure"))
-    assert len(result) == 299
+    assert len(result) == 341
 
 
 def test_load_formulas_bad_formula(clean_dir):
