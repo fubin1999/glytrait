@@ -148,6 +148,6 @@ def _correlation_matrix(trait_table: pd.DataFrame, threshold: float):
     Returns:
         np.ndarray: The correlation matrix.
     """
-    corr_matrix = trait_table.corr().values > threshold
+    corr_matrix = trait_table.corr().values >= threshold
     corr_matrix = corr_matrix.astype(int)
     return corr_matrix
