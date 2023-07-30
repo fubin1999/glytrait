@@ -109,18 +109,18 @@ def test_relationship_matrix(mocker):
         ),
         (
             -1,
-            np.array(
-                [
-                    [1, 1, 0, 1],
-                    [1, 1, 0, 1],
-                    [0, 0, 1, 1],
-                    [1, 1, 1, 1],
-                ]
-            ),
+            np.ones((4, 4), dtype=int),
         ),
         (
             1,
-            np.zeros((4, 4), dtype=int),
+            np.array(
+                [
+                    [1, 1, 0, 0],
+                    [1, 1, 0, 0],
+                    [0, 0, 1, 0],
+                    [0, 0, 0, 1],
+                ]
+            ),
         ),
     ],
 )
