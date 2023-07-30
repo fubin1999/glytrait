@@ -363,6 +363,132 @@ $ A2FE0B = (isBisecting) // (isComplex * is2Antennary * hasFuc * noa26Sia)
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,6-sialylated diantennary glycans
 $ A2F0E0B = (isBisecting) // (isComplex * is2Antennary * noFuc * noa26Sia)
 
+@ Relative abundance of species with a bisecting GlcNAc within triantennary glycans
+$ A3B = (isBisecting) // (isComplex * is3Antennary)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated triantennary glycans
+$ A3FB = (isBisecting) // (isComplex * is3Antennary * hasFuc)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated triantennary glycans
+$ A3F0B = (isBisecting) // (isComplex * is3Antennary * noFuc)
+
+@ Relative abundance of species with a bisecting GlcNAc within sialylated triantennary glycans
+$ A3SB = (isBisecting) // (isComplex * is3Antennary * hasSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-sialylated triantennary glycans
+$ A3S0B = (isBisecting) // (isComplex * is3Antennary * noSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated sialylated triantennary glycans
+$ A3FSB = (isBisecting) // (isComplex * is3Antennary * hasFuc * hasSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated sialylated triantennary glycans
+$ A3F0SB = (isBisecting) // (isComplex * is3Antennary * noFuc * hasSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated non-sialylated triantennary glycans
+$ A3FS0B = (isBisecting) // (isComplex * is3Antennary * hasFuc * noSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-sialylated triantennary glycans
+$ A3F0S0B = (isBisecting) // (isComplex * is3Antennary * noFuc * noSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within a2,3-sialylated triantennary glycans
+$ A3LB = (isBisecting) // (isComplex * is3Antennary * hasa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-a2,3-sialylated triantennary glycans
+$ A3L0B = (isBisecting) // (isComplex * is3Antennary * noa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,3-sialylated triantennary glycans
+$ A3FLB = (isBisecting) // (isComplex * is3Antennary * hasFuc * hasa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,3-sialylated triantennary glycans
+$ A3F0LB = (isBisecting) // (isComplex * is3Antennary * noFuc * hasa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,3-sialylated triantennary glycans
+$ A3FL0B = (isBisecting) // (isComplex * is3Antennary * hasFuc * noa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,3-sialylated triantennary glycans
+$ A3F0L0B = (isBisecting) // (isComplex * is3Antennary * noFuc * noa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within a2,6-sialylated triantennary glycans
+$ A3EB = (isBisecting) // (isComplex * is3Antennary * hasa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-a2,6-sialylated triantennary glycans
+$ A3E0B = (isBisecting) // (isComplex * is3Antennary * noa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,6-sialylated triantennary glycans
+$ A3FEB = (isBisecting) // (isComplex * is3Antennary * hasFuc * hasa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,6-sialylated triantennary glycans
+$ A3F0EB = (isBisecting) // (isComplex * is3Antennary * noFuc * hasa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,6-sialylated triantennary glycans
+$ A3FE0B = (isBisecting) // (isComplex * is3Antennary * hasFuc * noa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,6-sialylated triantennary glycans
+$ A3F0E0B = (isBisecting) // (isComplex * is3Antennary * noFuc * noa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within tetra-antennary glycans
+$ A4B = (isBisecting) // (isComplex * is4Antennary)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated tetra-antennary glycans
+$ A4FB = (isBisecting) // (isComplex * is4Antennary * hasFuc)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated tetra-antennary glycans
+$ A4F0B = (isBisecting) // (isComplex * is4Antennary * noFuc)
+
+@ Relative abundance of species with a bisecting GlcNAc within sialylated tetra-antennary glycans
+$ A4SB = (isBisecting) // (isComplex * is4Antennary * hasSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-sialylated tetra-antennary glycans
+$ A4S0B = (isBisecting) // (isComplex * is4Antennary * noSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated sialylated tetra-antennary glycans
+$ A4FSB = (isBisecting) // (isComplex * is4Antennary * hasFuc * hasSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated sialylated tetra-antennary glycans
+$ A4F0SB = (isBisecting) // (isComplex * is4Antennary * noFuc * hasSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated non-sialylated tetra-antennary glycans
+$ A4FS0B = (isBisecting) // (isComplex * is4Antennary * hasFuc * noSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-sialylated tetra-antennary glycans
+$ A4F0S0B = (isBisecting) // (isComplex * is4Antennary * noFuc * noSia)
+
+@ Relative abundance of species with a bisecting GlcNAc within a2,3-sialylated tetra-antennary glycans
+$ A4LB = (isBisecting) // (isComplex * is4Antennary * hasa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-a2,3-sialylated tetra-antennary glycans
+$ A4L0B = (isBisecting) // (isComplex * is4Antennary * noa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,3-sialylated tetra-antennary glycans
+$ A4FLB = (isBisecting) // (isComplex * is4Antennary * hasFuc * hasa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,3-sialylated tetra-antennary glycans
+$ A4F0LB = (isBisecting) // (isComplex * is4Antennary * noFuc * hasa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,3-sialylated tetra-antennary glycans
+$ A4FL0B = (isBisecting) // (isComplex * is4Antennary * hasFuc * noa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,3-sialylated tetra-antennary glycans
+$ A4F0L0B = (isBisecting) // (isComplex * is4Antennary * noFuc * noa23Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within a2,6-sialylated tetra-antennary glycans
+$ A4EB = (isBisecting) // (isComplex * is4Antennary * hasa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-a2,6-sialylated tetra-antennary glycans
+$ A4E0B = (isBisecting) // (isComplex * is4Antennary * noa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,6-sialylated tetra-antennary glycans
+$ A4FEB = (isBisecting) // (isComplex * is4Antennary * hasFuc * hasa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,6-sialylated tetra-antennary glycans
+$ A4F0EB = (isBisecting) // (isComplex * is4Antennary * noFuc * hasa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,6-sialylated tetra-antennary glycans
+$ A4FE0B = (isBisecting) // (isComplex * is4Antennary * hasFuc * noa26Sia)
+
+@ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,6-sialylated tetra-antennary glycans
+$ A4F0E0B = (isBisecting) // (isComplex * is4Antennary * noFuc * noa26Sia)
+
 
 # Galactosylaiton
 
