@@ -259,6 +259,7 @@ class TestConfig:
         """Check that when two values ara updated, the first one valid and the second one
         invalid, both are not updated."""
         cfg = config.Config(base_config)
+        old_value = cfg.get("filter_glycan_max_na")
         new = {
             "filter_glycan_max_na": 0.2,  # valid
             "impute_method": "not_valid",
@@ -266,7 +267,7 @@ class TestConfig:
         with pytest.raises(config.ConfigError) as excinfo:
             cfg.update(new)
         assert "impute_method must be one of" in str(excinfo.value)
-        assert cfg.get("filter_glycan_max_na") == 0.5
+        assert cfg.get("filter_glycan_max_na") == old_value
 
     def test_both_database_and_structure_file(self, base_config, clean_dir):
         structure_file = clean_dir / "structure.csv"

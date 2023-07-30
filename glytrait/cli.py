@@ -71,14 +71,14 @@ def save_builtin_formulas_callback(ctx, param, value):
     "-r",
     "--filter-glycan-ratio",
     type=click.FLOAT,
-    default=0.5,
+    default=1,
     help="Glycans with missing value ratio greater than this value will be filtered out.",
 )
 @click.option(
     "-i",
     "--impute-method",
     type=click.Choice(["zero", "min", "lod", "mean", "median"]),
-    default="min",
+    default="zero",
     help="Method to impute missing values.",
 )
 @click.option(

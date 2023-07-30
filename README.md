@@ -283,22 +283,21 @@ The following steps will be done:
 
 In the glycan-filtering step, the proportion threshold could be specified by the "-r" or the
 "--filter-glycan-ratio" option.
-The default value is 0.5, which means if a glycan has missing values in more than 50% of samples,
-it will be removed.
-You can change this value to 0.3 by:
+The default value is 1, which means no glycan will be removed.
+You can change this value to 0.5 by:
 
 ```shell
-glytrait data.csv -r 0.3
+glytrait data.csv -r 0.5
 ```
 
 The imputation method could be specified by the "-i" or the "--impute-method" option.
-The default method is "min",
-which means missing values will be imputed by the minimum value of a glycan.
+The default method is "zero",
+which means missing values will be imputed by 0.
 Other supported methods are "mean", "median", "zero", "lod".
-You can change imputation method to "mean" by:
+You can change imputation method to "min" by:
 
 ```shell
-glytrait data.csv -i mean
+glytrait data.csv -i min
 ```
 
 A full list of supported imputation methods are:
