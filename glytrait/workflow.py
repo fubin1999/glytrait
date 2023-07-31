@@ -33,15 +33,13 @@ def run_workflow(config: Config) -> None:
     meta_prop_df, derived_traits = _calcu_derived_traits(
         config, abund_df, glycans, formulas
     )
-    derived_traits, formulas = _filter_invalid_traits(config, derived_traits, formulas)
-    important_traits = _important_trait_table(config, derived_traits, formulas)
+    formulas, derived_traits = _filter_traits(config, derived_traits, formulas)
     trait_table = _combine_data(abund_df, derived_traits)
     groups, hypo_test_result, roc_result = _statistical_analysis(config, trait_table)
     write_output(
         config,
         derived_traits,
         abund_df,
-        important_traits,
         meta_prop_df,
         formulas,
         groups,
@@ -104,14 +102,19 @@ def _calcu_derived_traits(
     return meta_prop_df, derived_traits
 
 
-def _filter_invalid_traits(
+def _filter_traits(
     config: Config, derived_traits: pd.DataFrame, formulas: list[TraitFormula]
-) -> tuple[pd.DataFrame, list[TraitFormula]]:
+) -> tuple[list[TraitFormula], pd.DataFrame]:
     """Filter invalid traits if needed."""
-    if config.get("filter_invalid_traits"):
-        derived_traits = filter_invalid(derived_traits)
-        formulas = [f for f in formulas if f.name in derived_traits.columns]
-    return derived_traits, formulas
+    if config.get("post_filtering"):
+        formulas, derived_traits = filter_invalid(formulas, derived_traits)
+        formulas, derived_traits = filter_colinearity(
+            formulas,
+            derived_traits,
+            config.get("corr_threshold"),
+            config.get("corr_method"),
+        )
+    return formulas, derived_traits
 
 
 def _get_groups(config: Config) -> pd.Series:
@@ -128,29 +131,20 @@ def _combine_data(abund_df: pd.DataFrame, derived_traits: pd.DataFrame) -> pd.Da
     return pd.concat([abund_df, derived_traits], axis=1)
 
 
-def _important_trait_table(
-    config: Config, derived_trait_df: pd.DataFrame, formulas: list[TraitFormula]
-) -> pd.DataFrame:
-    """Get important trait table."""
-    important = filter_colinearity(
-        formulas, derived_trait_df, threshold=config.get("correlation_threshold")
-    )
-    important_trait = derived_trait_df.columns[important]
-    important_trait_df = derived_trait_df[important_trait]
-    return important_trait_df
-
-
 def _statistical_analysis(
     config: Config, trait_table: pd.DataFrame
 ) -> tuple[pd.Series | None, pd.DataFrame | None, pd.DataFrame | None]:
     """Perform statistical analysis."""
     if (groups := _get_groups(config)) is not None:
+        if config.get("post_filtering") is False:
+            print("Warning: post-filtering is not enabled, "
+                  "so statistical analysis is not performed.")
+            return groups, None, None
         hypo_result = auto_hypothesis_test(trait_table, groups)
         if groups.nunique() == 2:
             roc_result = calcu_roc_auc(trait_table, groups)
         else:
             roc_result = None
     else:
-        hypo_result = None
-        roc_result = None
+        return None, None, None
     return groups, hypo_result, roc_result

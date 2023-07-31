@@ -5,7 +5,6 @@ import pingouin as pg
 from sklearn.metrics import roc_auc_score
 
 from glytrait.exception import HypothesisTestingError
-from glytrait.trait import filter_invalid
 
 
 def mwu(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
@@ -97,7 +96,6 @@ def auto_hypothesis_test(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFr
         HypothesisTestingError: If only one group is provided, or when the index of
             `groups` and `trait_df` are not the same.
     """
-    trait_df = filter_invalid(trait_df)
     if set(groups.index) != set(trait_df.index):
         raise HypothesisTestingError(
             "The index of groups and trait_df must be the same."

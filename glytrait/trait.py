@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Iterable, Literal
 
 import numpy as np
 import pandas as pd
@@ -38,7 +38,9 @@ def calcu_derived_trait(
     return derived_trait_df
 
 
-def filter_invalid(trait_df: pd.DataFrame) -> pd.DataFrame:
+def filter_invalid(
+    formulas: Iterable[TraitFormula], trait_df: pd.DataFrame
+) -> tuple[list[TraitFormula], pd.DataFrame]:
     """Rule out the invalid traits.
 
     A trait is invalid if it:
@@ -46,6 +48,7 @@ def filter_invalid(trait_df: pd.DataFrame) -> pd.DataFrame:
     2. Is NaN for all samples.
 
     Args:
+        formulas (Iterable[TraitFormula]): The formulas to be filtered.
         trait_df (pd.DataFrame): The trait values, with samples as index and trait names
             as columns.
 
@@ -54,7 +57,8 @@ def filter_invalid(trait_df: pd.DataFrame) -> pd.DataFrame:
     """
     trait_df = _filter_all_same(trait_df)
     trait_df = _filter_all_nan(trait_df)
-    return trait_df
+    formulas = [f for f in formulas if f.name in trait_df.columns]
+    return formulas, trait_df
 
 
 def _filter_all_same(trait_df: pd.DataFrame) -> pd.DataFrame:
@@ -69,21 +73,23 @@ def _filter_all_nan(trait_df: pd.DataFrame) -> pd.DataFrame:
 
 def filter_colinearity(
     formulas: Iterable[TraitFormula],
-    derived_traits_table: pd.DataFrame,
+    trait_df: pd.DataFrame,
     threshold: float,
-) -> set[TraitFormula]:
+    method: Literal["pearson", "spearman"],
+) -> tuple[list[TraitFormula], pd.DataFrame]:
     """Filter the colinearity of the formulas.
 
     Args:
         formulas (Iterable[TraitFormula]): The formulas to be filtered.
-        derived_traits_table (pd.DataFrame): The derived traits table, after post-filtering.
+        trait_df (pd.DataFrame): The derived traits table, after post-filtering.
         threshold (float): The threshold of the correlation coefficient.
+        method (Literal["pearson", "spearman"]): The method to calculate the correlation.
 
     Returns:
-        An array of bool, indicating whether the corresponding trait should be kept.
-        The array is in the order of the column of `derived_traits_table`.
+        tuple[list[TraitFormula], pd.DataFrame]: The filtered formulas and the filtered
+            derived traits table.
     """
-    trait_names = list(derived_traits_table.columns)
+    trait_names = list(trait_df.columns)
 
     # First, build the parent-child relationship matrix.
     # This matrix consists of 0 and 1.
@@ -93,7 +99,7 @@ def filter_colinearity(
     # Second, build the correlation matrix.
     # This matrix also consists of 0 and 1.
     # 1 means the two traits are highly correlated (r > the threshold).
-    corr_matrix = _correlation_matrix(derived_traits_table, threshold)
+    corr_matrix = _correlation_matrix(trait_df, threshold, method)
 
     # Third, multiply the two matrices.
     # If the i-th row and j-th column is 1,
@@ -105,7 +111,10 @@ def filter_colinearity(
     remove_matrix = rela_matrix * corr_matrix
     to_keep = np.sum(remove_matrix, axis=1) == 0
 
-    return to_keep
+    # Finally, filter the formulas and the derived traits table.
+    filtered_trait_table = trait_df.loc[:, to_keep]
+    formulas = [f for f in formulas if f.name in filtered_trait_table.columns]
+    return formulas, filtered_trait_table
 
 
 def _relationship_matrix(trait_names: Iterable[str], formulas: Iterable[TraitFormula]):
@@ -135,7 +144,9 @@ def _relationship_matrix(trait_names: Iterable[str], formulas: Iterable[TraitFor
     return matrix
 
 
-def _correlation_matrix(trait_table: pd.DataFrame, threshold: float):
+def _correlation_matrix(
+    trait_table: pd.DataFrame, threshold: float, method: Literal["pearson", "spearman"]
+):
     """Build the correlation matrix.
 
     This matrix also consists of 0 and 1.
@@ -144,10 +155,11 @@ def _correlation_matrix(trait_table: pd.DataFrame, threshold: float):
     Args:
         trait_table (pd.DataFrame): The derived traits table, after post-filtering.
         threshold (float): The threshold of the correlation coefficient.
+        method (Literal["pearson", "spearman"]): The method to calculate the correlation.
 
     Returns:
         np.ndarray: The correlation matrix.
     """
-    corr_matrix = trait_table.corr().values >= threshold
+    corr_matrix = trait_table.corr(method=method).values >= threshold
     corr_matrix = corr_matrix.astype(int)
     return corr_matrix

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+from attrs import define
 
 import glytrait.formula
 import glytrait.meta_property
@@ -55,7 +56,12 @@ def test_calcu_trait():
     pd.testing.assert_frame_equal(result, expected)
 
 
-def test_filter_derived_trait():
+def test_filter_invalid():
+    @define
+    class FakeFormula:
+        name: str
+
+    formulas = [FakeFormula(name=n) for n in "ABCDEF"]
     df = pd.DataFrame(
         {
             "A": [1, 2, 3],
@@ -66,13 +72,15 @@ def test_filter_derived_trait():
             "F": [0.5, 0.5, 0.5],
         }
     )
-    result = trait.filter_invalid(df)
-    expected = pd.DataFrame(
+    result_formulas, result_df = trait.filter_invalid(formulas, df)
+    expected_formulas = [FakeFormula(name="A")]
+    expected_df = pd.DataFrame(
         {
             "A": [1, 2, 3],
         }
     )
-    pd.testing.assert_frame_equal(result, expected, check_dtype=False)
+    assert result_formulas == expected_formulas
+    pd.testing.assert_frame_equal(result_df, expected_df, check_dtype=False)
 
 
 def test_relationship_matrix(mocker):
@@ -133,13 +141,24 @@ def test_correlation_matrix(threshold, expected):
             "trait4": [2, 3, 1, 5, 4],  # 与trait1的相关性为0.6
         }
     )
-    result = _correlation_matrix(df, threshold)
+    result = _correlation_matrix(df, threshold, method="pearson")
     assert np.array_equal(result, expected)
 
 
 def test_filter_colinearity(mocker):
-    trait_table_mock = mocker.Mock()
-    trait_table_mock.columns = ["trait1", "trait2", "trait3", "trait4"]
+    @define
+    class FakeTrait:
+        name: str
+
+    trait_table = pd.DataFrame(
+        {  # This df is just a place-holder. The values are not important.
+            "trait1": [1, 2, 3, 4, 5],
+            "trait2": [1, 2, 3, 4, 5],
+            "trait3": [5, 4, 3, 2, 1],
+            "trait4": [2, 3, 1, 5, 4],
+        }
+    )
+    formulas = [FakeTrait(name=n) for n in trait_table.columns]
     relationship_matrix_mock = mocker.patch(
         "glytrait.trait._relationship_matrix",
         return_value=np.array(
@@ -150,6 +169,7 @@ def test_filter_colinearity(mocker):
                 [0, 0, 0, 0],
             ]
         ),
+        autospec=True,
     )
     correlation_matrix_mock = mocker.patch(
         "glytrait.trait._correlation_matrix",
@@ -161,11 +181,21 @@ def test_filter_colinearity(mocker):
                 [1, 1, 0, 1],
             ]
         ),
+        autospec=True,
     )
-    result = filter_colinearity("formulas", trait_table_mock, 0.5)
-    expected = np.array([False, True, True, True])
-    assert np.array_equal(result, expected)
+    result_formulas, result_df = filter_colinearity(formulas, trait_table, 0.5, "pearson")
+    expected_formulas = [FakeTrait(name=n) for n in ["trait2", "trait3", "trait4"]]
+    expected_df = pd.DataFrame(
+        {
+            "trait2": [1, 2, 3, 4, 5],
+            "trait3": [5, 4, 3, 2, 1],
+            "trait4": [2, 3, 1, 5, 4],
+        }
+    )
+
+    assert result_formulas == expected_formulas
+    pd.testing.assert_frame_equal(result_df, expected_df, check_dtype=False)
     relationship_matrix_mock.assert_called_once_with(
-        ["trait1", "trait2", "trait3", "trait4"], "formulas"
+        ["trait1", "trait2", "trait3", "trait4"], formulas
     )
-    correlation_matrix_mock.assert_called_once_with(trait_table_mock, 0.5)
+    correlation_matrix_mock.assert_called_once_with(trait_table, 0.5, "pearson")

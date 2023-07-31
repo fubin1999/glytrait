@@ -126,22 +126,37 @@ class TestConfig:
             config.Config(new)
         assert "impute_method must be a string" in str(excinfo.value)
 
-    def test_correlation_threshold(self, base_config):
-        new = base_config | {"correlation_threshold": 0.5}
+    def test_corr_threshold(self, base_config):
+        new = base_config | {"corr_threshold": 0.5}
         cfg = config.Config(new)
-        assert cfg.get("correlation_threshold") == 0.5
+        assert cfg.get("corr_threshold") == 0.5
 
-    def test_correlation_threshold_out_of_range(self, base_config):
-        new = base_config | {"correlation_threshold": 1.2}
+    def test_corr_threshold_out_of_range(self, base_config):
+        new = base_config | {"corr_threshold": 1.2}
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
-        assert "correlation_threshold must be between 0 and 1" in str(excinfo.value)
+        assert "corr_threshold must be between 0 and 1" in str(excinfo.value)
 
-    def test_correlation_threshold_str(self, base_config):
-        new = base_config | {"correlation_threshold": "0.5"}
+    def test_corr_threshold_str(self, base_config):
+        new = base_config | {"corr_threshold": "0.5"}
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
-        assert "correlation_threshold must be a float" in str(excinfo.value)
+        assert "corr_threshold must be a float" in str(excinfo.value)
+
+    def test_corr_method(self, base_config):
+        new = base_config | {"corr_method": "pearson"}
+        cfg = config.Config(new)
+        assert cfg.get("corr_method") == "pearson"
+
+        new = base_config | {"corr_method": "spearman"}
+        cfg = config.Config(new)
+        assert cfg.get("corr_method") == "spearman"
+
+    def test_corr_method_not_supported(self, base_config):
+        new = base_config | {"corr_method": "foo"}
+        with pytest.raises(config.ConfigError) as excinfo:
+            config.Config(new)
+        assert "corr_method must be one of: pearson, spearman." in str(excinfo.value)
 
     def test_sia_linkage(self, base_config):
         new = base_config | {"sia_linkage": True}
@@ -190,16 +205,16 @@ class TestConfig:
             config.Config(new)
         assert "Formula file does not exist" in str(excinfo.value)
 
-    def test_filter_invalid_traits(self, base_config):
-        new = base_config | {"filter_invalid_traits": True}
+    def test_post_filtering(self, base_config):
+        new = base_config | {"post_filtering": True}
         cfg = config.Config(new)
-        assert cfg.get("filter_invalid_traits") is True
+        assert cfg.get("post_filtering") is True
 
-    def test_filter_invalid_traits_not_bool(self, base_config):
-        new = base_config | {"filter_invalid_traits": 1}
+    def test_post_filtering_not_bool(self, base_config):
+        new = base_config | {"post_filtering": 1}
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
-        assert "filter_invalid_traits must be a boolean" in str(excinfo.value)
+        assert "post_filtering must be a boolean" in str(excinfo.value)
 
     def test_group_file(self, base_config, clean_dir):
         group_file = clean_dir / "group.csv"

@@ -76,13 +76,19 @@ def test_preprocess_pipeline(mocker):
     imputed_df_mock = mocker.Mock()
     normalized_df_mock = mocker.Mock()
     filter_glycan_mock = mocker.patch(
-        "glytrait.preprocessing.filter_glycans", return_value=filtered_df_mock
+        "glytrait.preprocessing.filter_glycans",
+        return_value=filtered_df_mock,
+        autospec=True,
     )
     impute_mock = mocker.patch(
-        "glytrait.preprocessing.impute", return_value=imputed_df_mock
+        "glytrait.preprocessing.impute",
+        return_value=imputed_df_mock,
+        autospec=True,
     )
     normalization_mock = mocker.patch(
-        "glytrait.preprocessing.normalization", return_value=normalized_df_mock
+        "glytrait.preprocessing.normalization",
+        return_value=normalized_df_mock,
+        autospec=True,
     )
 
     result = pp.preprocess_pipeline(abund_df_mock, 0.5, "zero")

@@ -26,7 +26,6 @@ glycan structures.
     - [Preprocessing](#preprocessing)
     - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
     - [Post-filter](#post-filtering)
-    - [Colinearity filtering](#colinearity-filtering)
     - [Univariate analysis](#univariate-analysis)
     - [The GlyTrait Formula](#the-glytrait-formula-advanced)
 - [License](#license)
@@ -94,10 +93,9 @@ Inside the xlsx file are four (five) sheets:
 2. The trait values for each sample, including the direct trait
    (glycan relative abundance) and the derived traits (calculated by GlyTrait);
 3. The definitions for the derived traits;
-4. Important derived trait values, filtered for colinearity;
-5. The meta properties GlyTrait generated to calculated derived traits;
-6. The univariate analysis results for each trait, if group information is provided.
-7. The ROC analysis results for each trait, if group information is provided.
+4. The meta properties GlyTrait generated to calculate derived traits;
+5. The univariate analysis results for each trait if group information is provided.
+6. The ROC analysis results for each trait if group information is provided.
 
 You don't need the fifth one for common situations,
 but a peek of it might help you better understand how GlyTrait works.
@@ -121,12 +119,14 @@ As a glance, GlyTrait supports the following options:
 |      -d, --database       | The built-in database to use, "serum" or "IgG".                                                                 |
 | -r, --filter-glycan-ratio | The proportion of missing values for a glycan to be ruled out. Default: 0.5.                                    |
 |    -i, --inpute-method    | The imputation method. "min", "mean", "median", "zero", or "lod". Default: "min".                               |
-|   -c, --corr-threshold    | The correlation threshold for colinearity filtering.                                                            |
+|     --corr-threshold      | The correlation threshold for collinearity filtering. Default to 1.0.                                           |
+|       --corr-method       | The correlation method for collinearity filtering. Default to "pearson".                                        |
 |     -l, --sia-linkage     | Flag to include the sialic acid linkage traits.                                                                 |
 |        --no-filter        | Flag to turn off post-filtering of derived traits.                                                              |
 |        -g, --group        | The group file.                                                                                                 |
 |    -t, --save-template    | The directory to save the formula trait template file.                                                          |
 |    -f, --formula-file     | The custom formula file to use.                                                                                 |
+|  -b, --builtin-formulas   | The directory path to save a copy of the built-in formulas.                                                     |
 
 The following sections will introduce these options in detail.
 
@@ -339,42 +339,41 @@ no "S" in composition strings in the composition mode.
 
 ### Post-Filtering
 
-Some derived traits might not be useful for your analysis.
-For example, some traits might all have the same value for all samples,
-or be NaN due to zero being in the denominator.
-GlyTrait rules out these traits by default.
-If you want to keep these traits, use the "--no-filter" option:
+Not all derived traits are informative.
+For example, some traits might have the same value for all samples.
+Some traits might be highly correlated with others.
 
-```shell
-glytrait data.csv --no-filter
-```
-
-### Colinearity filtering
-
-Colinearity, or multiple collinearity, is a common problem in statistics.
-It is the phenomenon that some variables are highly correlated with each other.
-Colinearity can cause problems in statistical analysis and machine learning:
-
-- The coefficients of the variables are unstable in linear regression and logistic regression.
-- The p-values are unstable in statistical tests, usually larger.
-- The performance of machine learning models is unstable, suffering overfitting.
-- The feature importance is unstable for nearly all model interpretation methods.
+GlyTrait carries out a two-step post-filtering process to remove these uninformative traits.
+First, traits with the same value for all samples will be removed.
+Second, highly correlated traits will be pruned,
+keeping only the traits considering more glycans.
 
 GlyTrait filters out highly correlated traits, using a "trait family tree" filtering method.
-Briefly, for a two correlated traits, the "parent" trait, 
-which normally considers more glycans, will be kept. 
+Briefly, for a two correlated traits, the "parent" trait,
+which normally considers more glycans, will be kept.
 For example, for the two high correlated traits: A2FG and A2G, the latter will be kept,
 because it is more general, and more robust for considering more glycans.
 Thanks to the dynamic "trait family tree" generated by GlyTrait,
 user-defined traits will also be considered in this filtering process.
 
-This results in a seperated table containing only those important derived traits left.
-
-GlyTrait regards two traits are highly correlated if their correlation coefficient is above 0.9.
-You can change this threshold by the "-c" or "--corr-threshold" option:
+By default, GlyTrait only filtering trarits with Pearson correlation coefficient of 1,
+i.e. traits with perfect collinearity.
+This threshold can be changed by the "--corr-threshold" option:
 
 ```shell
-glytrait data.csv -c 0.8
+glytrait data.csv --corr-threshold 0.9
+```
+
+The correlation method can be changed to Spearman by the "--corr-method" option:
+
+```shell
+glytrait data.csv --corr-method spearman
+```
+
+Post-filtering can be turned off by the "--no-filtering" option:
+
+```shell
+glytrait data.csv --no-filtering
 ```
 
 ### Statistical analysis
