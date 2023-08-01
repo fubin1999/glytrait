@@ -1,3 +1,16 @@
+"""This module defines the `TraitFormula` class, and other related functions.
+
+The `TraitFormula` class is used to represent a trait formula.
+It is the core of calculating derived traits.
+
+Classes:
+    TraitFormula: The trait formula.
+
+Functions:
+    load_formulas: Load all trait formulas from default formula files and custom formulas files.
+    save_trait_formulas_tepmlate: Save a template of trait formulas to a file.
+    save_builtin_formula: Save a built-in trait formulas to a file.
+"""
 from __future__ import annotations
 
 import itertools

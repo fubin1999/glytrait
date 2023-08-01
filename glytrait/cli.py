@@ -1,3 +1,4 @@
+"""Command line interface for glyTrait."""
 from pathlib import Path
 
 import click

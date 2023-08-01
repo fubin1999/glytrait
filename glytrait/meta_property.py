@@ -1,3 +1,8 @@
+"""This module provides functions for calculating meta properties of glycans.
+
+Functions:
+    build_meta_property_table: Build a table of meta properties for glycans.
+"""
 from typing import Iterable, Literal
 
 import pandas as pd

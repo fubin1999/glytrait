@@ -1,3 +1,11 @@
+"""Preprocess the abundance table.
+
+Functions:
+    preprocess_pipeline: Preprocess the abundance table.
+    filter_glycans: Filter glycans with too many missing values.
+    impute: Impute the missing values.
+    normalization: Normalize the abundance table by dividing the sum of each sample.
+"""
 from typing import Literal
 
 import pandas as pd

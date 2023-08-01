@@ -1,3 +1,10 @@
+"""This module provides the functions to calculate and filter the derived traits.
+
+Functions:
+    calcu_derived_trait: Calculate the derived trait values.
+    filter_invalid: Rule out the invalid traits.
+    filter_colinearity: Reduce the traits that are highly correlated.
+"""
 from typing import Iterable, Literal
 
 import numpy as np

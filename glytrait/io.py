@@ -1,3 +1,12 @@
+"""Input and output functions.
+
+Functions:
+    read_input: Read the input file.
+    read_group: Read the group file.
+    read_structure: Read the structure file.
+    load_default_structures: Load the default structure database.
+    write_output: Write the output file.
+"""
 from __future__ import annotations
 
 from importlib.resources import files, as_file

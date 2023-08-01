@@ -1,3 +1,11 @@
+"""Configuration for a GlyTrait.
+
+This module defines the Config class,
+which is used to store the configuration for a GlyTrait workflow.
+
+Classes:
+    Config: Configuration for a GlyTrait workflow.
+"""
 from collections.abc import Mapping, Callable
 from pathlib import Path
 from typing import Any, NoReturn, ClassVar

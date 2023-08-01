@@ -1,3 +1,8 @@
+"""The main workflow of GlyTrait.
+
+Functions:
+    run_workflow: Run the whole GlyTrait workflow.
+"""
 import pandas as pd
 
 from glytrait.analysis import auto_hypothesis_test, calcu_roc_auc

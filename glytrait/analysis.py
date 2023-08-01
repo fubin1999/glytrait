@@ -1,3 +1,11 @@
+"""This module contains functions for downstream analysis.
+
+Functions:
+    mwu: Perform Mann-Whitney U Test for two groups.
+    kruskal: Perform Kruskal-Wallis H-test for multiple groups.
+    auto_hypothesis_test: Perform hypothesis test automatically.
+    calculate_auc: Calculate the area under the ROC curve.
+"""
 import warnings
 
 import pandas as pd

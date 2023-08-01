@@ -1,3 +1,13 @@
+"""This module implements classes about representing glycans.
+
+Classes:
+    NGlycan: A class representing an N-glycan structure.
+    Composition: A class representing the composition of a glycan.
+
+Functions:
+    load_glycans: Load glycan structures from a list of structure strings.
+    load_compositions: Load glycan compositions from a list of composition strings.
+"""
 from __future__ import annotations
 
 import re

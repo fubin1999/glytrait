@@ -1,3 +1,6 @@
+"""This module contains the set of GlyTrait's exceptions."""
+
+
 class GlyTraitError(Exception):
     """Base class for exceptions in this module."""
 
