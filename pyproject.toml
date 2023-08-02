@@ -12,13 +12,13 @@ priority = "default"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
-glypy = "^1.0.9"
+glypy = "^1.0.11"
 attrs = "^23.1.0"
 pandas = "^2.0.1"
-numpy = "^1.24.3"
+numpy = "^1.25.2"
 openpyxl = "^3.1.2"
 click = "^8.1.3"
-emoji = "^2.5.0"
+emoji = "^2.7.0"
 pingouin = "^0.5.3"
 
 [tool.poetry.group.dev.dependencies]
