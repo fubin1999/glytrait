@@ -44,16 +44,17 @@ def formula_mocks(mocker) -> list:
 
 
 @pytest.mark.parametrize(
-    "has_structure, mode, structure_file, database",
+    "has_structure, mode, structure_file, database, n_samples",
     [
-        (True, "structure", None, None),
-        (False, "structure", "structure_file", None),
-        (False, "structure", None, "database"),
-        (False, "composition", None, None),
+        (True, "structure", None, None, 3),
+        (False, "structure", "structure_file", None, 3),
+        (False, "structure", None, "database", 3),
+        (False, "composition", None, None, 3),
+        (True, "structure", None, None, 1),
     ],
 )
 def test_load_and_preprocess_data(
-    mocker, default_config, mode, has_structure, structure_file, database
+    mocker, default_config, mode, has_structure, structure_file, database, n_samples
 ):
     config = default_config.copy()
     new = {
@@ -67,6 +68,7 @@ def test_load_and_preprocess_data(
     strucs = ["struc1", "struc2", "struc3"]
     abund_df = mocker.Mock(name="abund_df_mock")
     abund_df.columns = comps
+    abund_df.index = range(n_samples)
     glycans = ["glycan1", "glycan2", "glycan3"]
     strucs = None if not has_structure else strucs
     read_input_mock = mocker.patch(
@@ -125,6 +127,8 @@ def test_load_and_preprocess_data(
             read_structure_mock.assert_not_called()
             load_compositions_mock.assert_called_once_with(comps, sia_linkage=False)
     preprocess_mock.assert_called_once_with(abund_df, 0.5, "min")
+    if n_samples < 3:
+        assert config.get("post_filtering") is False
     assert result == (glycans, abund_df)
 
 

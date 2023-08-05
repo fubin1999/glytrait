@@ -58,6 +58,8 @@ def _load_and_preprocess_data(config: Config) -> tuple[list, pd.DataFrame]:
     comps, strucs, abund_df = read_input(config.get("input_file"))
     comps, strucs, abund_df = _preprocess(config, comps, strucs, abund_df)
     config.update({"_has_struc_col": strucs is not None})
+    if len(abund_df.index) < 3:
+        config.update({"post_filtering": False})
     if config.get("mode") == "structure":
         if strucs is None and config.get("structure_file") is not None:
             glycans = read_structure(config.get("structure_file"), comps)
