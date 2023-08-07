@@ -41,150 +41,146 @@ def default_config(input_file, output_file) -> dict:
     return cfg
 
 
-def test_cli(mocker, input_file, default_config):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file)])
-    assert result.exit_code == 0
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == default_config
+@pytest.fixture
+def workflow_class_mock(mocker):
+    return mocker.patch("glytrait.cli.Workflow", autospec=True)
 
 
-def test_cli_output_path(mocker, input_file, default_config):
+@pytest.fixture
+def workflow_mock(workflow_class_mock):
+    return workflow_class_mock.return_value
+
+
+def _test_normal_cases(workflow_mock, workflow_class_mock, config, args):
+    """Test normal cases when CLI is invaked with proper arguments."""
     runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "-o", "output_path.xlsx"])
+    result = runner.invoke(cli.cli, args)
     assert result.exit_code == 0
+    workflow_mock.run.assert_called_once()
+    assert workflow_class_mock.call_args[0][0].asdict() == config
+
+
+def _test_invalid_args(
+    workflow_mock, workflow_class_mock, args, msg,
+):
+    """Test cases when CLI raised with invalid args."""
+    runner = CliRunner()
+    result = runner.invoke(cli.cli, args)
+    assert result.exit_code != 0
+    assert msg in result.output
+    workflow_mock.run.assert_not_called()
+    workflow_class_mock.assert_not_called()
+
+
+def test_cli(input_file, default_config, workflow_class_mock, workflow_mock):
+    args = [str(input_file)]
+    _test_normal_cases(workflow_mock, workflow_class_mock, default_config, args)
+
+
+def test_cli_output_path(
+    input_file, default_config, workflow_class_mock, workflow_mock
+):
+    args = [str(input_file), "-o", "output_path.xlsx"]
     config = default_config | dict(output_file="output_path.xlsx")
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_sia_linkage(mocker, input_file, default_config):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "-l"])
-    assert result.exit_code == 0
+def test_cli_sia_linkage(
+    input_file, default_config, workflow_class_mock, workflow_mock
+):
+    args = [str(input_file), "-l"]
     config = default_config | dict(sia_linkage=True)
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_user_traits(mocker, input_file, clean_dir, default_config):
+def test_cli_user_traits(
+    input_file, clean_dir, default_config, workflow_class_mock, workflow_mock
+):
     user_file = clean_dir / "user_formula.txt"
     user_file.write_text("")
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "-f", str(user_file)])
-    assert result.exit_code == 0
+    args = [str(input_file), "-f", str(user_file)]
     config = default_config | dict(formula_file=str(user_file))
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_glytrait_error(mocker, input_file):
-    run_workflow_mock = mocker.patch(
-        "glytrait.cli.run_workflow", side_effect=cli.GlyTraitError, autospec=True
-    )
+def test_cli_glytrait_error(input_file, default_config, workflow_mock, workflow_class_mock):
+    workflow_mock.run.side_effect = cli.GlyTraitError
     runner = CliRunner()
     result = runner.invoke(cli.cli, [str(input_file)])
-    run_workflow_mock.assert_called_once()
+    workflow_mock.run.assert_called_once()
+    assert workflow_class_mock.call_args[0][0].asdict() == default_config
     assert result.exit_code != 0
     assert "👎" in result.output
 
 
-def test_cli_input_file_not_exist(mocker, clean_dir):
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    runner = CliRunner()
-    input_file = clean_dir / "file.csv"
-    result = runner.invoke(cli.cli, [str(input_file)])
-    run_workflow_mock.assert_not_called()
-    assert result.exit_code != 0
-    assert "does not exist" in result.output
+def test_cli_input_file_not_exist(
+    clean_dir, default_config, workflow_class_mock, workflow_mock
+):
+    input_file = clean_dir / "not_exist.csv"
+    args = [str(input_file)]
+    _test_invalid_args(workflow_mock, workflow_class_mock, args, "does not exist")
 
 
-def test_cli_output_dir_not_exist(mocker, input_file, clean_dir, default_config):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
+def test_cli_output_dir_not_exist(
+    input_file, clean_dir, default_config, workflow_class_mock, workflow_mock
+):
     output_file = clean_dir / "output_dir" / "output.xlsx"
-    result = runner.invoke(cli.cli, [str(input_file), "-o", str(output_file)])
-    assert result.exit_code == 0
+    args = [str(input_file), "-o", str(output_file)]
     config = default_config | dict(output_file=str(output_file))
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_formula_file_not_exist(mocker, input_file, clean_dir):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    formula_file = clean_dir / "formula.txt"
-    result = runner.invoke(cli.cli, [str(input_file), "-f", str(formula_file)])
-    assert result.exit_code != 0
-    assert "does not exist" in result.output
+def test_cli_formula_file_not_exist(
+    input_file, clean_dir, default_config, workflow_class_mock, workflow_mock
+):
+    args = [str(input_file), "-f", "not_exist.txt"]
+    _test_invalid_args(workflow_mock, workflow_class_mock, args, "does not exist")
 
 
-def test_cli_filter_off(mocker, input_file, default_config):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "--no-filter"])
-    assert result.exit_code == 0
+def test_cli_filter_off(input_file, default_config, workflow_class_mock, workflow_mock):
+    args = [str(input_file), "--no-filter"]
     config = default_config | dict(post_filtering=False)
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_group_file(mocker, input_file, clean_dir, default_config):
+def test_cli_group_file(
+    input_file, clean_dir, default_config, workflow_class_mock, workflow_mock
+):
     group_file = clean_dir / "group_file.csv"
     group_file.write_text("")
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "-g", str(group_file)])
-    assert result.exit_code == 0
+    args = [str(input_file), "-g", str(group_file)]
     config = default_config | dict(group_file=str(group_file))
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_filter_glycans(mocker, input_file, default_config):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "-r", 0.2])
-    assert result.exit_code == 0
+def test_cli_filter_glycans(
+    input_file, default_config, workflow_class_mock, workflow_mock
+):
+    args = [str(input_file), "-r", 0.2]
     config = default_config | dict(filter_glycan_max_na=0.2)
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_impute(mocker, input_file, default_config):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "-i", "median"])
-    assert result.exit_code == 0
+def test_cli_impute(input_file, default_config, workflow_class_mock, workflow_mock):
+    args = [str(input_file), "-i", "median"]
     config = default_config | dict(impute_method="median")
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_structure_file(mocker, input_file, clean_dir, default_config):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
+def test_cli_structure_file(
+    input_file, clean_dir, default_config, workflow_class_mock, workflow_mock
+):
     structure_file = clean_dir / "structure_file.csv"
     structure_file.touch()
-    result = runner.invoke(cli.cli, [str(input_file), "-s", str(structure_file)])
-    assert result.exit_code == 0
+    args = [str(input_file), "-s", str(structure_file)]
     config = default_config | dict(structure_file=str(structure_file))
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_databaes(mocker, input_file, default_config):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "-d", "serum"])
-    assert result.exit_code == 0
+def test_cli_databaes(input_file, default_config, workflow_class_mock, workflow_mock):
+    args = [str(input_file), "-d", "serum"]
     config = default_config | dict(database="serum")
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
 @pytest.mark.parametrize(
@@ -194,16 +190,14 @@ def test_cli_databaes(mocker, input_file, default_config):
         ("S", "structure"),
         ("composition", "composition"),
         ("C", "composition"),
-    ]
+    ],
 )
-def test_cli_mode_structure(mocker, input_file, default_config, mode_command, mode):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "-m", mode_command])
-    assert result.exit_code == 0
+def test_cli_mode_structure(
+    input_file, default_config, mode_command, mode, workflow_class_mock, workflow_mock
+):
+    args = [str(input_file), "-m", mode_command]
     config = default_config | dict(mode=mode)
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
 def test_cli_save_built_in_formulas(clean_dir):
@@ -217,21 +211,17 @@ def test_cli_save_built_in_formulas(clean_dir):
     assert file2.exists()
 
 
-def test_cli_corr_threshold(mocker, clean_dir, input_file, default_config):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "--corr-threshold", 0.5])
-    assert result.exit_code == 0
+def test_cli_corr_threshold(
+    clean_dir, input_file, default_config, workflow_class_mock, workflow_mock
+):
+    args = [str(input_file), "--corr-threshold", 0.5]
     config = default_config | dict(corr_threshold=0.5)
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_corr_method(mocker, clean_dir, input_file, default_config):
-    runner = CliRunner()
-    run_workflow_mock = mocker.patch("glytrait.cli.run_workflow", autospec=True)
-    result = runner.invoke(cli.cli, [str(input_file), "--corr-method", "spearman"])
-    assert result.exit_code == 0
+def test_cli_corr_method(
+    clean_dir, input_file, default_config, workflow_class_mock, workflow_mock
+):
+    args = [str(input_file), "--corr-method", "spearman"]
     config = default_config | dict(corr_method="spearman")
-    run_workflow_mock.assert_called_once()
-    assert run_workflow_mock.call_args[0][0].asdict() == config
+    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)

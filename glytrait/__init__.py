@@ -1,5 +1,5 @@
 """GlyTrait"""
-from .workflow import run_workflow
+from .workflow import Workflow
 
 
 __version__ = "0.4.1"

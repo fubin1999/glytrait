@@ -7,7 +7,7 @@ import emoji
 from glytrait.config import Config
 from glytrait.exception import GlyTraitError
 from glytrait.formula import save_trait_formula_template, save_builtin_formula
-from glytrait.workflow import run_workflow
+from glytrait.workflow import Workflow
 
 UNDIFINED = "__UNDEFINED__"
 
@@ -49,7 +49,7 @@ def save_builtin_formulas_callback(ctx, param, value):
 @click.command()
 @click.argument(
     "input-file",
-    type=click.Path(exists=True),
+    type=click.Path(),
     required=False,
 )
 @click.option(
@@ -210,7 +210,8 @@ Use `glytrait --help` for more information.
                 database=database,
             )
         )
-        run_workflow(config)
+        workflow = Workflow(config)
+        workflow.run()
     except GlyTraitError as e:
         raise click.UsageError(str(e) + emoji.emojize(" :thumbs_down:"))
     msg = f"Done :thumbs_up:! Output written to {output_file}."
