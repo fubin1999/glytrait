@@ -75,6 +75,10 @@ class Config:
         """Get a config value."""
         return self._config[key]
 
+    def set(self, key: str, value: Any) -> None:
+        """Set a config value."""
+        self.update({key: value})
+
     def update(self, new: Mapping[str, Any]) -> None:
         """Update the config with new values."""
         for key, value in new.items():

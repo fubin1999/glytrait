@@ -33,6 +33,23 @@ class TestConfig:
             config.Config(new)
         assert "Missing config key: input_file" in str(excinfo.value)
 
+    def test_set(self, base_config):
+        cfg = config.Config(base_config)
+        cfg.set("mode", "composition")
+        assert cfg.get("mode") == "composition"
+    
+    def test_set_not_supported(self, base_config):
+        cfg = config.Config(base_config)
+        with pytest.raises(KeyError) as excinfo:
+            cfg.set("foo", "bar")
+        assert "Invalid config key: foo" in str(excinfo.value)
+
+    def test_set_invalid_value(self, base_config):
+        cfg = config.Config(base_config)
+        with pytest.raises(config.ConfigError) as excinfo:
+            cfg.set("mode", "foo")
+        assert "mode must be one of" in str(excinfo.value)
+
     def test_input_file_not_csv(self, clean_dir, output_file):
         input_file = clean_dir / "test.txt"
         input_file.touch()
