@@ -120,7 +120,7 @@ def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
         struc_strings = _read_structure_string_from_directory(file, compositions)
     else:
         struc_strings = _read_structure_string_from_csv(file, compositions)
-    return load_glycans(struc_strings)
+    return load_glycans(compositions, struc_strings)
 
 
 def _read_structure_string_from_csv(file: str, compositions: Iterable[str]) -> list[str]:

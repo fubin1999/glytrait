@@ -13,6 +13,6 @@ def clean_dir(tmp_path):
 @pytest.fixture
 def make_glycan():
     def _make_glycan(string, format="glycoct"):
-        return glyc.NGlycan.from_string(string, format=format)
+        return glyc.NGlycan.from_string("glycan", string, format=format)
 
     return _make_glycan

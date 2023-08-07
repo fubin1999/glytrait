@@ -48,6 +48,7 @@ class GlycanType(Enum):
 class NGlycan:
     """A glycan."""
 
+    name: str = field()
     _glypy_glycan: GlypyGlycan = field(repr=False)
     _composition: GlycanComposition = field(init=False, repr=False)
     _cores: list[int] = field(init=False, repr=False)
@@ -91,11 +92,12 @@ class NGlycan:
 
     @classmethod
     def from_string(
-            cls, string: str, format: Literal["glycoct"] = "glycoct"
+        cls, name: str, string: str, format: Literal["glycoct"] = "glycoct"
     ) -> NGlycan:
         """Build a glycan from a string representation.
 
         Args:
+            name (str): The name of the glycan.
             string (str): The string representation of the glycan.
             format (Literal["glycoct"], optional): The format of the string.
                 Defaults to "glycoct".
@@ -105,23 +107,24 @@ class NGlycan:
         """
         if format == "glycoct":
             try:
-                return cls(glycoct_loads(string))
+                return cls(name, glycoct_loads(string))
             except GlycoCTError:
                 raise StructureParseError(f"Could not parse string: {string}")
         else:
             raise StructureParseError(f"Unknown format: {format}")
 
     @classmethod
-    def from_glycoct(cls, glycoct: str) -> NGlycan:
+    def from_glycoct(cls, name: str, glycoct: str) -> NGlycan:
         """Build a glycan from a GlycoCT string.
 
         Args:
+            name (str): The name of the glycan.
             glycoct (str): The GlycoCT string.
 
         Returns:
             NGlycan: The glycan.
         """
-        return cls.from_string(glycoct, format="glycoct")
+        return cls.from_string(name, glycoct, format="glycoct")
 
     def _traversal(
             self,
@@ -302,9 +305,6 @@ class NGlycan:
                             return True
         return False
 
-    def __repr__(self) -> str:
-        return f"NGlycan({to_iupac_lite(self._composition)})"
-
 
 def get_mono_comp(mono: MonosaccharideResidue) -> str:
     """Get the composition of a monosaccharide residue.
@@ -322,6 +322,7 @@ def get_mono_comp(mono: MonosaccharideResidue) -> str:
 class Composition:
     """A glycan composition."""
 
+    name: str = field()
     _comp: dict[str, int] = field(converter=dict)
     sia_linkage: bool = field(kw_only=True)
 
@@ -367,7 +368,7 @@ class Composition:
             mono_comp[m.group(1)] = int(m.group(2))
         for mono in cls._valid_monos(sia_linkage):
             mono_comp.setdefault(mono, 0)
-        return cls(mono_comp, sia_linkage=sia_linkage)
+        return cls(s, mono_comp, sia_linkage=sia_linkage)
 
     @staticmethod
     def _validate_string(s: str) -> NoReturn:
@@ -418,16 +419,17 @@ class Composition:
         return self._comp["E"]
 
 
-def load_glycans(structures: Iterable[str]) -> list[NGlycan]:
+def load_glycans(names: Iterable[str], structures: Iterable[str]) -> list[NGlycan]:
     """Load glycans from a list of structures.
 
     Args:
-        structures (Iterable[str]): The structures.
+        names (Iterable[str]): The names of the glycans.
+        structures (Iterable[str]): The structure strings of the glycans.
 
     Returns:
         list[NGlycan]: The glycans.
     """
-    return [NGlycan.from_string(s) for s in structures]
+    return [NGlycan.from_string(n, s) for n, s in zip(names, structures)]
 
 
 def load_compositions(
