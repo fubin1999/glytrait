@@ -47,7 +47,8 @@ def read_input(file: str) -> tuple[list, list | None, pd.DataFrame]:
     df = pd.read_csv(file)
     df = df.dropna(how="all")
     has_structure = "Structure" in df.columns
-    _check_input(df, has_structure)
+    check_input_file(df, has_structure)
+    # noinspection PyUnreachableCode
     df = df.set_index("Composition")
     comp_s = list(df.index)
     struc_s = list(df["Structure"]) if has_structure else None
@@ -58,7 +59,7 @@ def read_input(file: str) -> tuple[list, list | None, pd.DataFrame]:
     return comp_s, struc_s, abundance_df
 
 
-def _check_input(df: pd.DataFrame, has_structure: bool) -> NoReturn:
+def check_input_file(df: pd.DataFrame, has_structure: bool) -> NoReturn:
     """Check the input dataframe."""
     if df.columns[0] != "Composition":
         raise InputError("The first column of the input file should be Composition.")
