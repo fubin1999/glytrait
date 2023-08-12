@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Black">
-    <option name="enabledOnReformat" value="true" />
     <option name="executionMode" value="BINARY" />
     <option name="pathToExecutable" value="$USER_HOME$/mambaforge/bin/black" />
     <option name="sdkUUID" value="459f6b19-2557-4003-8f0f-9dc25e82a4ca" />

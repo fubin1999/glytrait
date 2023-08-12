@@ -4,7 +4,7 @@ Functions:
     run_workflow: Run the whole GlyTrait workflow.
 """
 from abc import abstractmethod, ABC
-from typing import Any, Type, ClassVar
+from typing import Any, Type, ClassVar, Protocol
 
 import pandas as pd
 from attrs import define, field
@@ -57,6 +57,45 @@ class WorkflowState:
         self._data.clear()
 
 
+class SupportGetSet(Protocol):
+    """A protocol that supports `get` and `set` methods."""
+
+    def get(self, key: str) -> Any:
+        ...
+
+    def set(self, key: str, value: Any) -> None:
+        ...
+
+
+@define
+class ReadOnlyProxy:
+    """A proxy class that prevents modifying the target object.
+
+    This is used to prevent modifying the config and the workflow state
+    in the `_execute` method of a workflow step.
+    """
+
+    obj: SupportGetSet = field()
+
+    def get(self, key: str) -> Any:
+        """Get the value of the key."""
+        return self.obj.get(key)
+
+    def set(self, key: str, value: Any, *, verify: bool = False) -> None:
+        """Set the value of the key.
+
+        This method is used to prevent modifying the target object accidentally.
+        To modify the target object, pass `verify=True` to this method.
+        """
+        if verify:
+            self.obj.set(key, value)
+        else:
+            raise AttributeError("Cannot set attribute without verification.")
+
+    def __getattr__(self, name: str):
+        raise AttributeError(f"Access to method {name} is not allowed")
+
+
 @define
 class WorkflowStep(ABC):
     """A workflow step.
@@ -84,18 +123,33 @@ class WorkflowStep(ABC):
     The `run` method is the entry point of the step.
     This method is not supposed to be overridden.
 
+    Extra notes on the `_execute` method:
+    1. Don't modify the workflow state manually in the `_execute` method.
+    Instead, return the data produced by the step as a dict.
+    2. Don't modify the config in the `_execute` method.
+    One motivation of doing this is to affect the behavior of the later steps.
+    However, this is a bad design.
+    Each step should care only about its own behavior.
+    Put the logic of deciding whether to run a step in that step's `_check_needed` method.
+
+    In summary, the config and the workflow state should be treated as read-only objects
+    in the `_execute` method.
+    Also, the `WorkflowStep` base class has a mechanism to prevent modifying them
+    in the `_execute` method.
+
+
     Examples:
         >>> class SomeStep(WorkflowStep):
         ...     def _execute(self) -> dict[str, Any] | None:
         ...         # Do something
-        ...         return {"key": value}
+        ...         return {"key": "value"}
 
         >>> step = SomeStep(...)
         >>> step.run()
     """
 
-    _config: Config = field(repr=False)
-    _state: WorkflowState = field(repr=False)
+    _config: Config = field(repr=False, converter=ReadOnlyProxy)
+    _state: WorkflowState = field(repr=False, converter=ReadOnlyProxy)
 
     def _check_needed(self) -> bool:
         """Check if the step is needed.
@@ -118,7 +172,7 @@ class WorkflowStep(ABC):
             data_produced = self._execute()
             if data_produced is not None:
                 for key, value in data_produced.items():
-                    self._state.set(key, value)
+                    self._state.set(key, value, verify=True)
 
 
 @define
@@ -143,7 +197,8 @@ class Workflow:
     _state: WorkflowState = field(init=False, repr=False)
 
     def __attrs_post_init__(self) -> None:
-        self._state = WorkflowState()
+        state_data = {"traits_filtered": False}
+        self._state = WorkflowState(state_data)
 
     @classmethod
     def register_step(cls, step_type: Type[WorkflowStep]) -> Type[WorkflowStep]:
@@ -172,7 +227,6 @@ class CheckInputFilesStep(WorkflowStep):
     This step checks the following things:
     1. If the format of the input file is valid.
     2. If structure information is provided in the structure mode.
-    3. If the number of samples is enough for post-filtering and statistical analysis.
 
     Required meta-data: None
 
@@ -183,38 +237,21 @@ class CheckInputFilesStep(WorkflowStep):
         """Execute the step."""
         input_df = pd.read_csv(self._config.get("input_file"))
 
+        # 1. Check the format of the input file.
         has_struc_col = "Structure" in input_df.columns
         check_input_file(input_df, has_struc_col)
 
+        # 2. Check if structure information is provided in the structure mode.
         # noinspection PyUnreachableCode
-        has_database = self._config.get("database") is not None
-        has_structure_file = self._config.get("structure_file") is not None
-
-        # Structure information must be provided in the structure mode,
-        # either in the input file, or in a separate structure file,
-        # or in the build-in database.
-        if not (has_database or has_structure_file or has_struc_col):
-            msg = (
-                "Must provide either structure_file or database when the input file "
-                "does not have a 'Structure' column."
-            )
-            raise ConfigError(msg)
-        # Cannot provide both structure_file and database.
-        if has_database and has_structure_file:
-            msg = "Cannot provide both structure_file and database."
-            raise ConfigError(msg)
-        # If the input file has a "Structure" column,
-        # but structure_file or database is also provided,
-        # the "Structure" column will be ignored.
-
-        if len(input_df.index) < 3:
-            # Too few samples, cannot do post-filtering and statistical analysis.
-            self._config.update(
-                {
-                    "post_filter": False,
-                    "group_file": None,
-                }
-            )
+        if self._config.get("mode") == "structure":
+            has_database = self._config.get("database") is not None
+            has_structure_file = self._config.get("structure_file") is not None
+            if not (has_database or has_structure_file or has_struc_col):
+                msg = (
+                    "Must provide either structure_file or database when the input file "
+                    "does not have a 'Structure' column."
+                )
+                raise ConfigError(msg)
 
 
 @Workflow.register_step
@@ -310,7 +347,7 @@ class LoadGroupStep(WorkflowStep):
 
         # Check if there are at least 2 groups.
         if groups.nunique() == 1:
-            msg = "Only one group, cannot do statistical analysis."
+            msg = "The group file must have at least 2 groups."
             raise InputError(msg)
 
         # Check if there are at least 3 samples in each group.
@@ -319,7 +356,7 @@ class LoadGroupStep(WorkflowStep):
         if len(counts_less_than_3) > 0:
             msg = (
                 f"The following groups have less than 3 samples: "
-                f"{', '.join(counts_less_than_3.index)}"
+                f"{', '.join(counts_less_than_3.index)}."
             )
             raise InputError(msg)
 
@@ -398,7 +435,7 @@ class CalcTraitStep(WorkflowStep):
 
     def _execute(self) -> dict[str, Any]:
         meta_property_df = build_meta_property_table(
-            self._state.get("abund_df").columns,
+            self._state.get("abund_df").columns.tolist(),
             self._state.get("glycans"),
             self._config.get("mode"),
             self._config.get("sia_linkage"),
@@ -423,6 +460,7 @@ class PostFilteringStep(WorkflowStep):
     and update the derived trait table and the formulas in the workflow state.
 
     Required meta-data:
+        abund_df: The abundance table. (For getting the number of samples).
         derived_trait_df: The derived trait table.
         formulas: A list of `Formula` objects.
 
@@ -432,7 +470,15 @@ class PostFilteringStep(WorkflowStep):
     """
 
     def _check_needed(self) -> bool:
-        return self._config.get("post_filtering") is True
+        if self._config.get("post_filtering") is False:
+            return False
+        n_samples = self._state.get("abund_df").shape[0]
+        if n_samples < 3:
+            msg = "Post-filtering will be skipped when there are less than 3 samples."
+            print(msg)
+            self._config.set("post_filtering", False, verify=True)
+            return False
+        return True
 
     def _execute(self) -> dict[str, Any]:
         formulas = self._state.get("formulas")
@@ -444,7 +490,11 @@ class PostFilteringStep(WorkflowStep):
             self._config.get("corr_threshold"),
             self._config.get("corr_method"),
         )
-        return {"formulas": formulas, "derived_trait_df": derived_traits}
+        return {
+            "formulas": formulas,
+            "derived_trait_df": derived_traits,
+            "traits_filtered": True,
+        }
 
 
 @Workflow.register_step
@@ -460,6 +510,7 @@ class AnalysisStep(WorkflowStep):
         abund_df: The abundance table.
         derived_trait_df: The derived trait table.
         groups: A series of group labels.
+        traits_filtered: Whether the derived traits are filtered.
 
     Produced meta-data:
         univariate_result: The univariate analysis result.
@@ -468,10 +519,8 @@ class AnalysisStep(WorkflowStep):
     def _check_needed(self) -> bool:
         if self._state.get("groups") is None:
             return False
-        if self._config.get("post_filtering") is False:
-            print(
-                "Downstream analysis will be skipped when post-filtering is disabled."
-            )
+        if self._state.get("traits_filtered") is False:
+            print("Downstream analysis will be skipped when post-filtering is off.")
             return False
         return True
 
@@ -507,7 +556,7 @@ class WriteOutputStep(WorkflowStep):
 
     def _execute(self) -> None:
         write_output(
-            self._config,
+            self._config.obj,
             self._state.get("derived_trait_df"),
             self._state.get("abund_df"),
             self._state.get("meta_property_df"),
