@@ -103,42 +103,59 @@ def input_df_no_struc_col(input_df_basic):
     return input_df_basic.drop("Structure", axis=1)
 
 
+class TestReadInputFileStep:
+
+    def test_basic(self, mocker, default_config, state, input_df_basic):
+        mocker.patch(
+            "glytrait.workflow.pd.read_csv", return_value=input_df_basic, autospec=True
+        )
+        step = gw.ReadInputFileStep(default_config, state)
+        step.run()
+        assert state.get("input_df").equals(input_df_basic)
+
+
 class TestCheckInputFilesStep:
     def test_basic(self, mocker, default_config, state, input_df_basic):
-        mocker.patch("glytrait.workflow.pd.read_csv", return_value=input_df_basic)
+        state.set("input_df", input_df_basic)
         check_input_mock = mocker.patch(
             "glytrait.workflow.check_input_file", autospec=True
         )
         step = gw.CheckInputFileStep(default_config, state)
         step.run()
         check_input_mock.assert_called_once_with(input_df_basic)
-        assert state._data == {}
+        assert state.get("has_struc_col") is True
+
+    def test_no_struc_col(self, mocker, default_config, state, input_df_no_struc_col):
+        state.set("input_df", input_df_no_struc_col)
+        check_input_mock = mocker.patch(
+            "glytrait.workflow.check_input_file", autospec=True
+        )
+        step = gw.CheckInputFileStep(default_config, state)
+        step.run()
+        check_input_mock.assert_called_once_with(input_df_no_struc_col)
+        assert state.get("has_struc_col") is False
 
 
 class TestCheckHasStructureStep:
-
-    def test_has_struc_col(self, mocker, default_config, state, input_df_basic):
-        mocker.patch("glytrait.workflow.pd.read_csv", return_value=input_df_basic)
+    def test_has_struc_col(self, default_config, state):
+        state.set("has_struc_col", True)
         step = gw.CheckHasStructureStep(default_config, state)
         step.run()
-        assert state._data == {}
 
-    def test_has_db(self, mocker, default_config, state, input_df_no_struc_col):
-        mocker.patch("glytrait.workflow.pd.read_csv", return_value=input_df_no_struc_col)
+    def test_has_db(self, default_config, state):
+        state.set("has_struc_col", False)
         default_config.set("database", "db")
         step = gw.CheckHasStructureStep(default_config, state)
         step.run()
-        assert state._data == {}
 
-    def test_has_struc_file(self, mocker, default_config, state, input_df_no_struc_col):
-        mocker.patch("glytrait.workflow.pd.read_csv", return_value=input_df_no_struc_col)
+    def test_has_struc_file(self, default_config, state):
+        state.set("has_struc_col", False)
         default_config.set("structure_file", "structure_file")
         step = gw.CheckHasStructureStep(default_config, state)
         step.run()
-        assert state._data == {}
 
-    def test_no_struc_info(self, mocker, default_config, state, input_df_no_struc_col):
-        mocker.patch("glytrait.workflow.pd.read_csv", return_value=input_df_no_struc_col)
+    def test_no_struc_info(self, default_config, state):
+        state.set("has_struc_col", False)
         step = gw.CheckHasStructureStep(default_config, state)
         with pytest.raises(gw.InputError) as excinfo:
             step.run()
@@ -153,7 +170,6 @@ class TestLoadAbundanceTableStep:
     @pytest.mark.parametrize("has_struc_col", [True, False])
     def test_with_struc_col(
         self,
-        mocker,
         default_config,
         state,
         has_struc_col,
@@ -164,7 +180,7 @@ class TestLoadAbundanceTableStep:
             input_df = input_df_basic
         else:
             input_df = input_df_no_struc_col
-        mocker.patch("glytrait.workflow.pd.read_csv", return_value=input_df)
+        state.set("input_df", input_df)
         step = gw.LoadAbundanceTableStep(default_config, state)
         step.run()
         result_df = pd.DataFrame(
@@ -760,7 +776,6 @@ class TestAnalysisStep:
 
 
 class TestWriteOutputStep:
-
     @pytest.fixture
     def state_ok(self, state):
         state.set("abund_df", "abund_df")

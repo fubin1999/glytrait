@@ -221,18 +221,39 @@ class Workflow:
 # ----- Workflow steps -----
 @Workflow.register_step
 @define
-class CheckInputFileStep(WorkflowStep):
-    """Check the validity of input file.
+class ReadInputFileStep(WorkflowStep):
+    """Read the input file.
 
     Required meta-data: None
 
-    Produced meta-data: None
+    Produced meta-data:
+        input_df: The input file as a pandas.DataFrame.
     """
 
-    def _execute(self) -> None:
-        """Execute the step."""
+    def _execute(self) -> dict:
         input_df = pd.read_csv(self._config.get("input_file"))
+        return {"input_df": input_df}
+
+
+@Workflow.register_step
+@define
+class CheckInputFileStep(WorkflowStep):
+    """Check the validity of input file.
+
+    Required meta-data:
+        input_df: The input file as a pandas.DataFrame.
+
+    Produced meta-data:
+        has_struc_col: Whether the input file has a "Structure" column.
+    """
+
+    def _execute(self) -> dict:
+        """Execute the step."""
+        input_df = self._state.get("input_df")
         check_input_file(input_df)
+        # noinspection PyUnreachableCode
+        has_struc_col = "Structure" in input_df.columns
+        return {"has_struc_col": has_struc_col}
 
 
 @Workflow.register_step
@@ -242,7 +263,8 @@ class CheckHasStructureStep(WorkflowStep):
 
     This step is only needed in the "structure" mode (when config.get("mode") == "structure").
 
-    Required meta-data: None
+    Required meta-data:
+        has_struc_col: Whether the input file has a "Structure" column.
 
     Produced meta-data: None
     """
@@ -251,8 +273,7 @@ class CheckHasStructureStep(WorkflowStep):
         return self._config.get("mode") == "structure"
 
     def _execute(self) -> None:
-        input_df = pd.read_csv(self._config.get("input_file"))
-        has_struc_col = "Structure" in input_df.columns
+        has_struc_col = self._state.get("has_struc_col")
         has_database = self._config.get("database") is not None
         has_structure_file = self._config.get("structure_file") is not None
         if not (has_database or has_structure_file or has_struc_col):
@@ -268,7 +289,8 @@ class CheckHasStructureStep(WorkflowStep):
 class LoadAbundanceTableStep(WorkflowStep):
     """Load the abundance table.
 
-    Required meta-data: None
+    Required meta-data:
+        input_df: The input file as a pandas.DataFrame.
 
     Produced meta-data:
         abund_df: The abundance table.
@@ -277,7 +299,7 @@ class LoadAbundanceTableStep(WorkflowStep):
     def _execute(self) -> dict[str, Any]:
         """Execute the step."""
         # Get the abundance table
-        input_df = pd.read_csv(self._config.get("input_file"))
+        input_df = self._state.get("input_df")
         input_df = input_df.set_index("Composition")
         if "Structure" in input_df.columns:
             abundance_df = input_df.drop(columns=["Structure"]).T
