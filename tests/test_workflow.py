@@ -109,70 +109,44 @@ class TestCheckInputFilesStep:
         check_input_mock = mocker.patch(
             "glytrait.workflow.check_input_file", autospec=True
         )
-        step = gw.CheckInputFilesStep(default_config, state)
+        step = gw.CheckInputFileStep(default_config, state)
         step.run()
-        check_input_mock.assert_called_once_with(input_df_basic, True)
+        check_input_mock.assert_called_once_with(input_df_basic)
         assert state._data == {}
 
-    def test_no_struc_col_has_db(
-        self, mocker, default_config, state, input_df_no_struc_col
-    ):
-        mocker.patch(
-            "glytrait.workflow.pd.read_csv", return_value=input_df_no_struc_col
-        )
-        check_input_mock = mocker.patch(
-            "glytrait.workflow.check_input_file", autospec=True
-        )
-        default_config.set("database", "database")
-        step = gw.CheckInputFilesStep(default_config, state)
+
+class TestCheckHasStructureStep:
+
+    def test_has_struc_col(self, mocker, default_config, state, input_df_basic):
+        mocker.patch("glytrait.workflow.pd.read_csv", return_value=input_df_basic)
+        step = gw.CheckHasStructureStep(default_config, state)
         step.run()
-        check_input_mock.assert_called_once_with(input_df_no_struc_col, False)
         assert state._data == {}
 
-    def test_no_struc_col_has_struc_file(
-        self, mocker, default_config, state, input_df_no_struc_col
-    ):
-        mocker.patch(
-            "glytrait.workflow.pd.read_csv", return_value=input_df_no_struc_col
-        )
-        check_input_mock = mocker.patch(
-            "glytrait.workflow.check_input_file", autospec=True
-        )
+    def test_has_db(self, mocker, default_config, state, input_df_no_struc_col):
+        mocker.patch("glytrait.workflow.pd.read_csv", return_value=input_df_no_struc_col)
+        default_config.set("database", "db")
+        step = gw.CheckHasStructureStep(default_config, state)
+        step.run()
+        assert state._data == {}
+
+    def test_has_struc_file(self, mocker, default_config, state, input_df_no_struc_col):
+        mocker.patch("glytrait.workflow.pd.read_csv", return_value=input_df_no_struc_col)
         default_config.set("structure_file", "structure_file")
-        step = gw.CheckInputFilesStep(default_config, state)
+        step = gw.CheckHasStructureStep(default_config, state)
         step.run()
-        check_input_mock.assert_called_once_with(input_df_no_struc_col, False)
         assert state._data == {}
 
-    def test_no_struc_col_no_db_no_struc_file(
-        self, mocker, default_config, state, input_df_no_struc_col
-    ):
-        mocker.patch(
-            "glytrait.workflow.pd.read_csv", return_value=input_df_no_struc_col
-        )
-        check_input_mock = mocker.patch(
-            "glytrait.workflow.check_input_file", autospec=True
-        )
-        step = gw.CheckInputFilesStep(default_config, state)
-        with pytest.raises(gw.ConfigError):
+    def test_no_struc_info(self, mocker, default_config, state, input_df_no_struc_col):
+        mocker.patch("glytrait.workflow.pd.read_csv", return_value=input_df_no_struc_col)
+        step = gw.CheckHasStructureStep(default_config, state)
+        with pytest.raises(gw.InputError) as excinfo:
             step.run()
-        check_input_mock.assert_called_once_with(input_df_no_struc_col, False)
-        assert state._data == {}
-
-    def test_no_struc_info_in_comp_mode(
-        self, mocker, default_config, state, input_df_no_struc_col
-    ):
-        mocker.patch(
-            "glytrait.workflow.pd.read_csv", return_value=input_df_no_struc_col
+        msg = (
+            "Must provide either structure_file or database name when the input file "
+            "does not have a 'Structure' column."
         )
-        check_input_mock = mocker.patch(
-            "glytrait.workflow.check_input_file", autospec=True
-        )
-        default_config.set("mode", "composition")
-        step = gw.CheckInputFilesStep(default_config, state)
-        step.run()
-        check_input_mock.assert_called_once_with(input_df_no_struc_col, False)
-        assert state._data == {}
+        assert msg in str(excinfo.value)
 
 
 class TestLoadAbundanceTableStep:
@@ -302,6 +276,50 @@ class TestLoadGlycansStep:
         load_comp_mock.assert_not_called()
         load_default_struc_mock.assert_not_called()
         read_struc_mock.assert_called_once()
+
+    def test_struc_col_and_db(
+        self,
+        mocker,
+        default_config,
+        state,
+        input_df_basic,
+        load_comp_mock,
+        load_default_struc_mock,
+        read_struc_mock,
+        load_glycans_mock,
+    ):
+        mocker.patch(
+            "glytrait.workflow.pd.read_csv", return_value=input_df_basic, autospec=True
+        )
+        default_config.set("database", "db")
+        step = gw.LoadGlycansStep(default_config, state)
+        step.run()
+        load_glycans_mock.assert_called_once()
+        load_comp_mock.assert_not_called()
+        load_default_struc_mock.assert_not_called()
+        read_struc_mock.assert_not_called()
+
+    def test_struc_col_and_struc_file(
+        self,
+        mocker,
+        default_config,
+        state,
+        input_df_basic,
+        load_comp_mock,
+        load_default_struc_mock,
+        read_struc_mock,
+        load_glycans_mock,
+    ):
+        mocker.patch(
+            "glytrait.workflow.pd.read_csv", return_value=input_df_basic, autospec=True
+        )
+        default_config.set("structure_file", "structure_file")
+        step = gw.LoadGlycansStep(default_config, state)
+        step.run()
+        load_glycans_mock.assert_called_once()
+        load_comp_mock.assert_not_called()
+        load_default_struc_mock.assert_not_called()
+        read_struc_mock.assert_not_called()
 
     def test_comp(
         self,

@@ -8,63 +8,6 @@ from glytrait.io import load_default_structures
 from .glycoct import *
 
 
-def test_read_input_with_structure_col(mocker):
-    df = pd.DataFrame(
-        {
-            "Composition": ["comp1", "comp2", "comp3"],
-            "Structure": ["structure1", "structure2", "structure3"],
-            "Sample1": [1., 2., 3.],
-            "Sample2": [4., 5., 6.],
-            "Sample3": [7., 8., 9.],
-        }
-    )
-    expected = (
-        ["comp1", "comp2", "comp3"],
-        ["structure1", "structure2", "structure3"],
-        pd.DataFrame(
-            {
-                "comp1": [1., 4., 7.],
-                "comp2": [2., 5., 8.],
-                "comp3": [3., 6., 9.],
-            },
-            index=["Sample1", "Sample2", "Sample3"],
-        ),
-    )
-    mocker.patch("pandas.read_csv", return_value=df)
-    result = io.read_input("fake_path")
-    assert result[0] == expected[0]
-    assert result[1] == expected[1]
-    pd.testing.assert_frame_equal(result[2], expected[2], check_names=False)
-
-
-def test_read_input_without_structure_col(mocker):
-    df = pd.DataFrame(
-        {
-            "Composition": ["comp1", "comp2", "comp3"],
-            "Sample1": [1., 2., 3.],
-            "Sample2": [4., 5., 6.],
-            "Sample3": [7., 8., 9.],
-        }
-    )
-    expected = (
-        ["comp1", "comp2", "comp3"],
-        None,
-        pd.DataFrame(
-            {
-                "comp1": [1., 4., 7.],
-                "comp2": [2., 5., 8.],
-                "comp3": [3., 6., 9.],
-            },
-            index=["Sample1", "Sample2", "Sample3"],
-        ),
-    )
-    mocker.patch("pandas.read_csv", return_value=df)
-    result = io.read_input("fake_path")
-    assert result[0] == expected[0]
-    assert result[1] == expected[1]
-    pd.testing.assert_frame_equal(result[2], expected[2], check_names=False)
-
-
 def test_read_group(mocker):
     group_df = pd.DataFrame(
         {

@@ -11,7 +11,7 @@ from attrs import define, field
 
 from glytrait.analysis import auto_hypothesis_test, calcu_roc_auc
 from glytrait.config import Config
-from glytrait.exception import ConfigError, InputError
+from glytrait.exception import InputError
 from glytrait.formula import load_formulas
 from glytrait.glycan import load_compositions, load_glycans
 from glytrait.io import (
@@ -221,12 +221,8 @@ class Workflow:
 # ----- Workflow steps -----
 @Workflow.register_step
 @define
-class CheckInputFilesStep(WorkflowStep):
-    """Check the validity of input files.
-
-    This step checks the following things:
-    1. If the format of the input file is valid.
-    2. If structure information is provided in the structure mode.
+class CheckInputFileStep(WorkflowStep):
+    """Check the validity of input file.
 
     Required meta-data: None
 
@@ -236,22 +232,35 @@ class CheckInputFilesStep(WorkflowStep):
     def _execute(self) -> None:
         """Execute the step."""
         input_df = pd.read_csv(self._config.get("input_file"))
+        check_input_file(input_df)
 
-        # 1. Check the format of the input file.
+
+@Workflow.register_step
+@define
+class CheckHasStructureStep(WorkflowStep):
+    """Check if structure information is provided in the structure mode.
+
+    This step is only needed in the "structure" mode (when config.get("mode") == "structure").
+
+    Required meta-data: None
+
+    Produced meta-data: None
+    """
+
+    def _check_needed(self) -> bool:
+        return self._config.get("mode") == "structure"
+
+    def _execute(self) -> None:
+        input_df = pd.read_csv(self._config.get("input_file"))
         has_struc_col = "Structure" in input_df.columns
-        check_input_file(input_df, has_struc_col)
-
-        # 2. Check if structure information is provided in the structure mode.
-        # noinspection PyUnreachableCode
-        if self._config.get("mode") == "structure":
-            has_database = self._config.get("database") is not None
-            has_structure_file = self._config.get("structure_file") is not None
-            if not (has_database or has_structure_file or has_struc_col):
-                msg = (
-                    "Must provide either structure_file or database when the input file "
-                    "does not have a 'Structure' column."
-                )
-                raise ConfigError(msg)
+        has_database = self._config.get("database") is not None
+        has_structure_file = self._config.get("structure_file") is not None
+        if not (has_database or has_structure_file or has_struc_col):
+            msg = (
+                "Must provide either structure_file or database name when the input file "
+                "does not have a 'Structure' column."
+            )
+            raise InputError(msg)
 
 
 @Workflow.register_step
@@ -304,12 +313,14 @@ class LoadGlycansStep(WorkflowStep):
                 comp_strings, sia_linkage=self._config.get("sia_linkage")
             )
         elif self._config.get("mode") == "structure":
-            if structure_file := self._config.get("structure_file"):
-                glycans = read_structure(structure_file, comp_strings)
+            if "Structure" in input_df.columns:
+                glycans = load_glycans(comp_strings, input_df["Structure"])
             elif database := self._config.get("database"):
                 glycans = load_default_structures(database, comp_strings)
+            elif structure_file := self._config.get("structure_file"):
+                glycans = read_structure(structure_file, comp_strings)
             else:
-                glycans = load_glycans(comp_strings, input_df["Structure"])
+                raise ValueError("No structure information provided.")
         else:
             raise ValueError(f"Invalid mode: {self._config.get('mode')}")
         return {"glycans": glycans}

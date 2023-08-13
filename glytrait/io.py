@@ -27,52 +27,21 @@ from glytrait.formula import TraitFormula
 from glytrait.glycan import NGlycan, load_glycans
 
 
-def read_input(file: str) -> tuple[list, list | None, pd.DataFrame]:
-    """Read the input file.
-
-    The first column should be "Composition", with condensed glycan composition notations.
-    The second column should be "Structure", with glycan structure strings like glycoCT.
-    The rest columns should be the abundance of the glycans in different samples.
-    The "Structure" column is optional.
-
-    Args:
-        file (str): The input csv file.
-
-    Returns:
-        tuple[list, list | None, pd.DataFrame]: The composition Series, the structure
-            Series and the abundance DataFrame. The abundance DataFrame has glycans as columns,
-            and samples as rows. If the "Structure" column is not provided, the structure
-            Series will be None.
-    """
-    df = pd.read_csv(file)
-    df = df.dropna(how="all")
-    has_structure = "Structure" in df.columns
-    check_input_file(df, has_structure)
-    # noinspection PyUnreachableCode
-    df = df.set_index("Composition")
-    comp_s = list(df.index)
-    struc_s = list(df["Structure"]) if has_structure else None
-    if has_structure:
-        abundance_df = df.drop(columns=["Structure"]).T
-    else:
-        abundance_df = df.T
-    return comp_s, struc_s, abundance_df
-
-
-def check_input_file(df: pd.DataFrame, has_structure: bool) -> NoReturn:
+def check_input_file(df: pd.DataFrame) -> NoReturn:
     """Check the input dataframe."""
     if df.columns[0] != "Composition":
         raise InputError("The first column of the input file should be Composition.")
     if df["Composition"].duplicated().sum() > 0:
         raise InputError("There are duplicated Compositions in the input file.")
 
-    if has_structure:
+    has_struc_col = "Structure" in df.columns
+    if has_struc_col:
         if df.columns[1] != "Structure":
             raise InputError("The second column of the input file should be Structure.")
         if df["Structure"].duplicated().sum() > 0:
             raise InputError("There are duplicated Structures in the input file.")
 
-    if np.any(df.iloc[:, 2 if has_structure else 1 :].dtypes != "float64"):
+    if np.any(df.iloc[:, 2 if has_struc_col else 1 :].dtypes != "float64"):
         raise InputError("The abundance columns in the input file should be numeric.")
 
 
@@ -124,7 +93,9 @@ def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
     return load_glycans(compositions, struc_strings)
 
 
-def _read_structure_string_from_csv(file: str, compositions: Iterable[str]) -> list[str]:
+def _read_structure_string_from_csv(
+    file: str, compositions: Iterable[str]
+) -> list[str]:
     df = pd.read_csv(file, index_col=0)
     if df.shape[1] != 1:
         raise InputError("The structure file should only have two columns.")
@@ -138,7 +109,9 @@ def _read_structure_string_from_csv(file: str, compositions: Iterable[str]) -> l
     return struc_strings
 
 
-def _read_structure_string_from_directory(path: str, compositions: Iterable[str]) -> list[str]:
+def _read_structure_string_from_directory(
+    path: str, compositions: Iterable[str]
+) -> list[str]:
     path = Path(path)
     struc_strings = []
     for comp in compositions:
