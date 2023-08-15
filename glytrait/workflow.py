@@ -3,7 +3,6 @@
 Functions:
     run_workflow: Run the whole GlyTrait workflow.
 """
-from abc import abstractmethod, ABC
 from typing import Any, Type, ClassVar, Protocol
 
 import pandas as pd
@@ -16,9 +15,9 @@ from glytrait.formula import load_formulas
 from glytrait.glycan import load_compositions, load_glycans
 from glytrait.io import (
     check_input_file,
-    read_structure,
+    read_structure_file,
     load_default_structures,
-    read_group,
+    read_group_file,
     write_output,
 )
 
@@ -97,7 +96,7 @@ class ReadOnlyProxy:
 
 
 @define
-class WorkflowStep(ABC):
+class WorkflowStep:
     """A workflow step.
 
     Workflow steps are the building blocks of the workflow.
@@ -158,13 +157,12 @@ class WorkflowStep(ABC):
         """
         return True
 
-    @abstractmethod
     def _execute(self) -> dict[str, Any] | None:
         """Execute the step.
 
         Subclasses must override this method to execute the step.
         """
-        ...
+        raise NotImplementedError("Subclasses must override this method.")
 
     def run(self) -> None:
         """The entry point of the step."""
@@ -340,7 +338,7 @@ class LoadGlycansStep(WorkflowStep):
             elif database := self._config.get("database"):
                 glycans = load_default_structures(database, comp_strings)
             elif structure_file := self._config.get("structure_file"):
-                glycans = read_structure(structure_file, comp_strings)
+                glycans = read_structure_file(structure_file, comp_strings)
             else:
                 raise ValueError("No structure information provided.")
         else:
@@ -368,7 +366,7 @@ class LoadGroupStep(WorkflowStep):
         return self._config.get("group_file") is not None
 
     def _execute(self) -> dict[str, Any]:
-        groups = read_group(self._config.get("group_file"))
+        groups = read_group_file(self._config.get("group_file"))
 
         # Check if the group series has the same index as the abundance table (ignore order).
         abund_df = self._state.get("abund_df")

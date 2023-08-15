@@ -9,6 +9,7 @@ Functions:
 """
 from __future__ import annotations
 
+import functools
 from importlib.resources import files, as_file
 from pathlib import Path
 from typing import NoReturn, Optional, Literal, Iterable
@@ -45,28 +46,48 @@ def check_input_file(df: pd.DataFrame) -> NoReturn:
         raise InputError("The abundance columns in the input file should be numeric.")
 
 
-def read_group(file: str) -> pd.Series:
+@functools.singledispatch
+def read_group_file(file) -> pd.Series:
     """Read the group file.
 
     The first column should be the sample IDs and the second column should be the group names.
 
     Args:
-        file (str): The group file.
+        file (str | Path | pandas.DataFrame): The group file.
 
     Returns:
         groups (pd.Series): The group names, with sample IDs as index.
+
+    Raises:
+        NotImplementedError: If the input file type is not supported.
     """
-    df = pd.read_csv(file, index_col=0)
+    raise NotImplementedError(f"Cannot read group file of type {type(file)}.")
+
+
+def _read_group_file(df: pd.DataFrame) -> pd.Series:
     if df.shape[1] != 1:
         raise InputError("The group file should only have two columns.")
     groups = df.squeeze()
     return groups
 
 
-def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
+@read_group_file.register(str)
+@read_group_file.register(Path)
+def _(file) -> pd.Series:
+    df = pd.read_csv(file, index_col=0)
+    return _read_group_file(df)
+
+
+@read_group_file.register(pd.DataFrame)
+def _(df) -> pd.Series:
+    return _read_group_file(df)
+
+
+@functools.singledispatch
+def read_structure_file(file, compositions: Iterable[str]) -> list[NGlycan]:
     """Read the structure file.
 
-    `file` could be either a CSV file with all structures,
+    `file` could be either a CSV file (or DataFrame) with all structures,
     or a directory containing the GLYCOCT files of the structures.
     If it is a CSV file, the first column should be the glycan compositions,
     and the second column should be the glycan structures.
@@ -76,16 +97,24 @@ def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
     structures will be the same as that of `compositions`.
 
     Args:
-        file (str): The CSV structure file, or a directory containing the GLYCOCT files.
+        file (str | Path | pandas.DataFrame):
+            The CSV structure file, or a directory containing the GLYCOCT files.
         compositions (Iterable[str]): The compositions of the glycans to be read.
 
     Returns:
         list[NGlycan]: The glycans.
 
     Raises:
-        InputError: If the input file format is wrong, or some compositions are not found in the
-            structure file.
+        InputError:
+            If the input file format is wrong,
+            or some compositions are not found in the structure file.
     """
+    raise NotImplementedError(f"Cannot read structure file of type {type(file)}.")
+
+
+@read_structure_file.register(str)
+@read_structure_file.register(Path)
+def _(file, compositions: Iterable[str]) -> list[NGlycan]:
     if Path(file).is_dir():
         struc_strings = _read_structure_string_from_directory(file, compositions)
     else:
@@ -93,10 +122,20 @@ def read_structure(file: str, compositions: Iterable[str]) -> list[NGlycan]:
     return load_glycans(compositions, struc_strings)
 
 
+@read_structure_file.register(pd.DataFrame)
+def _(df, compositions: Iterable[str]) -> list[NGlycan]:
+    struc_strings = _read_structure_string_from_df(df, compositions)
+    return load_glycans(compositions, struc_strings)
+
+
 def _read_structure_string_from_csv(
     file: str, compositions: Iterable[str]
 ) -> list[str]:
     df = pd.read_csv(file, index_col=0)
+    return _read_structure_string_from_df(df, compositions)
+
+
+def _read_structure_string_from_df(df: pd.DataFrame, compositions: Iterable[str]) -> list[str]:
     if df.shape[1] != 1:
         raise InputError("The structure file should only have two columns.")
     structures = df.squeeze()
@@ -143,7 +182,7 @@ def load_default_structures(
     """
     db_file = built_in_db[db]
     with as_file(db_file) as db_filename:
-        return read_structure(str(db_filename), compositions)
+        return read_structure_file(str(db_filename), compositions)
 
 
 def write_output(

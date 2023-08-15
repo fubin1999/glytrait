@@ -204,7 +204,7 @@ class TestLoadGlycansStep:
     @pytest.fixture
     def read_struc_mock(self, mocker):
         return mocker.patch(
-            "glytrait.workflow.read_structure", return_value="glycans", autospec=True
+            "glytrait.workflow.read_structure_file", return_value="glycans", autospec=True
         )
 
     @pytest.fixture
@@ -383,7 +383,7 @@ class TestLoadGroupStep:
     @pytest.fixture
     def read_group_mock(self, mocker, groups):
         return mocker.patch(
-            "glytrait.workflow.read_group", return_value=groups, autospec=True
+            "glytrait.workflow.read_group_file", return_value=groups, autospec=True
         )
 
     def test_basic(self, default_config, groups, read_group_mock, state, abund_df):
