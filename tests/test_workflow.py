@@ -104,7 +104,6 @@ def input_df_no_struc_col(input_df_basic):
 
 
 class TestReadInputFileStep:
-
     def test_basic(self, mocker, default_config, state, input_df_basic):
         mocker.patch(
             "glytrait.workflow.pd.read_csv", return_value=input_df_basic, autospec=True
@@ -204,7 +203,9 @@ class TestLoadGlycansStep:
     @pytest.fixture
     def read_struc_mock(self, mocker):
         return mocker.patch(
-            "glytrait.workflow.read_structure_file", return_value="glycans", autospec=True
+            "glytrait.workflow.read_structure_file",
+            return_value="glycans",
+            autospec=True,
         )
 
     @pytest.fixture
@@ -232,9 +233,7 @@ class TestLoadGlycansStep:
         read_struc_mock,
         load_glycans_mock,
     ):
-        mocker.patch(
-            "glytrait.workflow.pd.read_csv", return_value=input_df_basic, autospec=True
-        )
+        state.set("input_df", input_df_basic)
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
         assert state.get("glycans") == "glycans"
@@ -254,11 +253,7 @@ class TestLoadGlycansStep:
         read_struc_mock,
         load_glycans_mock,
     ):
-        mocker.patch(
-            "glytrait.workflow.pd.read_csv",
-            return_value=input_df_no_struc_col,
-            autospec=True,
-        )
+        state.set("input_df", input_df_no_struc_col)
         default_config.set("database", "db")
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
@@ -279,11 +274,7 @@ class TestLoadGlycansStep:
         read_struc_mock,
         load_glycans_mock,
     ):
-        mocker.patch(
-            "glytrait.workflow.pd.read_csv",
-            return_value=input_df_no_struc_col,
-            autospec=True,
-        )
+        state.set("input_df", input_df_no_struc_col)
         default_config.set("structure_file", "structure_file")
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
@@ -304,9 +295,7 @@ class TestLoadGlycansStep:
         read_struc_mock,
         load_glycans_mock,
     ):
-        mocker.patch(
-            "glytrait.workflow.pd.read_csv", return_value=input_df_basic, autospec=True
-        )
+        state.set("input_df", input_df_basic)
         default_config.set("database", "db")
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
@@ -326,9 +315,7 @@ class TestLoadGlycansStep:
         read_struc_mock,
         load_glycans_mock,
     ):
-        mocker.patch(
-            "glytrait.workflow.pd.read_csv", return_value=input_df_basic, autospec=True
-        )
+        state.set("input_df", input_df_basic)
         default_config.set("structure_file", "structure_file")
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
@@ -348,11 +335,7 @@ class TestLoadGlycansStep:
         read_struc_mock,
         load_glycans_mock,
     ):
-        mocker.patch(
-            "glytrait.workflow.pd.read_csv",
-            return_value=input_df_no_struc_col,
-            autospec=True,
-        )
+        state.set("input_df", input_df_no_struc_col)
         default_config.set("mode", "composition")
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
@@ -702,9 +685,9 @@ class TestAnalysisStep:
         return pd.Series(["A"] * 4 + ["B"] * 5, name="group", index=samples)
 
     @pytest.fixture
-    def hypo_test_mock(self, mocker):
+    def differential_analysis_mock(self, mocker):
         return mocker.patch(
-            "glytrait.workflow.auto_hypothesis_test",
+            "glytrait.workflow.differential_analysis",
             return_value="hypo_test_result",
             autospec=True,
         )
@@ -725,17 +708,17 @@ class TestAnalysisStep:
         state.set("traits_filtered", True)
         return state
 
-    def test_basic(self, default_config, state_ok, hypo_test_mock, roc_mock):
+    def test_basic(self, default_config, state_ok, differential_analysis_mock, roc_mock):
         step = gw.AnalysisStep(default_config, state_ok)
         step.run()
 
         assert state_ok.get("univariate_result") == "hypo_test_result"
         assert state_ok.get("roc_result") == "roc_result"
 
-        hypo_test_mock.assert_called_once()
+        differential_analysis_mock.assert_called_once()
         roc_mock.assert_called_once()
 
-    def test_no_groups(self, default_config, state_ok, hypo_test_mock, roc_mock):
+    def test_no_groups(self, default_config, state_ok, differential_analysis_mock, roc_mock):
         state_ok.set("groups", None)
         step = gw.AnalysisStep(default_config, state_ok)
         step.run()
@@ -743,10 +726,10 @@ class TestAnalysisStep:
         assert state_ok.get("univariate_result") is None
         assert state_ok.get("roc_result") is None
 
-        hypo_test_mock.assert_not_called()
+        differential_analysis_mock.assert_not_called()
         roc_mock.assert_not_called()
 
-    def test_not_filtered(self, default_config, state_ok, hypo_test_mock, roc_mock):
+    def test_not_filtered(self, default_config, state_ok, differential_analysis_mock, roc_mock):
         state_ok.set("traits_filtered", False)
         step = gw.AnalysisStep(default_config, state_ok)
         step.run()
@@ -754,10 +737,10 @@ class TestAnalysisStep:
         assert state_ok.get("univariate_result") is None
         assert state_ok.get("roc_result") is None
 
-        hypo_test_mock.assert_not_called()
+        differential_analysis_mock.assert_not_called()
         roc_mock.assert_not_called()
 
-    def test_3_groups(self, default_config, state_ok, hypo_test_mock, roc_mock):
+    def test_3_groups(self, default_config, state_ok, differential_analysis_mock, roc_mock):
         groups = pd.Series(
             ["A"] * 3 + ["B"] * 3 + ["C"] * 3,
             name="group",
@@ -771,7 +754,7 @@ class TestAnalysisStep:
         assert state_ok.get("univariate_result") == "hypo_test_result"
         assert state_ok.get("roc_result") is None
 
-        hypo_test_mock.assert_called_once()
+        differential_analysis_mock.assert_called_once()
         roc_mock.assert_not_called()
 
 

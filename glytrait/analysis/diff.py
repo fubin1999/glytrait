@@ -1,16 +1,7 @@
-"""This module contains functions for downstream analysis.
-
-Functions:
-    mwu: Perform Mann-Whitney U Test for two groups.
-    kruskal: Perform Kruskal-Wallis H-test for multiple groups.
-    auto_hypothesis_test: Perform hypothesis test automatically.
-    calculate_auc: Calculate the area under the ROC curve.
-"""
 import warnings
 
 import pandas as pd
 import pingouin as pg
-from sklearn.metrics import roc_auc_score
 
 from glytrait.exception import HypothesisTestingError
 
@@ -39,7 +30,7 @@ def mwu(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
         ttest_results.append(ttest_result)
     result_df = pd.concat(ttest_results, axis=0)
     _, result_df["p-val-adjusted"] = pg.multicomp(result_df["p-val"], method="fdr_bh")
-    result_df = result_df.drop(["alternative", "RBC", "CLES"], axis=1)
+    result_df = result_df[["U-val", "p-val", "p-val-adjusted", "CLES"]]
     return result_df
 
 
@@ -86,7 +77,7 @@ def kruskal(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
     return result_df
 
 
-def auto_hypothesis_test(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
+def differential_analysis(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
     """Automatically perform hypothesis test for the trait data.
 
     If `groups` has two unique values, Mann-Whitney U Test will be performed.
@@ -114,22 +105,3 @@ def auto_hypothesis_test(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFr
         return mwu(trait_df, groups)
     else:
         return kruskal(trait_df, groups)
-
-
-def calcu_roc_auc(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
-    """Perform ROC AUC test for the trait data.
-
-    Args:
-        trait_df (pd.DataFrame): Dataframe containing the trait data.
-        groups (pd.Series): Series containing the group information, with the same index as df.
-
-    Returns:
-        pd.DataFrame: Dataframe containing the ROC AUC test results with two columns:
-            "trait" and "roc_auc".
-    """
-    roc_auc_results = []
-    for trait in trait_df.columns:
-        roc_auc = roc_auc_score(groups, trait_df[trait])
-        roc_auc_results.append((trait, roc_auc))
-    result_df = pd.DataFrame.from_records(roc_auc_results, columns=["trait", "ROC AUC"])
-    return result_df

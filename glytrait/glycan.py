@@ -104,6 +104,9 @@ class NGlycan:
 
         Returns:
             NGlycan: The glycan.
+
+        Raises:
+            StructureParseError: When the string cannot be parsed.
         """
         if format == "glycoct":
             try:
@@ -123,6 +126,9 @@ class NGlycan:
 
         Returns:
             NGlycan: The glycan.
+
+        Raises:
+            StructureParseError: When the string cannot be parsed.
         """
         return cls.from_string(name, glycoct, format="glycoct")
 
@@ -360,6 +366,9 @@ class Composition:
 
         Returns:
             Composition: The composition.
+
+        Raises:
+            CompositionParseError: When the string cannot be parsed.
         """
         cls._validate_string(s)
         mono_comp: dict[str, int] = {}

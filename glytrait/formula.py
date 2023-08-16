@@ -259,6 +259,10 @@ def load_formulas(
 
     Returns:
         list[TraitFormula]: The formulas.
+
+    Raises:
+        FormulaError: If a formula string cannot be parsed,
+            or the user-provided formula file is in a wrong format.
     """
     default_formulas = list(_load_default_formulas(type=type))
     if user_file is None:
@@ -329,6 +333,10 @@ def _load_formulas(
 
     Returns:
         Generator[TraitFormula, None, None]: The generator of the formulas.
+
+    Raises:
+        FormulaError: If a formula string cannot be parsed,
+            or the user-provided formula file is in a wrong format.
     """
     description = None
     expression = None
@@ -382,6 +390,9 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
     Returns:
         tuple[str, list[str], list[str], float]: The name, numerator properties, denominator
             properties, and the coefficient of the formula.
+
+    Raises:
+        FormulaError: If the expression is invalid.
     """
     if "//" in expr:
         pattern = r"(\w+) = \((.+)\) // \((.+)\)"  # Expression with the "//" shortcut

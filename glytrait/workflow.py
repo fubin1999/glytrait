@@ -8,7 +8,7 @@ from typing import Any, Type, ClassVar, Protocol
 import pandas as pd
 from attrs import define, field
 
-from glytrait.analysis import auto_hypothesis_test, calcu_roc_auc
+from glytrait.analysis import differential_analysis, calcu_roc_auc
 from glytrait.config import Config
 from glytrait.exception import InputError
 from glytrait.formula import load_formulas
@@ -243,6 +243,9 @@ class CheckInputFileStep(WorkflowStep):
 
     Produced meta-data:
         has_struc_col: Whether the input file has a "Structure" column.
+
+    Errors Raised:
+        InputError: If the input file is invalid.
     """
 
     def _execute(self) -> dict:
@@ -265,6 +268,9 @@ class CheckHasStructureStep(WorkflowStep):
         has_struc_col: Whether the input file has a "Structure" column.
 
     Produced meta-data: None
+
+    Errors Raised:
+        InputError: If no structure information is provided.
     """
 
     def _check_needed(self) -> bool:
@@ -319,14 +325,21 @@ class LoadGlycansStep(WorkflowStep):
     will be parsed into a list of `Structure` objects,
     and the list will be stored in the workflow state.
 
-    Required meta-data: None
+    Required meta-data:
+        input_df: The input file as a pandas.DataFrame.
 
     Produced meta-data:
         glycans: A list of `Composition` or `NGlycan` objects.
+
+    Errors Raised:
+        CompositionParseError: When a composition string in the "composition" mode
+            cannot be parsed.
+        StructureParseError: When a structure string in the "structure" mode
+            cannot be parsed.
     """
 
     def _execute(self) -> dict[str, Any]:
-        input_df = pd.read_csv(self._config.get("input_file"))
+        input_df = self._state.get("input_df")
         comp_strings = input_df["Composition"].tolist()
         if self._config.get("mode") == "composition":
             glycans = load_compositions(
@@ -360,6 +373,11 @@ class LoadGroupStep(WorkflowStep):
 
     Produced meta-data:
         groups: A pandas.Series, with the same index as the abundance table.
+
+    Errors Raised:
+        InputError: If the group file has a different set of samples from the input file,
+            or there is only one group,
+            or there is less than 3 samples in at least one of the groups.
     """
 
     def _check_needed(self) -> bool:
@@ -401,11 +419,16 @@ class LoadFormulasStep(WorkflowStep):
 
     Load formulas from the built-in formulas file as well as the user-defined formulas file,
     and store them in the workflow state.
+    If "sia_linkage" is False, formulas about sialic acid linkage will be excluded.
 
     Required meta-data: None
 
     Produced meta-data:
         formulas: A list of `Formula` objects.
+
+    Errors Raised:
+        FormulaError: If a formula string cannot be parsed,
+            or the user-provided formula file is in a wrong format.
     """
 
     def _execute(self) -> dict[str, Any]:
@@ -560,7 +583,7 @@ class AnalysisStep(WorkflowStep):
         derived_trait_df = self._state.get("derived_trait_df")
         combined_df = pd.concat([abund_df, derived_trait_df], axis=1)
         groups = self._state.get("groups")
-        univariate_result = auto_hypothesis_test(combined_df, groups)
+        univariate_result = differential_analysis(combined_df, groups)
         if groups.nunique() == 2:
             roc_result = calcu_roc_auc(combined_df, self._state.get("groups"))
         else:
