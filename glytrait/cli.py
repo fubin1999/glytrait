@@ -112,21 +112,14 @@ def save_builtin_formulas_callback(ctx, param, value):
     type=click.FLOAT,
     default=1,
     help="Threshold for correlation between traits. "
-         "Default is 1, which means only traits with perfect collinearity "
-         "will be filtered.",
+    "Default is 1, which means only traits with perfect collinearity "
+    "will be filtered.",
 )
 @click.option(
     "--corr-method",
     type=click.Choice(["pearson", "spearman"]),
     default="pearson",
-    help="Method to calculate correlation between traits. "
-         "Default is 'pearson'."
-)
-@click.option(
-    "-g",
-    "--group-file",
-    type=click.Path(exists=True),
-    help="Group file for hypothesis test.",
+    help="Method to calculate correlation between traits. " "Default is 'pearson'.",
 )
 @click.option(
     "-s",
@@ -162,7 +155,6 @@ def cli(
     filter,
     corr_threshold,
     corr_method,
-    group_file,
     structure_file,
     database,
 ):
@@ -205,7 +197,6 @@ Use `glytrait --help` for more information.
                 sia_linkage=sia_linkage,
                 formula_file=formula_file,
                 post_filtering=filter,
-                group_file=group_file,
                 structure_file=structure_file,
                 database=database,
             )

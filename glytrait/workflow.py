@@ -8,7 +8,6 @@ from typing import Any, Type, ClassVar, Protocol
 import pandas as pd
 from attrs import define, field
 
-from glytrait.analysis import differential_analysis, calcu_roc_auc
 from glytrait.config import Config
 from glytrait.exception import InputError
 from glytrait.formula import load_formulas
@@ -17,7 +16,6 @@ from glytrait.io import (
     check_input_file,
     read_structure_file,
     load_default_structures,
-    read_group_file,
     write_output,
 )
 
@@ -361,59 +359,6 @@ class LoadGlycansStep(WorkflowStep):
 
 @Workflow.register_step
 @define
-class LoadGroupStep(WorkflowStep):
-    """Load the group information.
-
-    Read the group information from the input file,
-    and store it in the workflow state.
-    This step is optional.
-
-    Required meta-data:
-        abund_df: The abundance table.
-
-    Produced meta-data:
-        groups: A pandas.Series, with the same index as the abundance table.
-
-    Errors Raised:
-        InputError: If the group file has a different set of samples from the input file,
-            or there is only one group,
-            or there is less than 3 samples in at least one of the groups.
-    """
-
-    def _check_needed(self) -> bool:
-        return self._config.get("group_file") is not None
-
-    def _execute(self) -> dict[str, Any]:
-        groups = read_group_file(self._config.get("group_file"))
-
-        # Check if the group series has the same index as the abundance table (ignore order).
-        abund_df = self._state.get("abund_df")
-        if not abund_df.index.sort_values().equals(groups.index.sort_values()):
-            msg = "The group file must have the same samples as the input file."
-            raise InputError(msg)
-        # If equal, reindex the group series to the same order as the abundance table.
-        groups = groups.reindex(abund_df.index)
-
-        # Check if there are at least 2 groups.
-        if groups.nunique() == 1:
-            msg = "The group file must have at least 2 groups."
-            raise InputError(msg)
-
-        # Check if there are at least 3 samples in each group.
-        counts = groups.value_counts()
-        counts_less_than_3 = counts[counts < 3]
-        if len(counts_less_than_3) > 0:
-            msg = (
-                f"The following groups have less than 3 samples: "
-                f"{', '.join(counts_less_than_3.index)}."
-            )
-            raise InputError(msg)
-
-        return {"groups": groups}
-
-
-@Workflow.register_step
-@define
 class LoadFormulasStep(WorkflowStep):
     """Load the formulas of derived traits.
 
@@ -553,46 +498,6 @@ class PostFilteringStep(WorkflowStep):
 
 @Workflow.register_step
 @define
-class AnalysisStep(WorkflowStep):
-    """Carry out downstream analysis on glycans and derived traits.
-
-    Analysis includes:
-    - Univariate analysis
-    - ROC analysis
-
-    Required meta-data:
-        abund_df: The abundance table.
-        derived_trait_df: The derived trait table.
-        groups: A series of group labels.
-        traits_filtered: Whether the derived traits are filtered.
-
-    Produced meta-data:
-        univariate_result: The univariate analysis result.
-    """
-
-    def _check_needed(self) -> bool:
-        if self._state.get("groups") is None:
-            return False
-        if self._state.get("traits_filtered") is False:
-            print("Downstream analysis will be skipped when post-filtering is off.")
-            return False
-        return True
-
-    def _execute(self) -> dict[str, Any]:
-        abund_df = self._state.get("abund_df")
-        derived_trait_df = self._state.get("derived_trait_df")
-        combined_df = pd.concat([abund_df, derived_trait_df], axis=1)
-        groups = self._state.get("groups")
-        univariate_result = differential_analysis(combined_df, groups)
-        if groups.nunique() == 2:
-            roc_result = calcu_roc_auc(combined_df, self._state.get("groups"))
-        else:
-            roc_result = None
-        return {"univariate_result": univariate_result, "roc_result": roc_result}
-
-
-@Workflow.register_step
-@define
 class WriteOutputStep(WorkflowStep):
     """Write the output files.
 
@@ -615,9 +520,6 @@ class WriteOutputStep(WorkflowStep):
             self._state.get("abund_df"),
             self._state.get("meta_property_df"),
             self._state.get("formulas"),
-            self._state.get("groups"),
-            self._state.get("univariate_result"),
-            self._state.get("roc_result"),
         )
 
 

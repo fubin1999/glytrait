@@ -233,37 +233,6 @@ class TestConfig:
             config.Config(new)
         assert "post_filtering must be a boolean" in str(excinfo.value)
 
-    def test_group_file(self, base_config, clean_dir):
-        group_file = clean_dir / "group.csv"
-        group_file.touch()
-        group_file = str(group_file)
-        new = base_config | {"group_file": group_file}
-        cfg = config.Config(new)
-        assert cfg.get("group_file") == group_file
-
-    def test_group_file_not_str(self, base_config):
-        new = base_config | {"group_file": 1}
-        with pytest.raises(config.ConfigError) as excinfo:
-            config.Config(new)
-        assert "Group file must be a string" in str(excinfo.value)
-
-    def test_group_file_not_csv(self, base_config, clean_dir):
-        group_file = clean_dir / "group.txt"
-        group_file.touch()
-        group_file = str(group_file)
-        new = base_config | {"group_file": group_file}
-        with pytest.raises(config.ConfigError) as excinfo:
-            config.Config(new)
-        assert "Group file must be a CSV file" in str(excinfo.value)
-
-    def test_group_file_not_exist(self, base_config, clean_dir):
-        group_file = clean_dir / "group.csv"
-        group_file = str(group_file)
-        new = base_config | {"group_file": group_file}
-        with pytest.raises(config.ConfigError) as excinfo:
-            config.Config(new)
-        assert "Group file does not exist" in str(excinfo.value)
-
     def test_invalid_key(self, base_config):
         new = base_config | {"foo": "bar"}
         with pytest.raises(KeyError) as excinfo:
@@ -312,43 +281,6 @@ class TestConfig:
         with pytest.raises(config.ConfigError) as excinfo:
             config.Config(new)
         assert "Cannot provide both database and structure_file" in str(excinfo.value)
-
-    def test_both_struc_col_and_database(self, base_config):
-        new = base_config | {"database": "serum", "_has_struc_col": True}
-        with pytest.raises(config.ConfigError) as excinfo:
-            config.Config(new)
-        msg = "Cannot provide database when the input file already"
-        assert msg in str(excinfo.value)
-
-    def test_both_struc_col_and_structure_file(self, base_config, clean_dir):
-        structure_file = clean_dir / "structure.csv"
-        structure_file.touch()
-        new = base_config | {
-            "structure_file": str(structure_file),
-            "_has_struc_col": True,
-        }
-        with pytest.raises(config.ConfigError) as excinfo:
-            config.Config(new)
-        msg = "Cannot provide structure_file when the input file already"
-        assert msg in str(excinfo.value)
-
-    def test_has_struc_col_not_bool(self, base_config):
-        new = base_config | {"_has_struc_col": 1}
-        with pytest.raises(config.ConfigError) as excinfo:
-            config.Config(new)
-        assert "_has_struc_col must be a boolean" in str(excinfo.value)
-
-    def test_no_struc_col_struc_mode_no_database_no_structure_file(self, base_config):
-        new = base_config | {"_has_struc_col": False}
-        with pytest.raises(config.ConfigError) as excinfo:
-            config.Config(new)
-        assert "Must provide either structure_file or database" in str(excinfo.value)
-
-    @pytest.mark.parametrize("has_struc_col", [True, False])
-    def test_comp_mode(self, base_config, has_struc_col):
-        new = base_config | {"_has_struc_col": has_struc_col, "mode": "composition"}
-        cfg = config.Config(new)
-        assert cfg.get("_has_struc_col") is has_struc_col
 
     def test_comp_mode_database_provided(self, base_config):
         new = base_config | {

@@ -22,7 +22,6 @@ def default_config(monkeypatch) -> Config:
         sia_linkage=False,
         formula_file=None,
         post_filtering=True,
-        group_file=None,
         structure_file=None,
         database=None,
     )
@@ -346,95 +345,6 @@ class TestLoadGlycansStep:
         read_struc_mock.assert_not_called()
 
 
-class TestLoadGroupStep:
-    @pytest.fixture
-    def abund_df(self):
-        return pd.DataFrame(
-            {
-                "comp1": [1, 2, 3, 4, 5, 6],
-                "comp2": [7, 8, 9, 10, 11, 12],
-                "comp3": [13, 14, 15, 16, 17, 18],
-            },
-            index=["Sample1", "Sample2", "Sample3", "Sample4", "Sample5", "Sample6"],
-        )
-
-    @pytest.fixture
-    def groups(self) -> pd.Series:
-        samples = ["Sample1", "Sample2", "Sample3", "Sample4", "Sample5", "Sample6"]
-        return pd.Series(["A", "A", "A", "B", "B", "B"], name="group", index=samples)
-
-    @pytest.fixture
-    def read_group_mock(self, mocker, groups):
-        return mocker.patch(
-            "glytrait.workflow.read_group_file", return_value=groups, autospec=True
-        )
-
-    def test_basic(self, default_config, groups, read_group_mock, state, abund_df):
-        default_config.set("group_file", "group_file")
-        state.set("abund_df", abund_df)
-        step = gw.LoadGroupStep(default_config, state)
-        step.run()
-        assert state.get("groups").equals(groups)
-        read_group_mock.assert_called_once_with("group_file")
-
-    def test_no_group_file(self, default_config, read_group_mock, state, abund_df):
-        state.set("abund_df", abund_df)
-        step = gw.LoadGroupStep(default_config, state)
-        step.run()
-        assert state.get("groups") is None
-        read_group_mock.assert_not_called()
-
-    def test_diff_samples(self, default_config, read_group_mock, state, abund_df):
-        default_config.set("group_file", "group_file")
-        state.set("abund_df", abund_df.drop("Sample6", axis=0))
-        step = gw.LoadGroupStep(default_config, state)
-        with pytest.raises(gw.InputError) as excinfo:
-            step.run()
-        msg = "The group file must have the same samples as the input file."
-        assert msg in str(excinfo.value)
-        read_group_mock.assert_called_once_with("group_file")
-
-    def test_order(self, default_config, groups, read_group_mock, state, abund_df):
-        new_index = ["Sample2", "Sample3", "Sample1", "Sample4", "Sample5", "Sample6"]
-        groups_ordered = groups.reindex(new_index)
-        read_group_mock.return_value = groups_ordered
-        default_config.set("group_file", "group_file")
-        state.set("abund_df", abund_df)
-        step = gw.LoadGroupStep(default_config, state)
-        step.run()
-        assert state.get("groups").equals(groups)
-        read_group_mock.assert_called_once_with("group_file")
-
-    def test_only_1_group(
-        self, default_config, groups, read_group_mock, state, abund_df
-    ):
-        groups = pd.Series(["A"] * 6, name="group", index=groups.index)
-        read_group_mock.return_value = groups
-        default_config.set("group_file", "group_file")
-        state.set("abund_df", abund_df)
-        step = gw.LoadGroupStep(default_config, state)
-        with pytest.raises(gw.InputError) as excinfo:
-            step.run()
-        msg = "The group file must have at least 2 groups."
-        assert msg in str(excinfo.value)
-        read_group_mock.assert_called_once_with("group_file")
-
-    def test_too_few_samples_in_groups(
-        self, default_config, groups, read_group_mock, state, abund_df
-    ):
-        groups = groups.drop(["Sample1", "Sample4"])
-        read_group_mock.return_value = groups
-        abund_df = abund_df.drop(["Sample1", "Sample4"], axis=0)
-        state.set("abund_df", abund_df)
-        default_config.set("group_file", "group_file")
-        step = gw.LoadGroupStep(default_config, state)
-        with pytest.raises(gw.InputError) as excinfo:
-            step.run()
-        msg = "The following groups have less than 3 samples: A, B."
-        assert msg in str(excinfo.value)
-        read_group_mock.assert_called_once_with("group_file")
-
-
 class TestLoadFormulasStep:
     @define
     class Formula:
@@ -652,124 +562,15 @@ class TestPostFilteringStep:
         filter_collinear_mock.assert_not_called()
 
 
-class TestAnalysisStep:
-    @pytest.fixture
-    def abund_df(self):
-        return pd.DataFrame(
-            {
-                "comp1": [1] * 9,
-                "comp2": [1] * 9,
-                "comp3": [1] * 9,
-            },
-            index=[f"Sample{i}" for i in range(1, 10)],
-        )
-
-    @pytest.fixture
-    def traits(self):
-        return pd.DataFrame(
-            {
-                "trait1": [1] * 9,
-                "trait2": [1] * 9,
-                "trait3": [1] * 9,
-            },
-            index=[f"Sample{i}" for i in range(1, 10)],
-        )
-
-    @pytest.fixture
-    def combined_df(self, abund_df, traits):
-        return pd.concat([abund_df, traits], axis=1)
-
-    @pytest.fixture
-    def groups(self) -> pd.Series:
-        samples = [f"Sample{i}" for i in range(1, 10)]
-        return pd.Series(["A"] * 4 + ["B"] * 5, name="group", index=samples)
-
-    @pytest.fixture
-    def differential_analysis_mock(self, mocker):
-        return mocker.patch(
-            "glytrait.workflow.differential_analysis",
-            return_value="hypo_test_result",
-            autospec=True,
-        )
-
-    @pytest.fixture
-    def roc_mock(self, mocker):
-        return mocker.patch(
-            "glytrait.workflow.calcu_roc_auc",
-            return_value="roc_result",
-            autospec=True,
-        )
-
-    @pytest.fixture
-    def state_ok(self, state, abund_df, traits, groups):
-        state.set("abund_df", abund_df)
-        state.set("derived_trait_df", traits)
-        state.set("groups", groups)
-        state.set("traits_filtered", True)
-        return state
-
-    def test_basic(self, default_config, state_ok, differential_analysis_mock, roc_mock):
-        step = gw.AnalysisStep(default_config, state_ok)
-        step.run()
-
-        assert state_ok.get("univariate_result") == "hypo_test_result"
-        assert state_ok.get("roc_result") == "roc_result"
-
-        differential_analysis_mock.assert_called_once()
-        roc_mock.assert_called_once()
-
-    def test_no_groups(self, default_config, state_ok, differential_analysis_mock, roc_mock):
-        state_ok.set("groups", None)
-        step = gw.AnalysisStep(default_config, state_ok)
-        step.run()
-
-        assert state_ok.get("univariate_result") is None
-        assert state_ok.get("roc_result") is None
-
-        differential_analysis_mock.assert_not_called()
-        roc_mock.assert_not_called()
-
-    def test_not_filtered(self, default_config, state_ok, differential_analysis_mock, roc_mock):
-        state_ok.set("traits_filtered", False)
-        step = gw.AnalysisStep(default_config, state_ok)
-        step.run()
-
-        assert state_ok.get("univariate_result") is None
-        assert state_ok.get("roc_result") is None
-
-        differential_analysis_mock.assert_not_called()
-        roc_mock.assert_not_called()
-
-    def test_3_groups(self, default_config, state_ok, differential_analysis_mock, roc_mock):
-        groups = pd.Series(
-            ["A"] * 3 + ["B"] * 3 + ["C"] * 3,
-            name="group",
-            index=state_ok.get("groups").index,
-        )
-        state_ok.set("groups", groups)
-
-        step = gw.AnalysisStep(default_config, state_ok)
-        step.run()
-
-        assert state_ok.get("univariate_result") == "hypo_test_result"
-        assert state_ok.get("roc_result") is None
-
-        differential_analysis_mock.assert_called_once()
-        roc_mock.assert_not_called()
-
-
 class TestWriteOutputStep:
     @pytest.fixture
     def state_ok(self, state):
         state.set("abund_df", "abund_df")
         state.set("glycans", "glycans")
         state.set("formulas", "formulas")
-        state.set("groups", "groups")
         state.set("meta_property_df", "meta_property_df")
         state.set("derived_trait_df", "derived_trait_df")
         state.set("traits_filtered", True)
-        state.set("univariate_result", "univariate_result")
-        state.set("roc_result", "roc_result")
         return state
 
     def test_basic(self, mocker, default_config, state_ok):
@@ -786,7 +587,4 @@ class TestWriteOutputStep:
             "abund_df",
             "meta_property_df",
             "formulas",
-            "groups",
-            "univariate_result",
-            "roc_result",
         )

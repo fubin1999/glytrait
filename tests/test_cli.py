@@ -143,16 +143,6 @@ def test_cli_filter_off(input_file, default_config, workflow_class_mock, workflo
     _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_group_file(
-    input_file, clean_dir, default_config, workflow_class_mock, workflow_mock
-):
-    group_file = clean_dir / "group_file.csv"
-    group_file.write_text("")
-    args = [str(input_file), "-g", str(group_file)]
-    config = default_config | dict(group_file=str(group_file))
-    _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
-
-
 def test_cli_filter_glycans(
     input_file, default_config, workflow_class_mock, workflow_mock
 ):

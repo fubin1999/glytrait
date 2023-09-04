@@ -12,7 +12,7 @@ from __future__ import annotations
 import functools
 from importlib.resources import files, as_file
 from pathlib import Path
-from typing import NoReturn, Optional, Literal, Iterable
+from typing import NoReturn, Literal, Iterable
 
 import numpy as np
 import pandas as pd
@@ -135,7 +135,9 @@ def _read_structure_string_from_csv(
     return _read_structure_string_from_df(df, compositions)
 
 
-def _read_structure_string_from_df(df: pd.DataFrame, compositions: Iterable[str]) -> list[str]:
+def _read_structure_string_from_df(
+    df: pd.DataFrame, compositions: Iterable[str]
+) -> list[str]:
     if df.shape[1] != 1:
         raise InputError("The structure file should only have two columns.")
     structures = df.squeeze()
@@ -191,9 +193,6 @@ def write_output(
     direct_traits: pd.DataFrame,
     meta_prop_df: pd.DataFrame,
     formulas: list[TraitFormula],
-    groups: Optional[pd.Series] = None,
-    hypothesis_test: Optional[pd.DataFrame] = None,
-    roc_result: Optional[pd.DataFrame] = None,
 ) -> None:
     """Write the output file.
 
@@ -213,7 +212,7 @@ def write_output(
     wb = Workbook()
     ws_summary: Worksheet = wb.active
     ws_summary.title = "Summary"
-    _write_summary(ws_summary, config, direct_traits, derived_traits, groups)
+    _write_summary(ws_summary, config, direct_traits, derived_traits)
 
     # The trait table
     ws_trait = wb.create_sheet("Trait values")
@@ -227,15 +226,6 @@ def write_output(
     ws_meta = wb.create_sheet("Meta properties")
     _write_meta_properties(ws_meta, meta_prop_df)
 
-    # The hypothesis test results
-    if hypothesis_test is not None:
-        ws_uni = wb.create_sheet("Univariate analysis results")
-        _write_hypothesis_test(ws_uni, hypothesis_test)
-
-    if roc_result is not None:
-        ws_roc = wb.create_sheet("ROC results")
-        _write_roc_results(ws_roc, roc_result)
-
     wb.save(config.get("output_file"))
 
 
@@ -244,7 +234,6 @@ def _write_summary(
     config: Config,
     direct_triats: pd.DataFrame,
     derived_traits: pd.DataFrame,
-    groups: Optional[pd.Series] = None,
 ) -> None:
     """Write the summary sheet."""
     HEADER = "__HEADER__"
@@ -256,7 +245,6 @@ def _write_summary(
         ("Output file", config.get("output_file")),
         ("Structure file", config.get("structure_file")),
         ("Formula file", config.get("formula_file")),
-        ("Group file", config.get("group_file")),
         ("Mode", config.get("mode")),
         ("Database", config.get("database")),
         ("Glycan filter ratio", config.get("filter_glycan_max_na")),
@@ -268,7 +256,6 @@ def _write_summary(
         ("Correlation method", config.get("corr_method")),
         ("Result Overview", HEADER),
         ("Num. of samples", len(direct_triats.index)),
-        ("Num. of groups", groups.nunique() if groups is not None else None),
         ("Num. of glycans", len(direct_triats.columns)),
         ("Num. of traits", len(derived_traits.columns)),
     ]
@@ -336,22 +323,6 @@ def _write_trait_defination(ws: Worksheet, formulas: list[TraitFormula]) -> None
 
 def _write_meta_properties(ws: Worksheet, meta_prop_df: pd.DataFrame) -> None:
     for row in dataframe_to_rows(meta_prop_df, index=True, header=True):
-        ws.append(row)
-    ws.delete_rows(2)
-    for cell in ws[1]:
-        cell.font = cell.font.copy(bold=True)
-
-
-def _write_hypothesis_test(ws: Worksheet, hypothesis_test: pd.DataFrame) -> None:
-    for row in dataframe_to_rows(hypothesis_test, index=True, header=True):
-        ws.append(row)
-    ws.delete_rows(2)
-    for cell in ws[1]:
-        cell.font = cell.font.copy(bold=True)
-
-
-def _write_roc_results(ws: Worksheet, roc_result: pd.DataFrame) -> None:
-    for row in dataframe_to_rows(roc_result, index=False, header=True):
         ws.append(row)
     ws.delete_rows(2)
     for cell in ws[1]:

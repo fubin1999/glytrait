@@ -25,8 +25,7 @@ glycan structures.
     - [Built-in database](#built-in-database)
     - [Preprocessing](#preprocessing)
     - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
-    - [Post-filter](#post-filtering)
-    - [Univariate analysis](#univariate-analysis)
+    - [Post-filtering](#post-filtering)
     - [The GlyTrait Formula](#the-glytrait-formula-advanced)
 - [License](#license)
 
@@ -375,40 +374,6 @@ Post-filtering can be turned off by the "--no-filtering" option:
 ```shell
 glytrait data.csv --no-filtering
 ```
-
-### Statistical analysis
-
-GlyTrait supports univariate analysis and ROC analysis for direct and derived traits.
-To use this feature, you need to provide a csv file containing the sample grouping information.
-The csv file should have two columns, the first column is the sample name,
-and the second column is the group name.
-An example group file would be like:
-
-| Sample  | Group  |
-|---------|--------|
-| Sample1 | Group1 |
-| Sample2 | Group1 |
-| Sample3 | Group2 |
-| Sample4 | Group2 |
-
-Then use the "-g" or "--group-file" option to specify the group file:
-
-```shell
-glytrait data.csv -g group.csv
-```
-
-GlyTrait will carry out Mann-Whitney U Test for two groups,
-and Kruskal-Wallis H Test for more than two groups.
-The Benjamini-Hochberg procedure is used to correct the p-values.
-For more-than-two-groups situations, the Mann-Whitney U Test will be used for post-hoc test.
-GlyTraits uses non-parametric tests for the sake of robustness.
-
-ROC analysis will only be carried out for binary classification problems,
-i.e. if there are only two groups in the group file.
-
-A post-filtering step will be carried out before any statistical analysis,
-even if the "--no-filter" option is used.
-(See [Post-Filtering](#post-filtering) for details.)
 
 ### The GlyTrait Formula (Advanced)
 

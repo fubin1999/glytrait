@@ -23,10 +23,8 @@ default_config = {
     "sia_linkage": False,
     "formula_file": None,
     "post_filtering": True,
-    "group_file": None,
     "structure_file": None,
     "database": None,
-    "_has_struc_col": None,
 }
 
 must_have = {"input_file", "output_file", "mode"}
@@ -46,7 +44,6 @@ class Config:
         - sia_linkage: Whether to include sialic acid linkage in the analysis.
         - formula_file: Path to the formula file.
         - post_filtering: Whether to carry out post-filtering.
-        - group_file: Path to the group file.
         - structure_file: Path to the structure file.
         - database: The name of the built-in structure database to use.
         - _has_struc_col: Whether the input file has a structure column. Do not set this manually.
@@ -209,12 +206,6 @@ def valid_post_filtering(config: Mapping[str, Any]) -> NoReturn:
 
 
 @Config.register_validator
-def valid_group_file(config: Mapping[str, Any]) -> NoReturn:
-    """Check if a value is a valid group_file."""
-    valid_file(config["group_file"], "Group file", ".csv", check_exist=True)
-
-
-@Config.register_validator
 def valid_structure_file(config: Mapping[str, Any]) -> NoReturn:
     """Check if a value is a valid structure_file."""
     path = config["structure_file"]
@@ -248,34 +239,6 @@ def valid_database_and_structure_file(config: Mapping[str, Any]) -> NoReturn:
     structure_file = config["structure_file"]
     if database is not None and structure_file is not None:
         raise ConfigError("Cannot provide both database and structure_file.")
-
-
-@Config.register_validator
-def valid_struc_col(config: Mapping[str, Any]) -> NoReturn:
-    """Check if the config is valid for _has_struc_col."""
-    if config["_has_struc_col"] is None:
-        return
-    if not isinstance(config["_has_struc_col"], bool):
-        raise ConfigError("_has_struc_col must be a boolean.")
-    if config["mode"] == "composition":
-        return
-    if config["_has_struc_col"] is True:
-        if config["structure_file"] is not None:
-            raise ConfigError(
-                "Cannot provide structure_file when the input file already"
-                "has a 'Structure' column."
-            )
-        if config["database"] is not None:
-            raise ConfigError(
-                "Cannot provide database when the input file already"
-                "has a 'Structure' column."
-            )
-    else:  # _has_struc_col is False
-        if config["structure_file"] is None and config["database"] is None:
-            raise ConfigError(
-                "Must provide either structure_file or database when the input file "
-                "does not have a 'Structure' column."
-            )
 
 
 @Config.register_validator
