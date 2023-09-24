@@ -14,7 +14,10 @@ from glytrait.streamlit import utils
 
 def differential_analysis():
     st.title("Differential analysis")
-    groups = st.session_state.group_series
+    groups = st.session_state.get("group_series")
+    if groups is None:
+        st.warning("Please upload a group file for this analysis.")
+        st.stop()
     if groups.nunique() == 2:
         st.info("Two groups are detected. **Mann-Whitney U test** will be performed.")
         st.info(
@@ -172,8 +175,11 @@ def dimension_reduction():
 
 def roc_analysis():
     st.title("ROC analysis")
-
-    if st.session_state.group_series.nunique() != 2:
+    groups = st.session_state.get("group_series")
+    if groups is None:
+        st.warning("Please upload a group file for this analysis.")
+        st.stop()
+    if groups.nunique() != 2:
         st.warning(
             "ROC analysis with more than two groups is not available yet.", icon="⚠️"
         )
@@ -195,19 +201,15 @@ def roc_analysis():
     fig.add_shape(type="line", line=dict(dash="dash"), x0=0, x1=1, y0=0, y1=1)
     for trait in selected:
         model = LogisticRegression()
-        model.fit(
-            st.session_state.derived_trait_df[[trait]], st.session_state.group_series
-        )
+        model.fit(st.session_state.derived_trait_df[[trait]], groups)
         scores = model.predict_proba(st.session_state.derived_trait_df[[trait]])[:, 1]
-        fpr, tpr, _ = roc_curve(st.session_state.group_series, scores)
+        fpr, tpr, _ = roc_curve(groups, scores)
         fig.add_trace(go.Scatter(x=fpr, y=tpr, name=trait, mode="lines"))
     fig.update_layout(xaxis_title="FPR", yaxis_title="TPR")
     st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("ROC AUC")
-    auc_df = calcu_roc_auc(
-        st.session_state.derived_trait_df, st.session_state.group_series
-    )
+    auc_df = calcu_roc_auc(st.session_state.derived_trait_df, groups)
     auc_df["ROC AUC"] = auc_df["ROC AUC"].round(3)
     # Draw a dotplot of the 10 traits with the highest roc auc, using plotly
     fig = px.scatter(
