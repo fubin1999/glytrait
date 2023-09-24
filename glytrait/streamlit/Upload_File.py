@@ -394,8 +394,10 @@ class UploadGroupFileStep(StreamlitStep):
         # in the abundance dataframe.
         abund_df = st.session_state.abund_df
         if set(abund_df.index) != set(group_df["sample"]):
-            msg = ("The sample names in the group dataframe should be the "
-                   "same as the sample names in the abundance dataframe.")
+            msg = (
+                "The sample names in the group dataframe should be the "
+                "same as the sample names in the abundance dataframe."
+            )
             raise ValueError(msg)
 
         # 3. Check if there are more than one group.
@@ -551,9 +553,7 @@ class CalculateTraitStep(StreamlitStep):
         input_df = st.session_state.input_df
         comp_strings = input_df["Composition"].tolist()
         if st.session_state.mode == "composition":
-            glycans = load_compositions(
-                comp_strings, sia_linkage=st.session_state.sia_linkage
-            )
+            glycans = load_compositions(comp_strings)
         else:
             if st.session_state.has_struc_col:
                 glycans = load_structures(comp_strings, input_df["Structure"])
