@@ -30,11 +30,12 @@ class TestTraitFormula:
 
     @pytest.fixture
     def meta_property_table(self):
-        data = dict(
-            isComlex=[False, False, True, False],
-            isHighMannose=[True, True, False, False],
-            isHybrid=[False, False, False, True],
-        )
+        data = {
+            ".": [1, 1, 1, 1],
+            "isComlex": [False, False, True, False],
+            "isHighMannose": [True, True, False, False],
+            "isHybrid": [False, False, False, True],
+        }
         return pd.DataFrame(data, index=["G1", "G2", "G3", "G4"])
 
     @pytest.fixture

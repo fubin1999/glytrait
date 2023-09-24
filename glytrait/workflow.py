@@ -11,7 +11,7 @@ from attrs import define, field
 from glytrait.config import Config
 from glytrait.exception import InputError
 from glytrait.formula import load_formulas
-from glytrait.glycan import load_compositions, load_glycans
+from glytrait.glycan import load_compositions, load_structures
 from glytrait.io import (
     check_input_file,
     read_structure_file,
@@ -340,12 +340,10 @@ class LoadGlycansStep(WorkflowStep):
         input_df = self._state.get("input_df")
         comp_strings = input_df["Composition"].tolist()
         if self._config.get("mode") == "composition":
-            glycans = load_compositions(
-                comp_strings, sia_linkage=self._config.get("sia_linkage")
-            )
+            glycans = load_compositions(comp_strings)
         elif self._config.get("mode") == "structure":
             if "Structure" in input_df.columns:
-                glycans = load_glycans(comp_strings, input_df["Structure"])
+                glycans = load_structures(comp_strings, input_df["Structure"])
             elif database := self._config.get("database"):
                 glycans = load_default_structures(database, comp_strings)
             elif structure_file := self._config.get("structure_file"):

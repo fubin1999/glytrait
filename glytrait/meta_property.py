@@ -1,239 +1,709 @@
-"""This module provides functions for calculating meta properties of glycans.
+"""This module provides functions for calculating meta-properties of glycans.
 
 Functions:
-    build_meta_property_table: Build a table of meta properties for glycans.
+    build_meta_property_table: Build a table of meta-properties for glycans.
 """
-from typing import Iterable, Literal
+from collections.abc import Iterable
+from functools import singledispatch, cache
+from typing import Literal, Protocol, ClassVar, Type
 
 import pandas as pd
+from attrs import define
+from glypy import Monosaccharide
 
-from glytrait.glycan import NGlycan, Composition
+from glytrait.exception import SiaLinkageError
+from glytrait.glycan import Structure, Composition, GlycanType, get_mono_str
 
-basic_struc_meta_properties = {
-    ".",
-    "isComplex",
-    "isHighMannose",
-    "isHybrid",
-    "isBisecting",
-    "is1Antennary",
-    "is2Antennary",
-    "is3Antennary",
-    "is4Antennary",
-    "totalAntenna",
-    "coreFuc",
-    "antennaryFuc",
-    "hasAntennaryFuc",
-    "totalFuc",
-    "hasFuc",
-    "noFuc",
-    "totalSia",
-    "hasSia",
-    "noSia",
-    "totalMan",
-    "totalGal",
-    "hasPolyLacNAc"
-}
-sia_struc_meta_properties = {
-    "a23Sia",
-    "a26Sia",
-    "hasa23Sia",
-    "hasa26Sia",
-    "noa23Sia",
-    "noa26Sia",
-}
-struc_meta_properties = basic_struc_meta_properties | sia_struc_meta_properties
-basic_comp_meta_properties = {
-    ".",
-    "isHighBranching",
-    "isLowBranching",
-    "totalSia",
-    "totalFuc",
-    "totalGal",
-    "hasSia",
-    "hasFuc",
-    "hasGal",
-    "noSia",
-    "noFuc",
-    "noGal",
-}
-sia_comp_meta_properties = {
-    "a23Sia",
-    "a26Sia",
-    "hasa23Sia",
-    "hasa26Sia",
-    "noa23Sia",
-    "noa26Sia",
-}
-comp_meta_properties = basic_comp_meta_properties | sia_comp_meta_properties
+
+class MetaProperty(Protocol):
+    """The protocol of a meta-property class."""
+
+    name: str
+    sia_linkage: bool
+
+    def __call__(self, glycan: Composition | Structure) -> float:
+        ...
+
+
+struc_meta_properties: list[MetaProperty] = []
+comp_meta_properties: list[MetaProperty] = []
+
+
+def register_struc(meta_property: Type[MetaProperty]):
+    """Register a structure meta-property."""
+    struc_meta_properties.append(meta_property)
+    return meta_property
+
+
+def register_comp(meta_property: Type[MetaProperty]):
+    """Register a composition meta-property."""
+    comp_meta_properties.append(meta_property)
+    return meta_property
+
+
+def available_meta_properties(
+    mode: Literal["composition", "structure"],
+    sia_linkage: bool,
+    only_sia_linkage: bool = False,
+) -> dict[str, Type[MetaProperty]]:
+    """Get the names of the available meta properties.
+
+    Args:
+        mode (Literal["composition", "structure"]): The calculation mode.
+        sia_linkage (bool): Whether to include the sialic acid linkage meta-properties.
+        only_sia_linkage (bool, optional): Whether to only include the sialic acid linkage.
+            meta-properties. Defaults to False.
+            `sia_linkage` must be True if this is True.
+
+    Returns:
+        dict[str, Type[MetaProperty]]: The mapping from the names to the meta-property classes.
+    """
+    if only_sia_linkage and not sia_linkage:
+        raise ValueError("sia_linkage must be True if only_sia_linkage is True")
+
+    match mode:
+        case "composition":
+            mp_list = comp_meta_properties
+        case "structure":
+            mp_list = struc_meta_properties
+        case _:
+            raise ValueError(f"Invalid mode: {mode}")
+
+    if only_sia_linkage:
+        return {mp.name: mp for mp in mp_list if mp.sia_linkage}
+    elif sia_linkage:
+        return {mp.name: mp for mp in mp_list}
+    else:
+        return {mp.name: mp for mp in mp_list if not mp.sia_linkage}
+
+
+@register_comp
+@register_struc
+@define
+class Wildcard:
+    """This meta-property has value 1 for all glycans."""
+
+    name: ClassVar = "."
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Composition | Structure) -> float:
+        return 1.0
+
+
+@cache
+def _is_bisecting(glycan: Structure) -> bool:
+    """Decide whether a glycan has bisection."""
+    bft_iter = glycan.breadth_first_traversal(skip=["Fuc"])
+    for i in range(2):
+        next(bft_iter)
+    next_node = next(bft_iter)
+    return len(next_node.links) == 4
+
+
+@cache
+def _glycan_type(glycan: Structure) -> GlycanType:
+    """Decide whether a glycan is a 'complex', 'hybrid', or 'high-mannose' type."""
+    # N-glycan core is defined as the complex type.
+    if glycan.composition == {"Glc2NAc": 2, "Man": 3}:
+        # This type of glycan is actually pausimannose type.
+        # However, it is currently regarded as a complex type right now.
+        return GlycanType.COMPLEX
+
+    # Bisecting could only be found in complex type.
+    if _is_bisecting(glycan):
+        return GlycanType.COMPLEX
+
+    # If the glycan is not core, and it only has 2 "GlcNAc", it is high-mannose.
+    if glycan.composition["Glc2NAc"] == 2:
+        return GlycanType.HIGH_MANNOSE
+
+    # If the glycan is mono-antennary and not high-monnose, it is complex.
+    node1, node2 = _get_branch_core_man(glycan)
+    if any((len(node1.links) == 1, len(node2.links) == 1)):
+        return GlycanType.COMPLEX
+
+    # Then, if it has 3 "Glc2NAc", it must be hybrid.
+    if glycan.composition["Glc2NAc"] == 3:
+        return GlycanType.HYBRID
+
+    # All rest cases are complex.
+    return GlycanType.COMPLEX
+
+
+@register_struc
+@define
+class IsComplex:
+    """Whether the glycan is a complex type."""
+
+    name: ClassVar = "isComplex"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return _glycan_type(glycan) == GlycanType.COMPLEX
+
+
+@register_struc
+@define
+class IsHighMannose:
+    """Whether the glycan is a high-mannose type."""
+
+    name: ClassVar = "isHighMannose"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return _glycan_type(glycan) == GlycanType.HIGH_MANNOSE
+
+
+@register_struc
+@define
+class IsHybrid:
+    """Whether the glycan is a hybrid type."""
+
+    name: ClassVar = "isHybrid"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return _glycan_type(glycan) == GlycanType.HYBRID
+
+
+@register_struc
+@define
+class IsBisecting:
+    """Whether the glycan has bisection."""
+
+    name: ClassVar = "isBisecting"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return _is_bisecting(glycan)
+
+
+@cache
+def _get_branch_core_man(glycan: Structure) -> tuple[Monosaccharide, Monosaccharide]:
+    # Branch core mannose is defined as:
+    #
+    # X - Man  <- This one
+    #        \
+    #         Man - Glc2NAc - Glc2NAc
+    #        /
+    # X - Man  <- And this one
+    bft_iter = glycan.breadth_first_traversal(skip=["Fuc"])
+    for i in range(3):
+        next(bft_iter)
+    while True:
+        node1 = next(bft_iter)
+        if get_mono_str(node1) == "Man":
+            break
+    while True:
+        node2 = next(bft_iter)
+        if get_mono_str(node2) == "Man":
+            break
+    return node1, node2
+
+
+@cache
+def _count_antenna(glycan: Structure) -> int:
+    """Count the number of branches in a glycan."""
+    if _glycan_type(glycan) != GlycanType.COMPLEX:
+        return 0
+    node1, node2 = _get_branch_core_man(glycan)
+    return len(node1.links) + len(node2.links) - 2
+
+
+@register_struc
+@define
+class Is1Antennary:
+    """Whether the glycan has one antenna."""
+
+    name: ClassVar = "is1Antennary"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return _count_antenna(glycan) == 1
+
+
+@register_struc
+@define
+class Is2Antennary:
+    """Whether the glycan has two antennas."""
+
+    name: ClassVar = "is2Antennary"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return _count_antenna(glycan) == 2
+
+
+@register_struc
+@define
+class Is3Antennary:
+    """Whether the glycan has three antennas."""
+
+    name: ClassVar = "is3Antennary"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return _count_antenna(glycan) == 3
+
+
+@register_struc
+@define
+class Is4Antennary:
+    """Whether the glycan has four antennas."""
+
+    name: ClassVar = "is4Antennary"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return _count_antenna(glycan) == 4
+
+
+@register_struc
+@define
+class TotalAntenna:
+    """The total number of antennas."""
+
+    name: ClassVar = "totalAntenna"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return _count_antenna(glycan)
+
+
+@cache
+def _get_core_ids(glycan: Structure) -> list[int]:
+    """Get the IDs of the monosaccharides of the core."""
+    should_be = ["Glc2NAc", "Glc2NAc", "Man", "Man", "Man"]
+    cores: list[int] = []
+    for node in glycan.breadth_first_traversal(skip=["Fuc"]):
+        # The first two monosaacharides could only be "Glc2NAc".
+        # However, when the glycan is bisecting, the rest of the three monosaccharides
+        # might not all be "Man". So we look for the monosaacharides in the order of
+        # `should_be`, and skip the ones that are not in the order.
+        if get_mono_str(node) == should_be[len(cores)]:
+            cores.append(node.id)
+        if len(cores) == 5:
+            break
+    return cores
+
+
+@cache
+def _get_core_fuc(glycan: Structure) -> int:
+    cores = _get_core_ids(glycan)
+    n = 0
+    for node in glycan.breadth_first_traversal():
+        # node.parents()[0] is the nearest parent, and is a tuple of (Link, Monosaccharide)
+        # node.parents()[0][1] is the Monosaccharide
+        if get_mono_str(node) == "Fuc" and node.parents()[0][1].id in cores:
+            n = n + 1
+    return n
+
+
+@singledispatch
+def _count_fuc(glycan) -> int:
+    """Count the number of fucoses."""
+    raise TypeError
+
+
+@_count_fuc.register
+@cache
+def _(glycan: Structure) -> int:
+    return glycan.get("Fuc")
+
+
+@_count_fuc.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("F")
+
+
+@register_struc
+@define
+class CoreFuc:
+    """The number of fucoses on the core."""
+
+    name: ClassVar = "coreFuc"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return _get_core_fuc(glycan)
+
+
+@register_struc
+@define
+class AntennaryFuc:
+    """The number of fucoses on the antenna."""
+
+    name: ClassVar = "antennaryFuc"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        return glycan.composition.get("Fuc", 0) - _get_core_fuc(glycan)
+
+
+@register_struc
+@register_comp
+@define
+class TotalFuc:
+    """Total number of fucoses."""
+
+    name: ClassVar = "totalFuc"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_fuc(glycan)
+
+
+@register_struc
+@register_comp
+@define
+class HasFuc:
+    """Whether the glycan has any fucoses."""
+
+    name: ClassVar = "hasFuc"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_fuc(glycan) > 0
+
+
+@register_struc
+@register_comp
+@define
+class NoFuc:
+    """Whether the glycan has no fucoses."""
+
+    name: ClassVar = "noFuc"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_fuc(glycan) == 0
+
+
+@singledispatch
+def _count_sia(glycan) -> int:
+    """Count the number of sialic acids."""
+    raise TypeError
+
+
+@_count_sia.register
+@cache
+def _(glycan: Structure) -> int:
+    return glycan.get("Neu5Ac", 0) + glycan.get("Neu5Gc", 0)
+
+
+@_count_sia.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("S", 0) + glycan.get("E", 0) + glycan.get("L", 0)
+
+
+@register_struc
+@register_comp
+@define
+class TotalSia:
+    """The total number of sialic acids."""
+
+    name: ClassVar = "totalSia"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_sia(glycan)
+
+
+@register_struc
+@register_comp
+@define
+class HasSia:
+    """Whether the glycan has any sialic acids."""
+
+    name: ClassVar = "hasSia"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_sia(glycan) > 0
+
+
+@register_struc
+@register_comp
+@define
+class NoSia:
+    """Whether the glycan has no sialic acids."""
+
+    name: ClassVar = "noSia"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_sia(glycan) == 0
+
+
+@singledispatch
+def _count_gal(glycan) -> int:
+    """Count the number of Gals."""
+    raise TypeError
+
+
+@_count_gal.register
+@cache
+def _(glycan: Structure) -> int:
+    return glycan.get("Gal", 0)
+
+
+@_count_gal.register
+@cache
+def _(glycan: Composition) -> int:
+    n_H = glycan.get("H")
+    n_N = glycan.get("N")
+    if n_H >= 4 and n_N >= n_H - 1:
+        return n_H - 3
+    return 0
+
+
+@singledispatch
+def _count_man(glycan) -> int:
+    """Count the number of mannoses."""
+    raise TypeError
+
+
+@_count_man.register
+@cache
+def _(glycan: Structure) -> int:
+    return glycan.get("Man", 0)
+
+
+@_count_man.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("H", 0) - _count_gal(glycan)
+
+
+@register_struc
+@register_comp
+@define
+class TotalMan:
+    """The total number of mannoses."""
+
+    name: ClassVar = "totalMan"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_man(glycan)
+
+
+@register_struc
+@register_comp
+@define
+class TotalGal:
+    """The total number of galactoses."""
+
+    name: ClassVar = "totalGal"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_gal(glycan)
+
+
+@register_struc
+@define
+class HasPolyLacNAc:
+    """Whether the glycan has any poly-LacNAc."""
+
+    name: ClassVar = "hasPolyLacNAc"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Structure) -> float:
+        # Iterate all Gal residues.
+        # If a Gal residue has a GlcNAc child, and the GlcNAc residue has a Gal child,
+        # then the glycan has poly-LacNAc.
+        gals = glycan.breadth_first_traversal(only=["Gal"])
+        for gal in gals:
+            for _, child in gal.children():
+                if get_mono_str(child) == "Glc2NAc":
+                    children_of_glcnac = child.children()
+                    for _, child_of_glcnac in children_of_glcnac:
+                        if get_mono_str(child_of_glcnac) == "Gal":
+                            return True
+        return False
+
+
+@singledispatch
+def _count_a23_sia(glycan) -> int:
+    """Count the number of sialic acids with an alpha-2,3 linkage."""
+    raise TypeError
+
+
+@_count_a23_sia.register
+@cache
+def _(glycan: Structure) -> int:
+    n = 0
+    for node in glycan.breadth_first_traversal():
+        if get_mono_str(node) in ("Neu5Ac", "Neu5Gc"):
+            if node.links[2][0].parent_position == -1:
+                raise SiaLinkageError("Sialic acid linkage not specified")
+            elif node.links[2][0].parent_position == 3:
+                n = n + 1
+    return n
+
+
+@_count_a23_sia.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("L", 0)
+
+
+@singledispatch
+def _count_a26_sia(glycan) -> int:
+    """Count the number of sialic acids with an alpha-2,6 linkage."""
+    raise TypeError
+
+
+@_count_a26_sia.register
+@cache
+def _(glycan: Structure) -> int:
+    n = 0
+    for node in glycan.breadth_first_traversal():
+        if get_mono_str(node) in ("Neu5Ac", "Neu5Gc"):
+            if node.links[2][0].parent_position == -1:
+                raise SiaLinkageError("Sialic acid linkage not specified")
+            elif node.links[2][0].parent_position == 6:
+                n = n + 1
+    return n
+
+
+@_count_a26_sia.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("E", 0)
+
+
+@register_struc
+@register_comp
+@define
+class A23Sia:
+    """The number of sialic acids with an alpha-2,3 linkage."""
+
+    name: ClassVar = "a23Sia"
+    sia_linkage: ClassVar = True
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_a23_sia(glycan)
+
+
+@register_struc
+@register_comp
+@define
+class A26Sia:
+    """The number of sialic acids with an alpha-2,6 linkage."""
+
+    name: ClassVar = "a26Sia"
+    sia_linkage: ClassVar = True
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_a26_sia(glycan)
+
+
+@register_struc
+@register_comp
+@define
+class HasA23Sia:
+    """Whether the glycan has any sialic acids with an alpha-2,3 linkage."""
+
+    name: ClassVar = "hasa23Sia"
+    sia_linkage: ClassVar = True
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_a23_sia(glycan) > 0
+
+
+@register_struc
+@register_comp
+@define
+class HasA26Sia:
+    """Whether the glycan has any sialic acids with an alpha-2,6 linkage."""
+
+    name: ClassVar = "hasa26Sia"
+    sia_linkage: ClassVar = True
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_a26_sia(glycan) > 0
+
+
+@register_struc
+@register_comp
+@define
+class NoA23Sia:
+    """Whether the glycan has no sialic acids with an alpha-2,3 linkage."""
+
+    name: ClassVar = "noa23Sia"
+    sia_linkage: ClassVar = True
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_a23_sia(glycan) == 0
+
+
+@register_struc
+@register_comp
+@define
+class NoA26Sia:
+    """Whether the glycan has no sialic acids with an alpha-2,6 linkage."""
+
+    name: ClassVar = "noa26Sia"
+    sia_linkage: ClassVar = True
+
+    def __call__(self, glycan: Structure | Composition) -> float:
+        return _count_a26_sia(glycan) == 0
+
+
+@register_comp
+@define
+class IsHighBranching:
+    """Whether the glycan has a high branching."""
+
+    name: ClassVar = "isHighBranching"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Composition) -> float:
+        return glycan.get("N", 0) > 4
+
+
+@register_comp
+@define
+class IsLowBranching:
+    """Whether the glycan has a low branching."""
+
+    name: ClassVar = "isLowBranching"
+    sia_linkage: ClassVar = False
+
+    def __call__(self, glycan: Composition) -> float:
+        return glycan.get("N", 0) <= 4
 
 
 def build_meta_property_table(
     glycan_ids: Iterable[str],
-    glycans: Iterable[NGlycan | Composition],
+    glycans: Iterable[Structure | Composition],
     mode: Literal["composition", "structure"],
     sia_linkage: bool = False,
 ) -> pd.DataFrame:
-    """Build a table of meta properties for glycans.
+    """Build a table of meta-properties for glycans.
 
     Args:
         glycan_ids (Iterable[str]): The IDs of the glycans.
-        glycans (Iterable[NGlycan]): The glycans.
+        glycans (Iterable[Structure | Composition]): The glycans.
         mode (Literal["composition", "structure"]): The calculation mode.
         sia_linkage (bool, optional): Whether to include the sialic acid linkage
-            meta properties. Defaults to False.
+            meta-properties. Defaults to False.
 
     Returns:
-        pd.DataFrame: The table of meta properties, with Compositions as the index,
+        pd.DataFrame: The table of meta-properties, with `glycan_ids` as the index,
+            and the meta-property names as the columns.
     """
-    if mode == "composition":
-        return _build_comp_meta_property_table(glycan_ids, glycans, sia_linkage)
-    elif mode == "structure":
-        return _build_struc_meta_property_table(glycan_ids, glycans, sia_linkage)
-    else:
-        raise ValueError(f"Invalid type: {mode}")
-
-
-def _build_struc_meta_property_table(
-    glycan_ids: Iterable[str], glycans: Iterable[NGlycan], sia_linkage: bool = False
-) -> pd.DataFrame:
-    """Build a table of structural meta properties for glycans.
-
-    The following meta properties are included:
-        - isComplex: Whether the glycan is a complex type.
-        - isHighMannose: Whether the glycan is a high-mannose type.
-        - isHybrid: Whether the glycan is a hybrid type.
-        - isBisecting: Whether the glycan has a bisection.
-        - is1Antennary: Whether the glycan has a 1-antenna.
-        - is2Antennary: Whether the glycan has a 2-antenna.
-        - is3Antennary: Whether the glycan has a 3-antenna.
-        - is4Antennary: Whether the glycan has a 4-antenna.
-        - totalAntenna: The total number of antennae.
-        - coreFuc: The number of fucoses on the core.
-        - antennaryFuc: The number of fucoses on the antenna.
-        - hasAntennaryFuc: Whether the glycan has any fucoses on the antenna.
-        - totalFuc: The total number of fucoses.
-        - hasFuc: Whether the glycan has any fucoses.
-        - noFuc: Whether the glycan has no fucoses.
-        - totalSia: The total number of sialic acids.
-        - hasSia: Whether the glycan has any sialic acids.
-        - noSia: Whether the glycan has no sialic acids.
-        - totalMan: The total number of mannoses.
-        - totalGal: The total number of galactoses.
-        - hasPolyLacNAc: Whether the glycan has any poly-LacNAc.
-
-    If `sia_linkage` is True, the following meta properties are also included:
-        - a23Sia: The number of sialic acids with an alpha-2,3 linkage.
-        - a26Sia: The number of sialic acids with an alpha-2,6 linkage.
-        - hasa23Sia: Whether the glycan has any sialic acids with an alpha-2,3 linkage.
-        - hasa26Sia: Whether the glycan has any sialic acids with an alpha-2,6 linkage.
-        - noa23Sia: Whether the glycan has no sialic acids with an alpha-2,3 linkage.
-        - noa26Sia: Whether the glycan has no sialic acids with an alpha-2,6 linkage.
-
-    Args:
-        glycan_ids (Iterable[str]): The IDs of the glycans. Could be the
-            accession, or the composition.
-        glycans (Iterable[NGlycan]): The glycans.
-        sia_linkage (bool, optional): Whether to include the sialic acid linkage
-            meta properties. Defaults to False.
-
-    Returns:
-        pd.DataFrame: The table of meta properties, with Compositions as the index,
-            and the property names as the columns.
-    """
-    meta_property_table = pd.DataFrame(index=list(glycan_ids))
-
-    meta_property_table["isComplex"] = [g.is_complex() for g in glycans]
-    meta_property_table["isHighMannose"] = [g.is_high_mannose() for g in glycans]
-    meta_property_table["isHybrid"] = [g.is_hybrid() for g in glycans]
-    meta_property_table["isBisecting"] = [g.is_bisecting() for g in glycans]
-    meta_property_table["is1Antennary"] = [g.count_antenna() == 1 for g in glycans]
-    meta_property_table["is2Antennary"] = [g.count_antenna() == 2 for g in glycans]
-    meta_property_table["is3Antennary"] = [g.count_antenna() == 3 for g in glycans]
-    meta_property_table["is4Antennary"] = [g.count_antenna() == 4 for g in glycans]
-    meta_property_table["totalAntenna"] = [g.count_antenna() for g in glycans]
-    meta_property_table["coreFuc"] = [g.count_core_fuc() for g in glycans]
-    meta_property_table["antennaryFuc"] = [g.count_antennary_fuc() for g in glycans]
-    meta_property_table["hasAntennaryFuc"] = [
-        g.count_antennary_fuc() > 0 for g in glycans
-    ]
-    meta_property_table["totalFuc"] = [g.count_fuc() for g in glycans]
-    meta_property_table["hasFuc"] = [g.count_fuc() > 0 for g in glycans]
-    meta_property_table["noFuc"] = [g.count_fuc() == 0 for g in glycans]
-    meta_property_table["totalSia"] = [g.count_sia() for g in glycans]
-    meta_property_table["hasSia"] = [g.count_sia() > 0 for g in glycans]
-    meta_property_table["noSia"] = [g.count_sia() == 0 for g in glycans]
-    meta_property_table["totalMan"] = [g.count_man() for g in glycans]
-    meta_property_table["totalGal"] = [g.count_gal() for g in glycans]
-    meta_property_table["hasPolyLacNAc"] = [g.has_poly_lacnac() for g in glycans]
-
-    if sia_linkage:
-        meta_property_table["a23Sia"] = [g.count_a23_sia() for g in glycans]
-        meta_property_table["a26Sia"] = [g.count_a26_sia() for g in glycans]
-        meta_property_table["hasa23Sia"] = [g.count_a23_sia() > 0 for g in glycans]
-        meta_property_table["hasa26Sia"] = [g.count_a26_sia() > 0 for g in glycans]
-        meta_property_table["noa23Sia"] = [g.count_a23_sia() == 0 for g in glycans]
-        meta_property_table["noa26Sia"] = [g.count_a26_sia() == 0 for g in glycans]
-
-    return meta_property_table
-
-
-def _build_comp_meta_property_table(
-    glycan_ids: Iterable[str], glycans: Iterable[Composition], sia_linkage: bool = False
-) -> pd.DataFrame:
-    """Build a table of compositional meta properties for glycans.
-
-    The following meta properties are included:
-        - isHighBranching: Whether the glycan has a high branching.
-        - isLowBranching: Whether the glycan has a low branching.
-        - totalSia: The total number of sialic acids.
-        - totalFuc: The total number of fucoses.
-        - totalGal: The total number of galactoses.
-        - hasSia: Whether the glycan has any sialic acids.
-        - hasFuc: Whether the glycan has any fucoses.
-        - hasGal: Whether the glycan has any galactoses.
-        - noSia: Whether the glycan has no sialic acids.
-        - noFuc: Whether the glycan has no fucoses.
-        - noGal: Whether the glycan has no galactoses.
-
-    If `sia_linkage` is True, the following meta properties are also included:
-        - a23Sia: The number of sialic acids with an alpha-2,3 linkage.
-        - a26Sia: The number of sialic acids with an alpha-2,6 linkage.
-        - hasa23Sia: Whether the glycan has any sialic acids with an alpha-2,3 linkage.
-        - hasa26Sia: Whether the glycan has any sialic acids with an alpha-2,6 linkage.
-        - noa23Sia: Whether the glycan has no sialic acids with an alpha-2,3 linkage.
-        - noa26Sia: Whether the glycan has no sialic acids with an alpha-2,6 linkage.
-
-    Args:
-        glycan_ids (Iterable[str]): The IDs of the glycans. Could be the
-            accession, or the composition.
-        glycans (Iterable[Composition]): The glycans.
-        sia_linkage (bool, optional): Whether to include the sialic acid linkage
-            meta properties. Defaults to False.
-
-    Returns:
-        pd.DataFrame: The table of meta properties, with Compositions as the index,
-            and the property names as the columns.
-    """
-    meta_property_table = pd.DataFrame(index=list(glycan_ids))
-
-    meta_property_table["isHighBranching"] = [g.is_high_branching() for g in glycans]
-    meta_property_table["isLowBranching"] = [g.is_low_branching() for g in glycans]
-    meta_property_table["totalSia"] = [g.count_sia() for g in glycans]
-    meta_property_table["totalFuc"] = [g.count_fuc() for g in glycans]
-    meta_property_table["totalGal"] = [g.count_gal() for g in glycans]
-    meta_property_table["hasSia"] = [g.count_sia() > 0 for g in glycans]
-    meta_property_table["hasFuc"] = [g.count_fuc() > 0 for g in glycans]
-    meta_property_table["hasGal"] = [g.count_gal() > 0 for g in glycans]
-    meta_property_table["noSia"] = [g.count_sia() == 0 for g in glycans]
-    meta_property_table["noFuc"] = [g.count_fuc() == 0 for g in glycans]
-    meta_property_table["noGal"] = [g.count_gal() == 0 for g in glycans]
-
-    if sia_linkage:
-        meta_property_table["a23Sia"] = [g.count_a23_sia() for g in glycans]
-        meta_property_table["a26Sia"] = [g.count_a26_sia() for g in glycans]
-        meta_property_table["hasa23Sia"] = [g.count_a23_sia() > 0 for g in glycans]
-        meta_property_table["hasa26Sia"] = [g.count_a26_sia() > 0 for g in glycans]
-        meta_property_table["noa23Sia"] = [g.count_a23_sia() == 0 for g in glycans]
-        meta_property_table["noa26Sia"] = [g.count_a26_sia() == 0 for g in glycans]
-
-    return meta_property_table
+    mp_series_list: list[pd.Series] = []
+    for mp_name, MpClass in available_meta_properties(mode, sia_linkage).items():
+        mp_series_list.append(
+            pd.Series(
+                [MpClass()(glycan) for glycan in glycans],
+                index=glycan_ids,
+                name=mp_name,
+            )
+        )
+    return pd.concat(mp_series_list, axis=1)

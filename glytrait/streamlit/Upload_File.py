@@ -7,7 +7,7 @@ from attrs import define, field
 
 from glytrait.exception import GlyTraitError
 from glytrait.formula import load_formulas
-from glytrait.glycan import load_compositions, load_glycans
+from glytrait.glycan import load_compositions, load_structures
 from glytrait.io import load_default_structures, read_structure_file
 from glytrait.meta_property import build_meta_property_table
 from glytrait.preprocessing import preprocess_pipeline
@@ -556,7 +556,7 @@ class CalculateTraitStep(StreamlitStep):
             )
         else:
             if st.session_state.has_struc_col:
-                glycans = load_glycans(comp_strings, input_df["Structure"])
+                glycans = load_structures(comp_strings, input_df["Structure"])
             elif database := st.session_state.db_name:
                 glycans = load_default_structures(database, comp_strings)
             elif structure_file := st.session_state.structure_file:

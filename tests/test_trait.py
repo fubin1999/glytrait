@@ -38,6 +38,7 @@ def test_calcu_trait():
 
     meta_prop_df = pd.DataFrame(
         {
+            ".": [1, 1, 1],
             "isHighMannose": [True, False, False],
             "isHybrid": [False, False, True],
             "isComplex": [False, True, False],

@@ -216,9 +216,9 @@ class TestLoadGlycansStep:
         )
 
     @pytest.fixture
-    def load_glycans_mock(self, mocker):
+    def load_structures_mock(self, mocker):
         return mocker.patch(
-            "glytrait.workflow.load_glycans", return_value="glycans", autospec=True
+            "glytrait.workflow.load_structures", return_value="glycans", autospec=True
         )
 
     def test_from_struc_col(
@@ -230,13 +230,13 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-        load_glycans_mock,
+            load_structures_mock,
     ):
         state.set("input_df", input_df_basic)
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
         assert state.get("glycans") == "glycans"
-        load_glycans_mock.assert_called_once()
+        load_structures_mock.assert_called_once()
         load_comp_mock.assert_not_called()
         load_default_struc_mock.assert_not_called()
         read_struc_mock.assert_not_called()
@@ -250,14 +250,14 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-        load_glycans_mock,
+            load_structures_mock,
     ):
         state.set("input_df", input_df_no_struc_col)
         default_config.set("database", "db")
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
         assert state.get("glycans") == "glycans"
-        load_glycans_mock.assert_not_called()
+        load_structures_mock.assert_not_called()
         load_comp_mock.assert_not_called()
         load_default_struc_mock.assert_called_once()
         read_struc_mock.assert_not_called()
@@ -271,14 +271,14 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-        load_glycans_mock,
+            load_structures_mock,
     ):
         state.set("input_df", input_df_no_struc_col)
         default_config.set("structure_file", "structure_file")
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
         assert state.get("glycans") == "glycans"
-        load_glycans_mock.assert_not_called()
+        load_structures_mock.assert_not_called()
         load_comp_mock.assert_not_called()
         load_default_struc_mock.assert_not_called()
         read_struc_mock.assert_called_once()
@@ -292,13 +292,13 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-        load_glycans_mock,
+            load_structures_mock,
     ):
         state.set("input_df", input_df_basic)
         default_config.set("database", "db")
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
-        load_glycans_mock.assert_called_once()
+        load_structures_mock.assert_called_once()
         load_comp_mock.assert_not_called()
         load_default_struc_mock.assert_not_called()
         read_struc_mock.assert_not_called()
@@ -312,13 +312,13 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-        load_glycans_mock,
+            load_structures_mock,
     ):
         state.set("input_df", input_df_basic)
         default_config.set("structure_file", "structure_file")
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
-        load_glycans_mock.assert_called_once()
+        load_structures_mock.assert_called_once()
         load_comp_mock.assert_not_called()
         load_default_struc_mock.assert_not_called()
         read_struc_mock.assert_not_called()
@@ -332,14 +332,14 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-        load_glycans_mock,
+        load_structures_mock,
     ):
         state.set("input_df", input_df_no_struc_col)
         default_config.set("mode", "composition")
         step = gw.LoadGlycansStep(default_config, state)
         step.run()
         assert state.get("glycans") == "glycans"
-        load_glycans_mock.assert_not_called()
+        load_structures_mock.assert_not_called()
         load_comp_mock.assert_called_once()
         load_default_struc_mock.assert_not_called()
         read_struc_mock.assert_not_called()

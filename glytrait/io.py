@@ -25,7 +25,7 @@ import glytrait
 from glytrait.config import Config
 from glytrait.exception import *
 from glytrait.formula import TraitFormula
-from glytrait.glycan import NGlycan, load_glycans
+from glytrait.glycan import Structure, load_structures
 
 
 def check_input_file(df: pd.DataFrame) -> NoReturn:
@@ -84,7 +84,7 @@ def _(df) -> pd.Series:
 
 
 @functools.singledispatch
-def read_structure_file(file, compositions: Iterable[str]) -> list[NGlycan]:
+def read_structure_file(file, compositions: Iterable[str]) -> list[Structure]:
     """Read the structure file.
 
     `file` could be either a CSV file (or DataFrame) with all structures,
@@ -102,7 +102,7 @@ def read_structure_file(file, compositions: Iterable[str]) -> list[NGlycan]:
         compositions (Iterable[str]): The compositions of the glycans to be read.
 
     Returns:
-        list[NGlycan]: The glycans.
+        list[Structure]: The glycans.
 
     Raises:
         InputError:
@@ -114,18 +114,18 @@ def read_structure_file(file, compositions: Iterable[str]) -> list[NGlycan]:
 
 @read_structure_file.register(str)
 @read_structure_file.register(Path)
-def _(file, compositions: Iterable[str]) -> list[NGlycan]:
+def _(file, compositions: Iterable[str]) -> list[Structure]:
     if Path(file).is_dir():
         struc_strings = _read_structure_string_from_directory(file, compositions)
     else:
         struc_strings = _read_structure_string_from_csv(file, compositions)
-    return load_glycans(compositions, struc_strings)
+    return load_structures(compositions, struc_strings)
 
 
 @read_structure_file.register(pd.DataFrame)
-def _(df, compositions: Iterable[str]) -> list[NGlycan]:
+def _(df, compositions: Iterable[str]) -> list[Structure]:
     struc_strings = _read_structure_string_from_df(df, compositions)
-    return load_glycans(compositions, struc_strings)
+    return load_structures(compositions, struc_strings)
 
 
 def _read_structure_string_from_csv(
@@ -172,7 +172,7 @@ built_in_db = {
 
 def load_default_structures(
     db: Literal["serum", "IgG"], compositions: Iterable[str]
-) -> list[NGlycan]:
+) -> list[Structure]:
     """Return a list of default structures.
 
     Args:

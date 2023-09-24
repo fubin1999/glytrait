@@ -20,20 +20,10 @@ from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError
 from glypy.structure.glycan import Glycan as GlypyGlycan
 from glypy.structure.glycan_composition import (
     GlycanComposition,
-    to_iupac_lite,
     MonosaccharideResidue,
 )
-from glypy.structure.monosaccharide import Monosaccharide
 
 from glytrait.exception import *
-
-N_glycan_core = GlycanComposition.parse("{Man:3; Glc2NAc:2}")
-Glc2NAc = MonosaccharideResidue.from_iupac_lite("Glc2NAc")
-Man = MonosaccharideResidue.from_iupac_lite("Man")
-Gal = MonosaccharideResidue.from_iupac_lite("Gal")
-Neu5Ac = MonosaccharideResidue.from_iupac_lite("Neu5Ac")
-Neu5Gc = MonosaccharideResidue.from_iupac_lite("Neu5Gc")
-Fuc = MonosaccharideResidue.from_iupac_lite("Fuc")
 
 
 class GlycanType(Enum):
@@ -45,55 +35,36 @@ class GlycanType(Enum):
 
 
 @frozen
-class NGlycan:
-    """A glycan."""
+class Structure:
+    """The structure of a glycan.
+
+    Attributes:
+        name (str): The name of the glycan.
+        composition (dict): The composition of the glycan.
+
+    Methods:
+        from_string: classmethod for building a `Structure` instance from a string.
+        from_glycoct: classmethod for building a `Structure` instance from a glycoCT string.
+        breadth_first_traversal: traverse the structure in a "bfs" manner.
+        depth_first_traversal: traverse the structure in a "dfs" manner.
+    """
 
     name: str = field()
     _glypy_glycan: GlypyGlycan = field(repr=False)
-    _composition: GlycanComposition = field(init=False, repr=False)
-    _cores: list[int] = field(init=False, repr=False)
+    composition: dict[str, int] = field(init=False, repr=False, hash=False)
 
     def __attrs_post_init__(self):
         self._init_composition()
-        self._init_cores()
-        self._check_cores(self._cores)
 
     def _init_composition(self):
-        object.__setattr__(
-            self,
-            "_composition",
-            GlycanComposition.from_glycan(self._glypy_glycan),
-        )
-
-    def _init_cores(self):
-        should_be = ["Glc2NAc", "Glc2NAc", "Man", "Man", "Man"]
-        cores: list[int] = []
-        for node in self._breadth_first_traversal(skip=["Fuc"]):
-            # The first two monosaacharides could only be "Glc2NAc".
-            # However, when the glycan is bisecting, the rest of the three monosaccharides
-            # might not all be "Man". So we look for the monosaacharides in the order of
-            # `should_be`, and skip the ones that are not in the order.
-            if get_mono_comp(node) == should_be[len(cores)]:
-                cores.append(node.id)
-            if len(cores) == 5:
-                break
-        object.__setattr__(self, "_cores", cores)
-
-    def _check_cores(self, cores):
-        """Check the validation of the cores."""
-        core_nodes = [self._glypy_glycan.get(i) for i in cores]
-        core_residues = [
-            MonosaccharideResidue.from_monosaccharide(n) for n in core_nodes
-        ]
-        core_comps = [get_mono_comp(n) for n in core_residues]
-        N_glycan_core_comps = ["Glc2NAc", "Glc2NAc", "Man", "Man", "Man"]
-        if sorted(core_comps) != N_glycan_core_comps:
-            raise StructureParseError("This is not an N-glycan.")
+        glypy_comp = GlycanComposition.from_glycan(self._glypy_glycan)
+        comp = {str(k): v for k, v in glypy_comp.items()}
+        object.__setattr__(self, "composition", comp)
 
     @classmethod
     def from_string(
-        cls, name: str, string: str, format: Literal["glycoct"] = "glycoct"
-    ) -> NGlycan:
+        cls, name: str, string: str, *, format: Literal["glycoct"] = "glycoct"
+    ) -> Structure:
         """Build a glycan from a string representation.
 
         Args:
@@ -117,7 +88,7 @@ class NGlycan:
             raise StructureParseError(f"Unknown format: {format}")
 
     @classmethod
-    def from_glycoct(cls, name: str, glycoct: str) -> NGlycan:
+    def from_glycoct(cls, name: str, glycoct: str) -> Structure:
         """Build a glycan from a GlycoCT string.
 
         Args:
@@ -133,10 +104,11 @@ class NGlycan:
         return cls.from_string(name, glycoct, format="glycoct")
 
     def _traversal(
-            self,
-            method: Literal["bfs", "dfs"],
-            skip: Optional[Iterable[str]] = None,
-            only: Optional[Iterable[str]] = None,
+        self,
+        method: Literal["bfs", "dfs"],
+        *,
+        skip: Optional[Iterable[str]] = None,
+        only: Optional[Iterable[str]] = None,
     ) -> Generator[MonosaccharideResidue, None, None]:
         # set the traversal method
         if method == "bfs":
@@ -147,7 +119,7 @@ class NGlycan:
             raise ValueError(f"Unknown traversal method: {method}")
 
         # check the validation of `skip` and `only`
-        if skip is not None and only is not None:
+        if skip and only:
             raise ValueError("Cannot specify both `skip` and `only`.")
 
         # traverse the glycan
@@ -155,214 +127,87 @@ class NGlycan:
             yield from traversal_func()
         elif skip is not None:
             for node in traversal_func():
-                if get_mono_comp(node) not in skip:
+                if get_mono_str(node) not in skip:
                     yield node
         else:  # only is not None
             for node in traversal_func():
-                if get_mono_comp(node) in only:
+                if get_mono_str(node) in only:
                     yield node
 
-    def _breadth_first_traversal(
-            self,
-            skip: Optional[Iterable[str]] = None,
-            only: Optional[Iterable[str]] = None,
+    def breadth_first_traversal(
+        self,
+        *,
+        skip: Optional[Iterable[str]] = None,
+        only: Optional[Iterable[str]] = None,
     ) -> Generator[MonosaccharideResidue, None, None]:
+        """Traverse the structure in a "bfs" manner.
+
+        Args:
+            skip (Optional[Iterable[str]], optional): The monosaccharides to skip.
+                Defaults to None.
+            only (Optional[Iterable[str]], optional): The monosaccharides to traverse.
+                Defaults to None.
+
+        Yields:
+            glypy.MonosaccharideResidue: The monosaccharide residues.
+        """
         yield from self._traversal("bfs", skip=skip, only=only)
 
-    def _depth_first_traversal(
-            self,
-            skip: Optional[Iterable[str]] = None,
-            only: Optional[Iterable[str]] = None,
+    def depth_first_traversal(
+        self,
+        *,
+        skip: Optional[Iterable[str]] = None,
+        only: Optional[Iterable[str]] = None,
     ) -> Generator[MonosaccharideResidue, None, None]:
+        """Traverse the structure in a "dfs" manner.
+
+        Args:
+            skip (Optional[Iterable[str]], optional): The monosaccharides to skip.
+                Defaults to None.
+            only (Optional[Iterable[str]], optional): The monosaccharides to traverse.
+                Defaults to None.
+
+        Yields:
+            glypy.MonosaccharideResidue: The monosaccharide residues.
+        """
         yield from self._traversal("dfs", skip=skip, only=only)
 
-    def _get_branch_core_man(self) -> tuple[Monosaccharide, Monosaccharide]:
-        # Branch core mannose is defined as:
-        #
-        # X - Man  <- This one
-        #        \
-        #         Man - Glc2NAc - Glc2NAc
-        #        /
-        # X - Man  <- And this one
-        bft_iter = self._breadth_first_traversal(skip=["Fuc"])
-        for i in range(3):
-            next(bft_iter)
-        while True:
-            node1 = next(bft_iter)
-            if get_mono_comp(node1) == "Man":
-                break
-        while True:
-            node2 = next(bft_iter)
-            if get_mono_comp(node2) == "Man":
-                break
-        return node1, node2
-
-    @property
-    def type(self) -> GlycanType:
-        """The type of the glycan. Either 'complex', 'high-mannose' and 'hybrid'."""
-        # N-glycan core is defined as the complex type.
-        if self._composition == N_glycan_core:
-            return GlycanType.COMPLEX
-
-        # Bisecting could only be found in complex type.
-        if self.is_bisecting():
-            return GlycanType.COMPLEX
-
-        # If the glycan is not core, and it only has 2 "GlcNAc", it is high-mannose.
-        if self._composition[Glc2NAc] == 2:
-            return GlycanType.HIGH_MANNOSE
-
-        # If the glycan is mono-antennary and not high-monnose, it is complex.
-        node1, node2 = self._get_branch_core_man()
-        if any((len(node1.links) == 1, len(node2.links) == 1)):
-            return GlycanType.COMPLEX
-
-        # Then, if it has 3 "Glc2NAc", it must be hybrid.
-        if self._composition[Glc2NAc] == 3:
-            return GlycanType.HYBRID
-
-        # All rest cases are complex.
-        return GlycanType.COMPLEX
-
-    def is_complex(self) -> bool:
-        """Whether the glycan is complex."""
-        return self.type == GlycanType.COMPLEX
-
-    def is_high_mannose(self) -> bool:
-        """Whether the glycan is high-mannose."""
-        return self.type == GlycanType.HIGH_MANNOSE
-
-    def is_hybrid(self) -> bool:
-        """Whether the glycan is hybrid."""
-        return self.type == GlycanType.HYBRID
-
-    def is_bisecting(self) -> bool:
-        """Whether the glycan has a bisection."""
-        bft_iter = self._breadth_first_traversal(skip=["Fuc"])
-        for i in range(2):
-            next(bft_iter)
-        next_node = next(bft_iter)
-        return len(next_node.links) == 4
-
-    def count_antenna(self) -> int:
-        """The number of branches in the glycan."""
-        if not self.is_complex():
-            return 0
-        node1, node2 = self._get_branch_core_man()
-        return len(node1.links) + len(node2.links) - 2
-
-    def count_fuc(self) -> int:
-        """The number of fucoses."""
-        return self._composition[Fuc]
-
-    def count_core_fuc(self) -> int:
-        """The number of core fucoses."""
-        n = 0
-        for node in self._breadth_first_traversal():
-            # node.parents()[0] is the nearest parent, and is a tuple of (Link, Monosaccharide)
-            # node.parents()[0][1] is the Monosaccharide
-            if get_mono_comp(node) == "Fuc" and node.parents()[0][1].id in self._cores:
-                n = n + 1
-        return n
-
-    def count_antennary_fuc(self) -> int:
-        """The number of antennary fucoses."""
-        return self.count_fuc() - self.count_core_fuc()
-
-    def count_sia(self) -> int:
-        """The number of sialic acids."""
-        return self._composition[Neu5Ac] + self._composition[Neu5Gc]
-
-    def count_a23_sia(self) -> int:
-        """The number of a2,3-linked sialic acids."""
-        n = 0
-        for node in self._breadth_first_traversal():
-            if get_mono_comp(node) == "Neu5Ac":
-                if node.links[2][0].parent_position == -1:
-                    raise SiaLinkageError("Sialic acid linkage not specified")
-                elif node.links[2][0].parent_position == 3:
-                    n = n + 1
-        return n
-
-    def count_a26_sia(self) -> int:
-        """The number of a2,6-linked sialic acids."""
-        return self.count_sia() - self.count_a23_sia()
-
-    def count_man(self) -> int:
-        """The number of mannoses."""
-        return self._composition[Man]
-
-    def count_gal(self) -> int:
-        """The number of galactoses."""
-        return self._composition[Gal]
-
-    def has_poly_lacnac(self) -> bool:
-        """Whether the glycan has poly-LacNAc."""
-        # Iterate all Gal residues.
-        # If a Gal residue has a GlcNAc child, and the GlcNAc residue has a Gal child,
-        # then the glycan has poly-LacNAc.
-        gals = self._breadth_first_traversal(only=["Gal"])
-        for gal in gals:
-            for _, child in gal.children():
-                if get_mono_comp(child) == "Glc2NAc":
-                    children_of_glcnac = child.children()
-                    for _, child_of_glcnac in children_of_glcnac:
-                        if get_mono_comp(child_of_glcnac) == "Gal":
-                            return True
-        return False
-
-
-def get_mono_comp(mono: MonosaccharideResidue) -> str:
-    """Get the composition of a monosaccharide residue.
-
-    Args:
-        mono (MonosaccharideResidue): The monosaccharide residue.
-
-    Returns:
-        GlycanComposition: The composition.
-    """
-    return MonosaccharideResidue.from_monosaccharide(mono).name()
+    def get(self, key: str, default=0):
+        """Get the number of the given monosaccharide."""
+        return self.composition.get(key, default)
 
 
 @frozen
 class Composition:
-    """A glycan composition."""
+    """A glycan composition.
+
+    Attributes:
+        name (str): The name of the glycan.
+
+    Methods:
+        from_string: classmethod to build a `Composition` instance from a string.
+        asdict: convert the `Composition` instance into a dict.
+        get: get the number of the given monosaccharide.
+    """
 
     name: str = field()
-    _comp: dict[str, int] = field(converter=dict)
-    sia_linkage: bool = field(kw_only=True)
-
-    @staticmethod
-    def _valid_monos(sia_linkage: bool):
-        if sia_linkage:
-            return {"H", "N", "F", "L", "E"}
-        else:
-            return {"H", "N", "F", "S"}
+    _comp: dict[str, int] = field(converter=dict, hash=False)
 
     @_comp.validator
     def _check_comp(self, attribute, value):
         """Check the composition."""
-        valid_monos = self._valid_monos(self.sia_linkage)
-        if self.sia_linkage and "S" in value:
-            msg = "'S' is not allow for sialic-acid-linkage-specified composition."
-            raise CompositionParseError(msg)
-        if not self.sia_linkage and ("L" in value or "E" in value):
-            msg = "'E' and 'L' is not allow for sialic-acid-linkage-unspecified composition."
-            raise CompositionParseError(msg)
         for k, v in value.items():
-            if k not in valid_monos:
+            if k not in {"H", "N", "F", "S", "L", "E"}:
                 raise CompositionParseError(f"Unknown monosaccharide: {k}.")
             if v < 0:
                 raise CompositionParseError(f"Monosacharride must be above 0: {k}={v}.")
 
     @classmethod
-    def from_string(cls, s: str, *, sia_linkage: bool = False) -> Composition:
+    def from_string(cls, s: str) -> Composition:
         """Create a composition from a string.
 
         Args:
             s (str): The string, e.g. H5N4F1S1.
-            sia_linkage (bool): Whether the composition contains sialic acid linkages.
-                Defaults to False.
 
         Returns:
             Composition: The composition.
@@ -371,13 +216,12 @@ class Composition:
             CompositionParseError: When the string cannot be parsed.
         """
         cls._validate_string(s)
+        # noinspection PyUnreachableCode
         mono_comp: dict[str, int] = {}
         pattern = r"([A-Z])(\d+)"
         for m in re.finditer(pattern, s):
             mono_comp[m.group(1)] = int(m.group(2))
-        for mono in cls._valid_monos(sia_linkage):
-            mono_comp.setdefault(mono, 0)
-        return cls(s, mono_comp, sia_linkage=sia_linkage)
+        return cls(s, mono_comp)
 
     @staticmethod
     def _validate_string(s: str) -> NoReturn:
@@ -391,66 +235,43 @@ class Composition:
         """Return the composition as a dict."""
         return self._comp.copy()
 
-    def is_high_branching(self) -> bool:
-        """Whether the composition is high branching."""
-        return self._comp["N"] > 4
-
-    def is_low_branching(self) -> bool:
-        """Whether the composition is low branching."""
-        return self._comp["N"] <= 4
-
-    def count_sia(self) -> int:
-        """The number of sialic acids."""
-        if self.sia_linkage:
-            return self._comp["E"] + self._comp["L"]
-        else:
-            return self._comp["S"]
-
-    def count_fuc(self) -> int:
-        """The number of fucoses."""
-        return self._comp["F"]
-
-    def count_gal(self) -> int:
-        """The number of galactoses.
-
-        Note that this algorithm doesn't consider hybrid type N-glycans.
-        """
-        if self._comp["H"] >= 4 and self._comp["N"] >= self._comp["H"] - 1:
-            return self._comp["H"] - 3
-        return 0
-
-    def count_a23_sia(self) -> int:
-        """The number of a2,3-linked sialic acids."""
-        return self._comp["L"]
-
-    def count_a26_sia(self) -> int:
-        """The number of a2,6-linked sialic acids."""
-        return self._comp["E"]
+    def get(self, key: str, default: int = 0):
+        """Get the number of the given monosaccharide."""
+        return self._comp.get(key, default)
 
 
-def load_glycans(names: Iterable[str], structures: Iterable[str]) -> list[NGlycan]:
-    """Load glycans from a list of structures.
+def get_mono_str(mono: MonosaccharideResidue) -> str:
+    """Get the string representation of a monosaccharide residue.
+
+    This is a helper function for checking the identity of a `glypy.MonosaccarideResidue`
+    instance.
+
+    Args:
+        mono (glypy.MonosaccharideResidue): The monosaccharide residue.
+    """
+    return MonosaccharideResidue.from_monosaccharide(mono).name()
+
+
+def load_structures(names: Iterable[str], structures: Iterable[str]) -> list[Structure]:
+    """Load structures from a list of structures.
 
     Args:
         names (Iterable[str]): The names of the glycans.
         structures (Iterable[str]): The structure strings of the glycans.
 
     Returns:
-        list[NGlycan]: The glycans.
+        list[Structure]: The glycan structures.
     """
-    return [NGlycan.from_string(n, s) for n, s in zip(names, structures)]
+    return [Structure.from_string(n, s) for n, s in zip(names, structures)]
 
 
-def load_compositions(
-        compositions: Iterable[str], *, sia_linkage: bool
-) -> list[Composition]:
+def load_compositions(compositions: Iterable[str]) -> list[Composition]:
     """Load compositions from a list of strings.
 
     Args:
         compositions (Iterable[str]): The compositions.
-        sia_linkage (bool): Whether the compositions contain sialic acid linkages.
 
     Returns:
         list[Composition]: The compositions.
     """
-    return [Composition.from_string(s, sia_linkage=sia_linkage) for s in compositions]
+    return [Composition.from_string(s) for s in compositions]

@@ -27,12 +27,7 @@ from numpy.typing import NDArray
 
 import glytrait
 from glytrait.exception import FormulaError
-from glytrait.meta_property import (
-    sia_struc_meta_properties,
-    struc_meta_properties,
-    sia_comp_meta_properties,
-    comp_meta_properties,
-)
+from glytrait.meta_property import available_meta_properties
 
 default_struc_formula_file = files("glytrait.resources").joinpath("struc_formula.txt")
 default_comp_formula_file = files("glytrait.resources").joinpath("comp_formula.txt")
@@ -48,12 +43,9 @@ def _check_length(instance, attribute, value):
         raise FormulaError(f"`{attribute.name[1:]}` cannot be empty.")
 
 
-def _check_meta_properties(instance, attribute, value):
+def _check_meta_properties(instance: TraitFormula, attribute, value):
     """Validator for `TraitFormula`."""
-    if instance.type == "composition":
-        valid_meta_properties = comp_meta_properties
-    else:
-        valid_meta_properties = struc_meta_properties
+    valid_meta_properties = available_meta_properties(instance.type, sia_linkage=True)
     invalid_properties = set(value) - set(valid_meta_properties)
     if len(invalid_properties) > 0:
         raise FormulaError(
@@ -123,10 +115,9 @@ class TraitFormula:
 
     def _init_sia_linkage(self) -> bool:
         """Whether the formula contains sia linkage meta properties."""
-        if self.type == "composition":
-            sia_meta_properties = sia_comp_meta_properties
-        else:
-            sia_meta_properties = sia_struc_meta_properties
+        sia_meta_properties = available_meta_properties(
+            self.type, sia_linkage=True, only_sia_linkage=True
+        )
         for prop in itertools.chain(
             self.numerator_properties, self.denominator_properties
         ):
@@ -161,10 +152,7 @@ class TraitFormula:
     def _initialize(
         meta_property_table: pd.DataFrame, properties: list[str]
     ) -> NDArray:
-        if len(properties) == 1 and properties[0] == ".":
-            return np.ones_like(meta_property_table.index)
-        else:
-            return meta_property_table[properties].prod(axis=1)
+        return meta_property_table[properties].prod(axis=1)
 
     def calcu_trait(self, abundance_table: pd.DataFrame) -> NDArray:
         """Calculate the trait.

@@ -11,8 +11,14 @@ def clean_dir(tmp_path):
 
 
 @pytest.fixture
-def make_glycan():
-    def _make_glycan(string, format="glycoct"):
-        return glyc.NGlycan.from_string("glycan", string, format=format)
+def make_structure():
+    def _make_structure(string, format="glycoct"):
+        return glyc.Structure.from_string("glycan", string, format=format)
+    return _make_structure
 
-    return _make_glycan
+
+@pytest.fixture
+def make_composition():
+    def _make_composition(string):
+        return glyc.Composition.from_string(string)
+    return _make_composition
