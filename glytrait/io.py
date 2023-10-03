@@ -12,10 +12,11 @@ from __future__ import annotations
 import functools
 from importlib.resources import files, as_file
 from pathlib import Path
-from typing import NoReturn, Literal, Iterable
+from typing import NoReturn, Literal, Iterable, Protocol, ClassVar, Any, Type
 
 import numpy as np
 import pandas as pd
+from attrs import define
 from openpyxl import Workbook
 from openpyxl.styles import Side, Alignment
 from openpyxl.utils.dataframe import dataframe_to_rows
@@ -187,143 +188,178 @@ def load_default_structures(
         return read_structure_file(str(db_filename), compositions)
 
 
-def write_output(
-    config: Config,
-    derived_traits: pd.DataFrame,
-    direct_traits: pd.DataFrame,
-    meta_prop_df: pd.DataFrame,
-    formulas: list[TraitFormula],
-) -> None:
+class Output(Protocol):
+    """Manage the output written to an `openpyxl.Worsheet`.
+
+    Class attributes:
+        name: The name of the output.
+
+    Methods:
+        write: Write the output to the worksheet.
+    """
+
+    name: ClassVar[str]
+    """The name of the output."""
+
+    def write(self, data: dict[str, Any], ws: Worksheet) -> None:
+        """Write the output to the worksheet.
+
+        Args:
+            data (dict[str, Any]): The data to be written, with the keys being the data names,
+                and the values being the data.
+            ws (Worksheet): The worksheet to write to.
+        """
+        raise NotImplementedError
+
+
+output_classes: list[Type] = []
+
+
+def register_output(cls: Type[Output]) -> Type[Output]:
+    """Register an output class."""
+    output_classes.append(cls)
+    return cls
+
+
+@register_output
+@define
+class SummaryOutput(Output):
+    """Write the summary sheet."""
+
+    name: ClassVar[str] = "Summary"
+
+    def write(self, data: dict[str, Any], ws: Worksheet) -> None:
+        config = data["config"]
+        direct_triats = data["direct_traits"]
+        derived_traits = data["derived_traits"]
+
+        HEADER = "__HEADER__"
+        records = [
+            # option name, option Value
+            ("GlyTrait version", glytrait.__version__),
+            ("Options", HEADER),
+            ("Input file", config.get("input_file")),
+            ("Output file", config.get("output_file")),
+            ("Structure file", config.get("structure_file")),
+            ("Formula file", config.get("formula_file")),
+            ("Mode", config.get("mode")),
+            ("Database", config.get("database")),
+            ("Glycan filter ratio", config.get("filter_glycan_max_na")),
+            ("Imputation method", config.get("impute_method")),
+            ("Normalization method", "Total abundance"),
+            ("Sialic acid linkage", config.get("sia_linkage")),
+            ("Post filtering", config.get("post_filtering")),
+            ("Correlation threshold", config.get("corr_threshold")),
+            ("Correlation method", config.get("corr_method")),
+            ("Result Overview", HEADER),
+            ("Num. of samples", len(direct_triats.index)),
+            ("Num. of glycans", len(direct_triats.columns)),
+            ("Num. of traits", len(derived_traits.columns)),
+        ]
+
+        for i, (name, value) in enumerate(records, start=1):
+            cell1, cell2 = f"A{i}", f"B{i}"
+            if value == HEADER:
+                ws[cell1] = name
+                ws.merge_cells(f"{cell1}:{cell2}")
+                ws[cell1].font = ws[cell1].font.copy(bold=True)
+                ws[cell1].alignment = Alignment(horizontal="center", vertical="center")
+            else:
+                ws[cell1] = name
+                ws[cell2] = value if value is not None else "none"
+
+        ws.column_dimensions["A"].width = max(len(cell.value) for cell in ws["A"])
+        for cell in ws["A"]:
+            cell.alignment = Alignment(horizontal="left")
+        for cell in ws["B"]:
+            cell.alignment = Alignment(horizontal="left")
+
+
+@register_output
+@define
+class TraitValuesOutput(Output):
+    """Write the trait values sheet."""
+
+    name: ClassVar[str] = "Trait values"
+
+    def write(self, data: dict[str, Any], ws: Worksheet) -> None:
+        direct_traits = data["direct_traits"]
+        derived_traits = data["derived_traits"]
+        combined_df = pd.concat([direct_traits, derived_traits], axis=1)
+
+        for row in dataframe_to_rows(combined_df, index=True, header=True):
+            ws.append(row)
+        ws.delete_rows(2)
+        for cell in ws[1][1:]:
+            cell.font = cell.font.copy(bold=True)
+            cell.border = cell.border.copy(bottom=Side(border_style="double"))
+        ws.insert_rows(1)
+        ws.merge_cells(
+            start_row=1,
+            start_column=2,
+            end_row=1,
+            end_column=len(direct_traits.columns) + 1,
+        )
+        ws.cell(1, 2).value = "Direct traits"
+        ws.merge_cells(
+            start_row=1,
+            start_column=len(direct_traits.columns) + 2,
+            end_row=1,
+            end_column=len(combined_df.columns) + 1,
+        )
+        ws.cell(1, len(direct_traits.columns) + 2).value = "Derived traits"
+        for cell in ws[1][1:]:
+            cell.font = cell.font.copy(bold=True)
+            cell.border = cell.border.copy(bottom=Side(border_style="thin"))
+
+
+@register_output
+@define
+class TraitDefinitionsOutput(Output):
+    """Write the trait defination sheet."""
+
+    name: ClassVar[str] = "Trait definitions"
+
+    def write(self, data: dict[str, Any], ws: Worksheet) -> None:
+        formulas = data["formulas"]
+        ws.append(["Trait Name", "Description"])
+        for cell in ws[1]:
+            cell.font = cell.font.copy(bold=True)
+        for formula in formulas:
+            ws.append([formula.name, formula.description])
+
+
+@register_output
+@define
+class MetaPropertiesOutput(Output):
+    """Write the meta-properties sheet."""
+
+    name: ClassVar[str] = "Meta properties"
+
+    def write(self, data: dict[str, Any], ws: Worksheet) -> None:
+        meta_prop_df = data["meta_prop_df"]
+        for row in dataframe_to_rows(meta_prop_df, index=True, header=True):
+            ws.append(row)
+        ws.delete_rows(2)
+        for cell in ws[1]:
+            cell.font = cell.font.copy(bold=True)
+
+
+def write_output(data: dict[str, Any], file: str) -> None:
     """Write the output file.
 
     Args:
-        config (Config): The configuration.
-        derived_traits (pd.DataFrame): The trait values, with samples as index and trait names as
-            columns.
-        direct_traits (pd.DataFrame): The normalized abundance table, with samples as index and
-            glycan IDs as columns.
-        meta_prop_df (pd.DataFrame): The table of meta properties generated by
-            `build_meta_property_table`.
-        formulas (list[TraitFormula]): The trait formulas.
-        groups (pd.Series): The group names, with sample IDs as index. Optional.
-        hypothesis_test (Optional[pd.DataFrame], optional): The hypothesis test results. Optional.
-        roc_result (Optional[pd.DataFrame], optional): The ROC results. Optional.
+        data (dict[str, Any]): The data to be written, with the keys being the data names,
+            and the values being the data.
+        file (str): The output filepath.
     """
     wb = Workbook()
-    ws_summary: Worksheet = wb.active
-    ws_summary.title = "Summary"
-    _write_summary(ws_summary, config, direct_traits, derived_traits)
-
-    # The trait table
-    ws_trait = wb.create_sheet("Trait values")
-    _write_trait_values(ws_trait, direct_traits, derived_traits)
-
-    # The trait definitions
-    ws_def = wb.create_sheet("Trait definitions")
-    _write_trait_defination(ws_def, formulas)
-
-    # The meta properties
-    ws_meta = wb.create_sheet("Meta properties")
-    _write_meta_properties(ws_meta, meta_prop_df)
-
-    wb.save(config.get("output_file"))
-
-
-def _write_summary(
-    ws: Worksheet,
-    config: Config,
-    direct_triats: pd.DataFrame,
-    derived_traits: pd.DataFrame,
-) -> None:
-    """Write the summary sheet."""
-    HEADER = "__HEADER__"
-    records = [
-        # option name, option Value
-        ("GlyTrait version", glytrait.__version__),
-        ("Options", HEADER),
-        ("Input file", config.get("input_file")),
-        ("Output file", config.get("output_file")),
-        ("Structure file", config.get("structure_file")),
-        ("Formula file", config.get("formula_file")),
-        ("Mode", config.get("mode")),
-        ("Database", config.get("database")),
-        ("Glycan filter ratio", config.get("filter_glycan_max_na")),
-        ("Imputation method", config.get("impute_method")),
-        ("Normalization method", "Total abundance"),
-        ("Sialic acid linkage", config.get("sia_linkage")),
-        ("Post filtering", config.get("post_filtering")),
-        ("Correlation threshold", config.get("corr_threshold")),
-        ("Correlation method", config.get("corr_method")),
-        ("Result Overview", HEADER),
-        ("Num. of samples", len(direct_triats.index)),
-        ("Num. of glycans", len(direct_triats.columns)),
-        ("Num. of traits", len(derived_traits.columns)),
-    ]
-
-    for i, (name, value) in enumerate(records, start=1):
-        cell1, cell2 = f"A{i}", f"B{i}"
-        if value == HEADER:
-            ws[cell1] = name
-            ws.merge_cells(f"{cell1}:{cell2}")
-            ws[cell1].font = ws[cell1].font.copy(bold=True)
-            ws[cell1].alignment = Alignment(horizontal="center", vertical="center")
-        else:
-            ws[cell1] = name
-            ws[cell2] = value if value is not None else "none"
-
-    ws.column_dimensions["A"].width = max(len(cell.value) for cell in ws["A"])
-    for cell in ws["A"]:
-        cell.alignment = Alignment(horizontal="left")
-    for cell in ws["B"]:
-        cell.alignment = Alignment(horizontal="left")
-
-
-def _write_trait_values(
-    ws: Worksheet,
-    direct_traits: pd.DataFrame,
-    derived_traits: pd.DataFrame,
-) -> None:
-    """Write the trait values sheet."""
-    combined_df = pd.concat([direct_traits, derived_traits], axis=1)
-
-    for row in dataframe_to_rows(combined_df, index=True, header=True):
-        ws.append(row)
-    ws.delete_rows(2)
-    for cell in ws[1][1:]:
-        cell.font = cell.font.copy(bold=True)
-        cell.border = cell.border.copy(bottom=Side(border_style="double"))
-    ws.insert_rows(1)
-    ws.merge_cells(
-        start_row=1,
-        start_column=2,
-        end_row=1,
-        end_column=len(direct_traits.columns) + 1,
-    )
-    ws.cell(1, 2).value = "Direct traits"
-    ws.merge_cells(
-        start_row=1,
-        start_column=len(direct_traits.columns) + 2,
-        end_row=1,
-        end_column=len(combined_df.columns) + 1,
-    )
-    ws.cell(1, len(direct_traits.columns) + 2).value = "Derived traits"
-    for cell in ws[1][1:]:
-        cell.font = cell.font.copy(bold=True)
-        cell.border = cell.border.copy(bottom=Side(border_style="thin"))
-
-
-def _write_trait_defination(ws: Worksheet, formulas: list[TraitFormula]) -> None:
-    """Write the trait defination sheet."""
-    ws.append(["Trait Name", "Description"])
-    for cell in ws[1]:
-        cell.font = cell.font.copy(bold=True)
-    for formula in formulas:
-        ws.append([formula.name, formula.description])
-
-
-def _write_meta_properties(ws: Worksheet, meta_prop_df: pd.DataFrame) -> None:
-    for row in dataframe_to_rows(meta_prop_df, index=True, header=True):
-        ws.append(row)
-    ws.delete_rows(2)
-    for cell in ws[1]:
-        cell.font = cell.font.copy(bold=True)
+    ws = wb.active
+    first_cls = output_classes[0]
+    first_output = first_cls()
+    first_output.write(data, ws)
+    for cls in output_classes[1:]:
+        output = cls()
+        ws = wb.create_sheet(output.name)
+        output.write(data, ws)
+    wb.save(file)

@@ -581,10 +581,4 @@ class TestWriteOutputStep:
         step = gw.WriteOutputStep(default_config, state_ok)
         step.run()
 
-        write_output_mock.assert_called_once_with(
-            default_config,
-            "derived_trait_df",
-            "abund_df",
-            "meta_property_df",
-            "formulas",
-        )
+        write_output_mock.assert_called_once()

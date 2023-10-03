@@ -512,13 +512,14 @@ class WriteOutputStep(WorkflowStep):
     """
 
     def _execute(self) -> None:
-        write_output(
-            self._config.obj,
-            self._state.get("derived_trait_df"),
-            self._state.get("abund_df"),
-            self._state.get("meta_property_df"),
-            self._state.get("formulas"),
-        )
+        data = {
+            "config": self._config.obj,
+            "derived_traits": self._state.get("derived_trait_df"),
+            "direct_traits": self._state.get("abund_df"),
+            "meta_prop_df": self._state.get("meta_property_df"),
+            "formulas": self._state.get("formulas"),
+        }
+        write_output(data, self._config.get("output_file"))
 
 
 # ---- END of workflow steps ----
