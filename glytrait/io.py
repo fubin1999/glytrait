@@ -23,9 +23,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.worksheet.worksheet import Worksheet
 
 import glytrait
-from glytrait.config import Config
 from glytrait.exception import *
-from glytrait.formula import TraitFormula
 from glytrait.glycan import Structure, load_structures
 
 
@@ -275,42 +273,36 @@ class SummaryOutput(Output):
             cell.alignment = Alignment(horizontal="left")
 
 
+def _write_values(df: pd.DataFrame, ws: Worksheet) -> None:
+    for row in dataframe_to_rows(df, index=True, header=True):
+        ws.append(row)
+    ws.delete_rows(2)
+    for cell in ws[1]:
+        cell.font = cell.font.copy(bold=True)
+    for cell in ws[1][1:]:
+        cell.border = cell.border.copy(bottom=Side(border_style="thin"))
+
+
 @register_output
 @define
-class TraitValuesOutput(Output):
-    """Write the trait values sheet."""
+class GlycanAbundOutput(Output):
+    """Write the glycan abundance."""
+
+    name: ClassVar[str] = "Glycan abundance"
+
+    def write(self, data: dict[str, Any], ws: Worksheet) -> None:
+        _write_values(data["direct_traits"], ws)
+
+
+@register_output
+@define
+class TraitValueOutput(Output):
+    """Write the trait value sheet."""
 
     name: ClassVar[str] = "Trait values"
 
     def write(self, data: dict[str, Any], ws: Worksheet) -> None:
-        direct_traits = data["direct_traits"]
-        derived_traits = data["derived_traits"]
-        combined_df = pd.concat([direct_traits, derived_traits], axis=1)
-
-        for row in dataframe_to_rows(combined_df, index=True, header=True):
-            ws.append(row)
-        ws.delete_rows(2)
-        for cell in ws[1][1:]:
-            cell.font = cell.font.copy(bold=True)
-            cell.border = cell.border.copy(bottom=Side(border_style="double"))
-        ws.insert_rows(1)
-        ws.merge_cells(
-            start_row=1,
-            start_column=2,
-            end_row=1,
-            end_column=len(direct_traits.columns) + 1,
-        )
-        ws.cell(1, 2).value = "Direct traits"
-        ws.merge_cells(
-            start_row=1,
-            start_column=len(direct_traits.columns) + 2,
-            end_row=1,
-            end_column=len(combined_df.columns) + 1,
-        )
-        ws.cell(1, len(direct_traits.columns) + 2).value = "Derived traits"
-        for cell in ws[1][1:]:
-            cell.font = cell.font.copy(bold=True)
-            cell.border = cell.border.copy(bottom=Side(border_style="thin"))
+        _write_values(data["derived_traits"], ws)
 
 
 @register_output
