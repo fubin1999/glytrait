@@ -3,7 +3,7 @@
   <component name="Black">
     <option name="executionMode" value="BINARY" />
     <option name="pathToExecutable" value="$USER_HOME$/mambaforge/bin/black" />
-    <option name="sdkUUID" value="459f6b19-2557-4003-8f0f-9dc25e82a4ca" />
+    <option name="sdkName" value="Poetry (glytrait)" />
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="Poetry (glytrait)" project-jdk-type="Python SDK" />
 </project>

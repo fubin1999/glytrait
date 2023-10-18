@@ -46,7 +46,7 @@ class TestTraitFormula:
             G3=[7, 8, 9],
             G4=[10, 11, 12],
         )
-        return pd.DataFrame(data, index=["S1", "S2", "S3"])
+        return pd.DataFrame(data, index=["S1", "S2", "S3"], dtype=float)
 
     def test_init_invalid_properties(self):
         with pytest.raises(FormulaError) as excinfo:

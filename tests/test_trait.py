@@ -34,6 +34,7 @@ def test_calcu_trait():
             "G3": [7, 8, 9],
         },
         index=["S1", "S2", "S3"],
+        dtype=float,
     )
 
     meta_prop_df = pd.DataFrame(
