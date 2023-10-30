@@ -192,12 +192,9 @@ class TestTraitFormula:
         "trait1, trait2, expected",
         [
             ("A2G", "CG", True),
-            ("A2F", "CF", True),
             ("A2Fa", "CFa", True),
             ("A2Fc", "CFc", True),
-            ("CFa", "CF", True),
             ("A2S", "CS", True),
-            ("A2E", "A2S", True),
             ("A2E", "CE", True),
             ("A2SG", "A2G", True),
             ("A2FSG", "A2FG", True),
@@ -293,7 +290,7 @@ def test_parse_expression_invalid(expression):
 @pytest.mark.parametrize(
     "type, expected",
     [
-        ("structure", 383),
+        ("structure", 354),
         ("composition", 75),
     ],
 )
@@ -341,7 +338,7 @@ $ TM = (isHighMannose) / (.)"""
 
 def test_load_formulas_without_user_file():
     result = list(glytrait.formula.load_formulas(type="structure"))
-    assert len(result) == 383
+    assert len(result) == 354
 
 
 def test_load_formulas_bad_formula(clean_dir):

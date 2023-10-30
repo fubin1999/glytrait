@@ -11,7 +11,7 @@ url = "http://mirrors.aliyun.com/pypi/simple"
 priority = "default"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.10,<3.13"
 glypy = "^1.0.11"
 attrs = "^23.1.0"
 pandas = "^2.0.1"

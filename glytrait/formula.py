@@ -202,37 +202,14 @@ class TraitFormula:
             raise TypeError("The other formula is not a TraitFormula instance.")
 
         # General case
-        condition_1 = (
+        condition = (
             not (num2 - num1)
             and not (den2 - den1)
             and num1 - num2 == den1 - den2
             and len(num1 - num2) == 1
         )
 
-        # Fc, Fa are children of F. E, L are children of S.
-        special_mp = {
-            "totalFuc": ["coreFuc", "antennaryFuc"],
-            "totalSia": ["a23Sia", "a26Sia"],
-        }
-        condition_2 = (
-            den1 == den2
-            and len(num2 - num1) == 1
-            and list(num2 - num1)[0] in special_mp
-            and len(num1 - num2) == 1
-            and list(num1 - num2)[0] in special_mp[list(num2 - num1)[0]]
-        )
-
-        # GS is a child of S.
-        condition_3 = (
-            num1 == num2
-            and ("totalSia" in num1 or "a23Sia" in num1 or "a26Sia" in num1)
-            and len(den1 - den2) == 1
-            and list(den1 - den2)[0] == "totalGal"
-        )
-
-        if condition_1 or condition_2 or condition_3:
-            return True
-        return False
+        return condition
 
 
 def load_formulas(
