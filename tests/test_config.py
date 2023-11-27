@@ -154,6 +154,11 @@ class TestConfig:
             config.Config(new)
         assert "corr_threshold must be between 0 and 1" in str(excinfo.value)
 
+    def test_corr_threshold_no_filter(self, base_config):
+        new = base_config | {"corr_threshold": -1}
+        cfg = config.Config(new)
+        assert cfg.get("corr_threshold") == -1
+
     def test_corr_threshold_str(self, base_config):
         new = base_config | {"corr_threshold": "0.5"}
         with pytest.raises(config.ConfigError) as excinfo:

@@ -481,12 +481,13 @@ class PostFilteringStep(WorkflowStep):
         formulas = self._state.get("formulas")
         derived_traits = self._state.get("derived_trait_df")
         formulas, derived_traits = filter_invalid(formulas, derived_traits)
-        formulas, derived_traits = filter_colinearity(
-            formulas,
-            derived_traits,
-            self._config.get("corr_threshold"),
-            self._config.get("corr_method"),
-        )
+        if self._config.get("corr_threshold") != -1:
+            formulas, derived_traits = filter_colinearity(
+                formulas,
+                derived_traits,
+                self._config.get("corr_threshold"),
+                self._config.get("corr_method"),
+            )
         return {
             "formulas": formulas,
             "derived_trait_df": derived_traits,

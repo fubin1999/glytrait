@@ -561,6 +561,25 @@ class TestPostFilteringStep:
         filter_invalid_mock.assert_not_called()
         filter_collinear_mock.assert_not_called()
 
+    def test_skip_collinearity_filtering(
+        self,
+        default_config,
+        state_ok,
+        filter_invalid_mock,
+        filter_collinear_mock,
+        abund_df,
+    ):
+        default_config.set("corr_threshold", -1)
+
+        step = gw.PostFilteringStep(default_config, state_ok)
+        step.run()
+
+        assert state_ok.get("formulas") == "formulas_1"
+        assert state_ok.get("derived_trait_df") == "traits_1"
+        assert state_ok.get("traits_filtered") is True
+        filter_invalid_mock.assert_called_once_with("formulas_0", "traits_0")
+        filter_collinear_mock.assert_not_called()
+
 
 class TestWriteOutputStep:
     @pytest.fixture

@@ -171,8 +171,8 @@ def valid_corr_threshold(config: Mapping[str, Any]) -> NoReturn:
     value = config["corr_threshold"]
     if not isinstance(value, (float, int)):
         raise ConfigError("corr_threshold must be a float.")
-    if not 0 <= value <= 1:
-        raise ConfigError("corr_threshold must be between 0 and 1.")
+    if not (0 <= value <= 1 or value == -1):
+        raise ConfigError("corr_threshold must be between 0 and 1, or -1.")
 
 
 @Config.register_validator
