@@ -657,7 +657,7 @@ def test_build_meta_property_table(mocker, make_structure):
     )
     expected = pd.DataFrame(
         {
-            ".": [1., 1., 1.],
+            ".": [1.0, 1.0, 1.0],
             "isComplex": [True, True, False],
         },
         index=glycan_ids,

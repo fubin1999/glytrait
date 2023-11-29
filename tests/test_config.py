@@ -37,7 +37,7 @@ class TestConfig:
         cfg = config.Config(base_config)
         cfg.set("mode", "composition")
         assert cfg.get("mode") == "composition"
-    
+
     def test_set_not_supported(self, base_config):
         cfg = config.Config(base_config)
         with pytest.raises(KeyError) as excinfo:

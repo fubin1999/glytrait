@@ -14,6 +14,7 @@ def clean_dir(tmp_path):
 def make_structure():
     def _make_structure(string, format="glycoct"):
         return glyc.Structure.from_string("glycan", string, format=format)
+
     return _make_structure
 
 
@@ -21,4 +22,5 @@ def make_structure():
 def make_composition():
     def _make_composition(string):
         return glyc.Composition.from_string(string)
+
     return _make_composition

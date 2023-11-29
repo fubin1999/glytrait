@@ -230,7 +230,7 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-            load_structures_mock,
+        load_structures_mock,
     ):
         state.set("input_df", input_df_basic)
         step = gw.LoadGlycansStep(default_config, state)
@@ -250,7 +250,7 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-            load_structures_mock,
+        load_structures_mock,
     ):
         state.set("input_df", input_df_no_struc_col)
         default_config.set("database", "db")
@@ -271,7 +271,7 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-            load_structures_mock,
+        load_structures_mock,
     ):
         state.set("input_df", input_df_no_struc_col)
         default_config.set("structure_file", "structure_file")
@@ -292,7 +292,7 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-            load_structures_mock,
+        load_structures_mock,
     ):
         state.set("input_df", input_df_basic)
         default_config.set("database", "db")
@@ -312,7 +312,7 @@ class TestLoadGlycansStep:
         load_comp_mock,
         load_default_struc_mock,
         read_struc_mock,
-            load_structures_mock,
+        load_structures_mock,
     ):
         state.set("input_df", input_df_basic)
         default_config.set("structure_file", "structure_file")

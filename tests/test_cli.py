@@ -61,7 +61,10 @@ def _test_normal_cases(workflow_mock, workflow_class_mock, config, args):
 
 
 def _test_invalid_args(
-    workflow_mock, workflow_class_mock, args, msg,
+    workflow_mock,
+    workflow_class_mock,
+    args,
+    msg,
 ):
     """Test cases when CLI raised with invalid args."""
     runner = CliRunner()
@@ -103,7 +106,9 @@ def test_cli_user_traits(
     _test_normal_cases(workflow_mock, workflow_class_mock, config, args)
 
 
-def test_cli_glytrait_error(input_file, default_config, workflow_mock, workflow_class_mock):
+def test_cli_glytrait_error(
+    input_file, default_config, workflow_mock, workflow_class_mock
+):
     workflow_mock.run.side_effect = cli.GlyTraitError
     runner = CliRunner()
     result = runner.invoke(cli.cli, [str(input_file)])

@@ -64,8 +64,8 @@ class TestGlycan:
                     "Glc2NAc",
                     "Gal",
                     "Neu5Ac",
-                ]
-            )
+                ],
+            ),
         ],
     )
     def test_traversal(self, glycoct, mode, expected, make_structure):

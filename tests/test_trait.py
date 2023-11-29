@@ -185,7 +185,9 @@ def test_filter_colinearity(mocker):
         ),
         autospec=True,
     )
-    result_formulas, result_df = filter_colinearity(formulas, trait_table, 0.5, "pearson")
+    result_formulas, result_df = filter_colinearity(
+        formulas, trait_table, 0.5, "pearson"
+    )
     expected_formulas = [FakeTrait(name=n) for n in ["trait2", "trait3", "trait4"]]
     expected_df = pd.DataFrame(
         {
