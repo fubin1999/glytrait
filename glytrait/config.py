@@ -8,7 +8,7 @@ Classes:
 """
 from collections.abc import Mapping, Callable
 from pathlib import Path
-from typing import Any, NoReturn, ClassVar
+from typing import Any, ClassVar
 
 from .exception import ConfigError
 
@@ -87,7 +87,7 @@ class Config:
         self.check_validity(new_config)
         self._config = new_config
 
-    def check_validity(self, config_dict: dict[str, Any]) -> NoReturn:
+    def check_validity(self, config_dict: dict[str, Any]) -> None:
         """Check if a value is valid for a config key."""
         for validator in self.validators:
             validator(config_dict)
@@ -98,7 +98,7 @@ class Config:
 
 def valid_file(
     file: str, name: str, suffix: str, *, check_exist: bool = True, none_ok: bool = True
-) -> NoReturn:
+) -> None:
     """Validate a file.
 
     Args:
@@ -124,19 +124,19 @@ def valid_file(
 
 
 @Config.register_validator
-def valid_input_file(config: Mapping[str, Any]) -> NoReturn:
+def valid_input_file(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid input file."""
     valid_file(config["input_file"], "Input file", ".csv", check_exist=True)
 
 
 @Config.register_validator
-def valid_output_file(config: Mapping[str, Any]) -> NoReturn:
+def valid_output_file(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid output file."""
     valid_file(config["output_file"], "Output file", ".xlsx", check_exist=False)
 
 
 @Config.register_validator
-def valid_mode(config: Mapping[str, Any]) -> NoReturn:
+def valid_mode(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid mode."""
     value = config["mode"]
     if not isinstance(value, str):
@@ -146,7 +146,7 @@ def valid_mode(config: Mapping[str, Any]) -> NoReturn:
 
 
 @Config.register_validator
-def valid_filter_glycan_max_na(config: Mapping[str, Any]) -> NoReturn:
+def valid_filter_glycan_max_na(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid filter_glycan_max_na."""
     value = config["filter_glycan_max_na"]
     if not isinstance(value, (float, int)):
@@ -156,7 +156,7 @@ def valid_filter_glycan_max_na(config: Mapping[str, Any]) -> NoReturn:
 
 
 @Config.register_validator
-def valid_impute_method(config: Mapping[str, Any]) -> NoReturn:
+def valid_impute_method(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid impute_method."""
     value = config["impute_method"]
     if not isinstance(value, str):
@@ -166,7 +166,7 @@ def valid_impute_method(config: Mapping[str, Any]) -> NoReturn:
 
 
 @Config.register_validator
-def valid_corr_threshold(config: Mapping[str, Any]) -> NoReturn:
+def valid_corr_threshold(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid correlation_threshold."""
     value = config["corr_threshold"]
     if not isinstance(value, (float, int)):
@@ -176,7 +176,7 @@ def valid_corr_threshold(config: Mapping[str, Any]) -> NoReturn:
 
 
 @Config.register_validator
-def valid_corr_method(config: Mapping[str, Any]) -> NoReturn:
+def valid_corr_method(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid correlation_method."""
     value = config["corr_method"]
     if not isinstance(value, str):
@@ -186,27 +186,27 @@ def valid_corr_method(config: Mapping[str, Any]) -> NoReturn:
 
 
 @Config.register_validator
-def valid_sia_linkage(config: Mapping[str, Any]) -> NoReturn:
+def valid_sia_linkage(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid sia_linkage."""
     if not isinstance(config["sia_linkage"], bool):
         raise ConfigError("sia_linkage must be a boolean.")
 
 
 @Config.register_validator
-def valid_formula_file(config: Mapping[str, Any]) -> NoReturn:
+def valid_formula_file(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid formula_file."""
     valid_file(config["formula_file"], "Formula file", ".txt", check_exist=True)
 
 
 @Config.register_validator
-def valid_post_filtering(config: Mapping[str, Any]) -> NoReturn:
+def valid_post_filtering(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid filter_invalid_traits."""
     if not isinstance(config["post_filtering"], bool):
         raise ConfigError("post_filtering must be a boolean.")
 
 
 @Config.register_validator
-def valid_structure_file(config: Mapping[str, Any]) -> NoReturn:
+def valid_structure_file(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid structure_file."""
     path = config["structure_file"]
     if path is None:
@@ -221,7 +221,7 @@ def valid_structure_file(config: Mapping[str, Any]) -> NoReturn:
 
 
 @Config.register_validator
-def valid_database(config: Mapping[str, Any]) -> NoReturn:
+def valid_database(config: Mapping[str, Any]) -> None:
     """Check if a value is a valid database."""
     value = config["database"]
     if value is None:
@@ -233,7 +233,7 @@ def valid_database(config: Mapping[str, Any]) -> NoReturn:
 
 
 @Config.register_validator
-def valid_database_and_structure_file(config: Mapping[str, Any]) -> NoReturn:
+def valid_database_and_structure_file(config: Mapping[str, Any]) -> None:
     """Check if database and structure_file are provided together."""
     database = config["database"]
     structure_file = config["structure_file"]
@@ -242,7 +242,7 @@ def valid_database_and_structure_file(config: Mapping[str, Any]) -> NoReturn:
 
 
 @Config.register_validator
-def valid_composition_mode(config: Mapping[str, Any]) -> NoReturn:
+def valid_composition_mode(config: Mapping[str, Any]) -> None:
     """Check if the config is valid for composition mode."""
     if config["mode"] == "structure":
         return

@@ -27,7 +27,7 @@ from glytrait.exception import *
 from glytrait.glycan import Structure, load_structures
 
 
-def check_input_file(df: pd.DataFrame) -> NoReturn:
+def check_input_file(df: pd.DataFrame) -> None:
     """Check the input dataframe."""
     if df.columns[0] != "Composition":
         raise InputError("The first column of the input file should be Composition.")
@@ -152,12 +152,11 @@ def _read_structure_string_from_df(
 def _read_structure_string_from_directory(
     path: str, compositions: Iterable[str]
 ) -> list[str]:
-    path = Path(path)
     struc_strings = []
     for comp in compositions:
         try:
             filename = comp + ".glycoct_condensed"
-            struc_strings.append((path / filename).read_text())
+            struc_strings.append((Path(path) / filename).read_text())
         except FileNotFoundError:
             raise InputError(f"{comp} is not provided in the structure directory.")
     return struc_strings

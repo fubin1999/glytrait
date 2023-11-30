@@ -160,7 +160,7 @@ def cli(
 ):
     """Run the glytrait workflow."""
     if input_file is None:
-        msg = """
+        msg = r"""
 Welcome to GlyTrait!
 
    _____ _    _______        _ _   

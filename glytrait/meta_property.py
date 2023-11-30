@@ -3,13 +3,13 @@
 Functions:
     build_meta_property_table: Build a table of meta-properties for glycans.
 """
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from functools import singledispatch, cache
 from typing import Literal, Protocol, ClassVar, Type
 
 import pandas as pd
 from attrs import define
-from glypy import Monosaccharide
+from glypy import Monosaccharide  # type: ignore
 
 from glytrait.exception import SiaLinkageError
 from glytrait.glycan import Structure, Composition, GlycanType, get_mono_str
@@ -18,15 +18,15 @@ from glytrait.glycan import Structure, Composition, GlycanType, get_mono_str
 class MetaProperty(Protocol):
     """The protocol of a meta-property class."""
 
-    name: str
-    sia_linkage: bool
+    name: ClassVar[str]
+    sia_linkage: ClassVar[bool]
 
-    def __call__(self, glycan: Composition | Structure) -> float:
+    def __call__(self, glycan) -> float:
         ...
 
 
-struc_meta_properties: list[MetaProperty] = []
-comp_meta_properties: list[MetaProperty] = []
+struc_meta_properties: list[Type[MetaProperty]] = []
+comp_meta_properties: list[Type[MetaProperty]] = []
 
 
 def register_struc(meta_property: Type[MetaProperty]):
@@ -80,7 +80,7 @@ def available_meta_properties(
 @register_comp
 @register_struc
 @define
-class Wildcard:
+class Wildcard(MetaProperty):
     """This meta-property has value 1 for all glycans."""
 
     name: ClassVar = "."
@@ -132,7 +132,7 @@ def _glycan_type(glycan: Structure) -> GlycanType:
 
 @register_struc
 @define
-class IsComplex:
+class IsComplex(MetaProperty):
     """Whether the glycan is a complex type."""
 
     name: ClassVar = "isComplex"
@@ -144,7 +144,7 @@ class IsComplex:
 
 @register_struc
 @define
-class IsHighMannose:
+class IsHighMannose(MetaProperty):
     """Whether the glycan is a high-mannose type."""
 
     name: ClassVar = "isHighMannose"
@@ -156,7 +156,7 @@ class IsHighMannose:
 
 @register_struc
 @define
-class IsHybrid:
+class IsHybrid(MetaProperty):
     """Whether the glycan is a hybrid type."""
 
     name: ClassVar = "isHybrid"
@@ -168,7 +168,7 @@ class IsHybrid:
 
 @register_struc
 @define
-class IsBisecting:
+class IsBisecting(MetaProperty):
     """Whether the glycan has bisection."""
 
     name: ClassVar = "isBisecting"
@@ -212,7 +212,7 @@ def _count_antenna(glycan: Structure) -> int:
 
 @register_struc
 @define
-class Is1Antennary:
+class Is1Antennary(MetaProperty):
     """Whether the glycan has one antenna."""
 
     name: ClassVar = "is1Antennary"
@@ -224,7 +224,7 @@ class Is1Antennary:
 
 @register_struc
 @define
-class Is2Antennary:
+class Is2Antennary(MetaProperty):
     """Whether the glycan has two antennas."""
 
     name: ClassVar = "is2Antennary"
@@ -236,7 +236,7 @@ class Is2Antennary:
 
 @register_struc
 @define
-class Is3Antennary:
+class Is3Antennary(MetaProperty):
     """Whether the glycan has three antennas."""
 
     name: ClassVar = "is3Antennary"
@@ -248,7 +248,7 @@ class Is3Antennary:
 
 @register_struc
 @define
-class Is4Antennary:
+class Is4Antennary(MetaProperty):
     """Whether the glycan has four antennas."""
 
     name: ClassVar = "is4Antennary"
@@ -260,7 +260,7 @@ class Is4Antennary:
 
 @register_struc
 @define
-class TotalAntenna:
+class TotalAntenna(MetaProperty):
     """The total number of antennas."""
 
     name: ClassVar = "totalAntenna"
@@ -319,7 +319,7 @@ def _(glycan: Composition) -> int:
 
 @register_struc
 @define
-class CoreFuc:
+class CoreFuc(MetaProperty):
     """The number of fucoses on the core."""
 
     name: ClassVar = "coreFuc"
@@ -331,7 +331,7 @@ class CoreFuc:
 
 @register_struc
 @define
-class AntennaryFuc:
+class AntennaryFuc(MetaProperty):
     """The number of fucoses on the antenna."""
 
     name: ClassVar = "antennaryFuc"
@@ -344,7 +344,7 @@ class AntennaryFuc:
 @register_struc
 @register_comp
 @define
-class TotalFuc:
+class TotalFuc(MetaProperty):
     """Total number of fucoses."""
 
     name: ClassVar = "totalFuc"
@@ -357,7 +357,7 @@ class TotalFuc:
 @register_struc
 @register_comp
 @define
-class HasFuc:
+class HasFuc(MetaProperty):
     """Whether the glycan has any fucoses."""
 
     name: ClassVar = "hasFuc"
@@ -370,7 +370,7 @@ class HasFuc:
 @register_struc
 @register_comp
 @define
-class NoFuc:
+class NoFuc(MetaProperty):
     """Whether the glycan has no fucoses."""
 
     name: ClassVar = "noFuc"
@@ -401,7 +401,7 @@ def _(glycan: Composition) -> int:
 @register_struc
 @register_comp
 @define
-class TotalSia:
+class TotalSia(MetaProperty):
     """The total number of sialic acids."""
 
     name: ClassVar = "totalSia"
@@ -414,7 +414,7 @@ class TotalSia:
 @register_struc
 @register_comp
 @define
-class HasSia:
+class HasSia(MetaProperty):
     """Whether the glycan has any sialic acids."""
 
     name: ClassVar = "hasSia"
@@ -427,7 +427,7 @@ class HasSia:
 @register_struc
 @register_comp
 @define
-class NoSia:
+class NoSia(MetaProperty):
     """Whether the glycan has no sialic acids."""
 
     name: ClassVar = "noSia"
@@ -480,7 +480,7 @@ def _(glycan: Composition) -> int:
 @register_struc
 @register_comp
 @define
-class TotalMan:
+class TotalMan(MetaProperty):
     """The total number of mannoses."""
 
     name: ClassVar = "totalMan"
@@ -493,7 +493,7 @@ class TotalMan:
 @register_struc
 @register_comp
 @define
-class TotalGal:
+class TotalGal(MetaProperty):
     """The total number of galactoses."""
 
     name: ClassVar = "totalGal"
@@ -505,7 +505,7 @@ class TotalGal:
 
 @register_struc
 @define
-class HasPolyLacNAc:
+class HasPolyLacNAc(MetaProperty):
     """Whether the glycan has any poly-LacNAc."""
 
     name: ClassVar = "hasPolyLacNAc"
@@ -579,7 +579,7 @@ def _(glycan: Composition) -> int:
 @register_struc
 @register_comp
 @define
-class A23Sia:
+class A23Sia(MetaProperty):
     """The number of sialic acids with an alpha-2,3 linkage."""
 
     name: ClassVar = "a23Sia"
@@ -592,7 +592,7 @@ class A23Sia:
 @register_struc
 @register_comp
 @define
-class A26Sia:
+class A26Sia(MetaProperty):
     """The number of sialic acids with an alpha-2,6 linkage."""
 
     name: ClassVar = "a26Sia"
@@ -605,7 +605,7 @@ class A26Sia:
 @register_struc
 @register_comp
 @define
-class HasA23Sia:
+class HasA23Sia(MetaProperty):
     """Whether the glycan has any sialic acids with an alpha-2,3 linkage."""
 
     name: ClassVar = "hasa23Sia"
@@ -618,7 +618,7 @@ class HasA23Sia:
 @register_struc
 @register_comp
 @define
-class HasA26Sia:
+class HasA26Sia(MetaProperty):
     """Whether the glycan has any sialic acids with an alpha-2,6 linkage."""
 
     name: ClassVar = "hasa26Sia"
@@ -631,7 +631,7 @@ class HasA26Sia:
 @register_struc
 @register_comp
 @define
-class NoA23Sia:
+class NoA23Sia(MetaProperty):
     """Whether the glycan has no sialic acids with an alpha-2,3 linkage."""
 
     name: ClassVar = "noa23Sia"
@@ -644,7 +644,7 @@ class NoA23Sia:
 @register_struc
 @register_comp
 @define
-class NoA26Sia:
+class NoA26Sia(MetaProperty):
     """Whether the glycan has no sialic acids with an alpha-2,6 linkage."""
 
     name: ClassVar = "noa26Sia"
@@ -656,7 +656,7 @@ class NoA26Sia:
 
 @register_comp
 @define
-class IsHighBranching:
+class IsHighBranching(MetaProperty):
     """Whether the glycan has a high branching."""
 
     name: ClassVar = "isHighBranching"
@@ -668,7 +668,7 @@ class IsHighBranching:
 
 @register_comp
 @define
-class IsLowBranching:
+class IsLowBranching(MetaProperty):
     """Whether the glycan has a low branching."""
 
     name: ClassVar = "isLowBranching"
@@ -679,7 +679,7 @@ class IsLowBranching:
 
 
 def build_meta_property_table(
-    glycan_ids: Iterable[str],
+    glycan_ids: Sequence[str],
     glycans: Iterable[Structure | Composition],
     mode: Literal["composition", "structure"],
     sia_linkage: bool = False,
@@ -702,7 +702,7 @@ def build_meta_property_table(
         mp_series_list.append(
             pd.Series(
                 [MpClass()(glycan) for glycan in glycans],
-                index=glycan_ids,
+                index=pd.Index(glycan_ids),
                 name=mp_name,
             )
         )

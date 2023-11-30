@@ -65,35 +65,6 @@ class SupportGetSet(Protocol):
 
 
 @define
-class ReadOnlyProxy:
-    """A proxy class that prevents modifying the target object.
-
-    This is used to prevent modifying the config and the workflow state
-    in the `_execute` method of a workflow step.
-    """
-
-    obj: SupportGetSet = field()
-
-    def get(self, key: str) -> Any:
-        """Get the value of the key."""
-        return self.obj.get(key)
-
-    def set(self, key: str, value: Any, *, verify: bool = False) -> None:
-        """Set the value of the key.
-
-        This method is used to prevent modifying the target object accidentally.
-        To modify the target object, pass `verify=True` to this method.
-        """
-        if verify:
-            self.obj.set(key, value)
-        else:
-            raise AttributeError("Cannot set attribute without verification.")
-
-    def __getattr__(self, name: str):
-        raise AttributeError(f"Access to method {name} is not allowed")
-
-
-@define
 class WorkflowStep:
     """A workflow step.
 
@@ -145,8 +116,8 @@ class WorkflowStep:
         >>> step.run()
     """
 
-    _config: Config = field(repr=False, converter=ReadOnlyProxy)
-    _state: WorkflowState = field(repr=False, converter=ReadOnlyProxy)
+    _config: Config = field(repr=False)
+    _state: WorkflowState = field(repr=False)
 
     def _check_needed(self) -> bool:
         """Check if the step is needed.
@@ -168,7 +139,7 @@ class WorkflowStep:
             data_produced = self._execute()
             if data_produced is not None:
                 for key, value in data_produced.items():
-                    self._state.set(key, value, verify=True)
+                    self._state.set(key, value)
 
 
 @define
@@ -339,20 +310,21 @@ class LoadGlycansStep(WorkflowStep):
     def _execute(self) -> dict[str, Any]:
         input_df = self._state.get("input_df")
         comp_strings = input_df["Composition"].tolist()
+
         if self._config.get("mode") == "composition":
-            glycans = load_compositions(comp_strings)
+            return {"glycans": load_compositions(comp_strings)}
         elif self._config.get("mode") == "structure":
             if "Structure" in input_df.columns:
-                glycans = load_structures(comp_strings, input_df["Structure"])
+                structures = load_structures(comp_strings, input_df["Structure"])
             elif database := self._config.get("database"):
-                glycans = load_default_structures(database, comp_strings)
+                structures = load_default_structures(database, comp_strings)
             elif structure_file := self._config.get("structure_file"):
-                glycans = read_structure_file(structure_file, comp_strings)
+                structures = read_structure_file(structure_file, comp_strings)
             else:
                 raise ValueError("No structure information provided.")
+            return {"glycans": structures}
         else:
             raise ValueError(f"Invalid mode: {self._config.get('mode')}")
-        return {"glycans": glycans}
 
 
 @Workflow.register_step
@@ -473,7 +445,7 @@ class PostFilteringStep(WorkflowStep):
         if n_samples < 3:
             msg = "Post-filtering will be skipped when there are less than 3 samples."
             print(msg)
-            self._config.set("post_filtering", False, verify=True)
+            self._config.set("post_filtering", False)
             return False
         return True
 
@@ -514,7 +486,7 @@ class WriteOutputStep(WorkflowStep):
 
     def _execute(self) -> None:
         data = {
-            "config": self._config.obj,
+            "config": self._config,
             "derived_traits": self._state.get("derived_trait_df"),
             "direct_traits": self._state.get("abund_df"),
             "meta_prop_df": self._state.get("meta_property_df"),

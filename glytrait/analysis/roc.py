@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score  # type: ignore
 
 
 def calcu_roc_auc(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:

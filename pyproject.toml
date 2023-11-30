@@ -44,6 +44,13 @@ exclude = [
     "glytrait/streamlit",
 ]
 
+[[tool.mypy.overrides]]
+module = "scikit-learn"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pingouin"
+ignore_missing_imports = true
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

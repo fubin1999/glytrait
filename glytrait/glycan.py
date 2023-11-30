@@ -16,9 +16,9 @@ from enum import Enum, auto
 from typing import Literal, NoReturn, Iterable, Optional
 
 from attrs import frozen, field
-from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError
-from glypy.structure.glycan import Glycan as GlypyGlycan
-from glypy.structure.glycan_composition import (
+from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError  # type: ignore
+from glypy.structure.glycan import Glycan as GlypyGlycan  # type: ignore
+from glypy.structure.glycan_composition import (  # type: ignore
     GlycanComposition,
     MonosaccharideResidue,
 )
@@ -131,7 +131,7 @@ class Structure:
                     yield node
         else:  # only is not None
             for node in traversal_func():
-                if get_mono_str(node) in only:
+                if get_mono_str(node) in only:  # type: ignore
                     yield node
 
     def breadth_first_traversal(
@@ -216,15 +216,14 @@ class Composition:
             CompositionParseError: When the string cannot be parsed.
         """
         cls._validate_string(s)
-        # noinspection PyUnreachableCode
         mono_comp: dict[str, int] = {}
         pattern = r"([A-Z])(\d+)"
         for m in re.finditer(pattern, s):
             mono_comp[m.group(1)] = int(m.group(2))
-        return cls(s, mono_comp)
+        return cls(s, mono_comp)  # type: ignore
 
     @staticmethod
-    def _validate_string(s: str) -> NoReturn:
+    def _validate_string(s: str) -> None:
         if s == "":
             raise CompositionParseError("Empty string.")
         pattern = r"^([A-Z]\d+)*$"

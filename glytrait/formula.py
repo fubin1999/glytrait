@@ -17,7 +17,7 @@ import itertools
 import re
 from importlib.resources import files
 from pathlib import Path
-from typing import Literal, Optional, Generator, Iterable
+from typing import Literal, Optional, Generator, Iterable, Annotated
 
 import attrs
 import numpy as np
@@ -45,7 +45,9 @@ def _check_length(instance, attribute, value):
 
 def _check_meta_properties(instance: TraitFormula, attribute, value):
     """Validator for `TraitFormula`."""
-    valid_meta_properties = available_meta_properties(instance.type, sia_linkage=True)
+    valid_meta_properties = available_meta_properties(
+        instance.type, sia_linkage=True  # type: ignore
+    )
     invalid_properties = set(value) - set(valid_meta_properties)
     if len(invalid_properties) > 0:
         raise FormulaError(
@@ -105,6 +107,7 @@ class TraitFormula:
         validator=[_check_length, _check_meta_properties, _check_denominator],
     )
     coefficient: float = field(default=1.0, validator=attrs.validators.gt(0))
+
     sia_linkage: bool = field(init=False, default=False)
     _initialized = field(init=False, default=False)
     _numerator = field(init=False, default=None)
@@ -116,7 +119,7 @@ class TraitFormula:
     def _init_sia_linkage(self) -> bool:
         """Whether the formula contains sia linkage meta properties."""
         sia_meta_properties = available_meta_properties(
-            self.type, sia_linkage=True, only_sia_linkage=True
+            self.type, sia_linkage=True, only_sia_linkage=True  # type: ignore
         )
         for prop in itertools.chain(
             self.numerator_properties, self.denominator_properties
@@ -152,7 +155,7 @@ class TraitFormula:
     def _initialize(
         meta_property_table: pd.DataFrame, properties: list[str]
     ) -> NDArray:
-        return meta_property_table[properties].prod(axis=1)
+        return np.asarray(meta_property_table[properties].prod(axis=1))
 
     def calcu_trait(self, abundance_table: pd.DataFrame) -> NDArray:
         """Calculate the trait.
@@ -327,8 +330,8 @@ def _load_formulas(
                     description=description,
                     name=name,
                     type=type,
-                    numerator_properties=num_prop,
-                    denominator_properties=den_prop,
+                    numerator_properties=num_prop,  # type: ignore
+                    denominator_properties=den_prop,  # type: ignore
                     coefficient=coef,
                 )
             except FormulaError as e:
@@ -395,7 +398,7 @@ def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
     return name, num_prop, den_prop, coef
 
 
-def save_trait_formula_template(dirpath: str) -> None:
+def save_trait_formula_template(dirpath: str | Path) -> None:
     """Copy the template of trait formula file to the given path.
 
     Args:
@@ -409,16 +412,15 @@ def save_trait_formula_template(dirpath: str) -> None:
         f.write(content)
 
 
-def save_builtin_formula(dirpath: str) -> None:
+def save_builtin_formula(dirpath: str | Path) -> None:
     """Copy the builtin formula file to the given path.
 
     Args:
         dirpath (str): The path to save the built-in formula file.
     """
-    dirpath = Path(dirpath)
-    dirpath.mkdir(parents=True, exist_ok=True)
-    struc_file = dirpath / "struc_builtin_formulas.txt"
-    comp_file = dirpath / "comp_builtin_formulas.txt"
+    Path(dirpath).mkdir(parents=True, exist_ok=True)
+    struc_file = Path(dirpath) / "struc_builtin_formulas.txt"
+    comp_file = Path(dirpath) / "comp_builtin_formulas.txt"
     struc_content = default_struc_formula_file.open("r").read()
     comp_content = default_comp_formula_file.open("r").read()
     with open(struc_file, "w", encoding="utf8") as f:
