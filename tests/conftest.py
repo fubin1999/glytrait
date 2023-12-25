@@ -21,6 +21,6 @@ def make_structure():
 @pytest.fixture
 def make_composition():
     def _make_composition(string):
-        return glyc.Composition.from_string(string)
+        return glyc.Composition.from_string(string, string)
 
     return _make_composition

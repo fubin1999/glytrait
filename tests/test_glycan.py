@@ -158,27 +158,27 @@ class TestComposition:
         ],
     )
     def test_from_string(self, comp, expected):
-        result = glyc.Composition.from_string(comp)
+        result = glyc.Composition.from_string(comp, comp)
         assert result.asdict() == expected
 
     def test_from_string_name(self):
-        result = glyc.Composition.from_string("H5N4F1S1")
-        assert result.name == "H5N4F1S1"
+        result = glyc.Composition.from_string("G", "H5N4F1S1")
+        assert result.name == "G"
 
     @pytest.mark.parametrize("s", ["H5N4FS", "1HN4", "abc"])
     def test_from_string_invalid(self, s):
         with pytest.raises(CompositionParseError) as excinfo:
-            glyc.Composition.from_string(s)
+            glyc.Composition.from_string(s, s)
         assert f"Invalid composition: {s}." in str(excinfo.value)
 
     def test_from_string_invalid_mono(self):
         with pytest.raises(CompositionParseError) as excinfo:
-            glyc.Composition.from_string("H5N4F1P1")
+            glyc.Composition.from_string("G", "H5N4F1P1")
         assert "Unknown monosaccharide: P" in str(excinfo.value)
 
     def test_from_string_emtpy(self):
         with pytest.raises(CompositionParseError) as excinfo:
-            glyc.Composition.from_string("")
+            glyc.Composition.from_string("G", "")
         assert "Empty string." in str(excinfo.value)
 
     def test_get(self):

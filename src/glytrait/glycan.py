@@ -203,11 +203,12 @@ class Composition:
                 raise CompositionParseError(f"Monosacharride must be above 0: {k}={v}.")
 
     @classmethod
-    def from_string(cls, s: str) -> Composition:
+    def from_string(cls, name: str, string: str) -> Composition:
         """Create a composition from a string.
 
         Args:
-            s (str): The string, e.g. H5N4F1S1.
+            name (str): The name of the glycan.
+            string (str): The string representation of the composition.
 
         Returns:
             Composition: The composition.
@@ -215,12 +216,12 @@ class Composition:
         Raises:
             CompositionParseError: When the string cannot be parsed.
         """
-        cls._validate_string(s)
+        cls._validate_string(string)
         mono_comp: dict[str, int] = {}
         pattern = r"([A-Z])(\d+)"
-        for m in re.finditer(pattern, s):
+        for m in re.finditer(pattern, string):
             mono_comp[m.group(1)] = int(m.group(2))
-        return cls(s, mono_comp)  # type: ignore
+        return cls(name, mono_comp)  # type: ignore
 
     @staticmethod
     def _validate_string(s: str) -> None:
@@ -273,4 +274,4 @@ def load_compositions(compositions: Iterable[str]) -> list[Composition]:
     Returns:
         list[Composition]: The compositions.
     """
-    return [Composition.from_string(s) for s in compositions]
+    return [Composition.from_string(s, s) for s in compositions]
