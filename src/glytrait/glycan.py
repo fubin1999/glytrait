@@ -200,6 +200,18 @@ class Composition(Mapping[str, int]):
         Composition(name='G', comp={'H': 5, 'N': 4, 'F': 1, 'S': 1})
         >>> str(comp)
         "H5N4F1S1"
+        >>> comp["H"]
+        5
+        >>> comp["H"] = 6
+        # raise TypeError (unchangeable)
+        >>> len(comp)
+        11  # 5 + 4 + 1 + 1
+        >>> for mono, num in comp.items():
+        ...     print(mono, num)
+        H 5
+        N 4
+        F 1
+        S 1
     """
 
     name: str = field()
@@ -208,6 +220,7 @@ class Composition(Mapping[str, int]):
     def __attrs_post_init__(self):
         self._validate_comp()
         self._remove_zero()
+        self._reorder()
 
     def _validate_comp(self) -> None:
         for k, v in self._comp.items():
@@ -223,6 +236,13 @@ class Composition(Mapping[str, int]):
                 to_delete.add(k)
         for k in to_delete:
             del self._comp[k]
+
+    def _reorder(self) -> None:
+        new_comp: dict[str, int] = {}
+        for mono in VALID_MONOS:
+            if mono in self._comp:
+                new_comp[mono] = self._comp[mono]
+        object.__setattr__(self, "_comp", new_comp)
 
     @classmethod
     def from_string(cls, name: str, string: str) -> Composition:
@@ -266,9 +286,8 @@ class Composition(Mapping[str, int]):
 
     def __str__(self) -> str:
         mono_strings: list[str] = []
-        for mono in VALID_MONOS:
-            if self._comp.get(mono, 0) > 0:
-                mono_strings.append(f"{mono}{self._comp[mono]}")
+        for mono, num in self._comp.items():
+            mono_strings.append(f"{mono}{num}")
         return "".join(mono_strings)
 
 
