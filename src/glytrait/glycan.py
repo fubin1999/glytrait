@@ -197,7 +197,7 @@ class Composition(Mapping[str, int]):
     Examples:
         >>> comp = Composition("G", {"H": 5, "N": 4, "F": 1, "S": 1})
         >>> comp
-        Composition(name='G', _comp={'H': 5, 'N': 4, 'F': 1, 'S': 1})
+        Composition(name='G', comp={'H': 5, 'N': 4, 'F': 1, 'S': 1})
         >>> str(comp)
         "H5N4F1S1"
     """
@@ -205,14 +205,24 @@ class Composition(Mapping[str, int]):
     name: str = field()
     _comp: dict[str, int] = field(converter=dict, hash=False)
 
-    @_comp.validator
-    def _check_comp(self, attribute, value):
-        """Check the composition."""
-        for k, v in value.items():
+    def __attrs_post_init__(self):
+        self._validate_comp()
+        self._remove_zero()
+
+    def _validate_comp(self) -> None:
+        for k, v in self._comp.items():
             if k not in VALID_MONOS:
                 raise CompositionParseError(f"Unknown monosaccharide: {k}.")
             if v < 0:
                 raise CompositionParseError(f"Monosacharride must be above 0: {k}={v}.")
+
+    def _remove_zero(self) -> None:
+        to_delete: set[str] = set()
+        for k, v in self._comp.items():
+            if v == 0:
+                to_delete.add(k)
+        for k in to_delete:
+            del self._comp[k]
 
     @classmethod
     def from_string(cls, name: str, string: str) -> Composition:
@@ -228,20 +238,16 @@ class Composition(Mapping[str, int]):
         Raises:
             CompositionParseError: When the string cannot be parsed.
         """
-        cls._validate_string(string)
+        if string == "":
+            raise CompositionParseError("Empty string.")
+        pattern = r"^([A-Z]\d+)*$"
+        if not re.fullmatch(pattern, string):
+            raise CompositionParseError(f"Invalid composition: {string}.")
         mono_comp: dict[str, int] = {}
         pattern = r"([A-Z])(\d+)"
         for m in re.finditer(pattern, string):
             mono_comp[m.group(1)] = int(m.group(2))
         return cls(name, mono_comp)  # type: ignore
-
-    @staticmethod
-    def _validate_string(s: str) -> None:
-        if s == "":
-            raise CompositionParseError("Empty string.")
-        pattern = r"^([A-Z]\d+)*$"
-        if not re.fullmatch(pattern, s):
-            raise CompositionParseError(f"Invalid composition: {s}.")
 
     def __getitem__(self, __key: str) -> int:
         try:

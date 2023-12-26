@@ -137,6 +137,19 @@ class TestGlycan:
 
 
 class TestComposition:
+    @pytest.mark.parametrize(
+        "d, expected",
+        [
+            (dict(H=5, N=4, F=1, S=1), "H5N4F1S1"),
+            (dict(H=5, N=4, F=1), "H5N4F1"),
+            (dict(N=4, H=5, F=1), "H5N4F1"),  # order should not matter
+            (dict(N=4, H=5, F=0), "H5N4"),  # skip 0
+        ],
+    )
+    def test_init(self, d, expected):
+        comp = glyc.Composition("G", d)
+        assert str(comp) == expected
+
     def test_init_unknown_mono(self):
         with pytest.raises(CompositionParseError) as excinfo:
             glyc.Composition("H5N4P1", dict(H=5, N=4, P=1))
@@ -198,18 +211,6 @@ class TestComposition:
     def test_iter(self):
         comp = glyc.Composition("G", dict(H=5, N=4, F=1))
         assert list(comp) == ["H", "N", "F"]
-
-    @pytest.mark.parametrize(
-        "d, expected",
-        [
-            (dict(H=5, N=4, F=1, S=1), "H5N4F1S1"),
-            (dict(H=5, N=4, F=1), "H5N4F1"),
-            (dict(N=4, H=5, F=1), "H5N4F1"),  # order should not matter
-        ],
-    )
-    def test_str(self, d, expected):
-        comp = glyc.Composition("G", d)
-        assert str(comp) == expected
 
 
 def test_load_glycans():
