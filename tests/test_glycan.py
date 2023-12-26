@@ -199,6 +199,18 @@ class TestComposition:
         comp = glyc.Composition("G", dict(H=5, N=4, F=1))
         assert list(comp) == ["H", "N", "F"]
 
+    @pytest.mark.parametrize(
+        "d, expected",
+        [
+            (dict(H=5, N=4, F=1, S=1), "H5N4F1S1"),
+            (dict(H=5, N=4, F=1), "H5N4F1"),
+            (dict(N=4, H=5, F=1), "H5N4F1"),  # order should not matter
+        ],
+    )
+    def test_str(self, d, expected):
+        comp = glyc.Composition("G", d)
+        assert str(comp) == expected
+
 
 def test_load_glycans():
     names = ["test_1", "test_2", "test_3"]

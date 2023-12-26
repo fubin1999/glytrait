@@ -13,9 +13,9 @@ from __future__ import annotations
 import re
 from collections.abc import Generator, Mapping, Iterator
 from enum import Enum, auto
-from typing import Literal, NoReturn, Iterable, Optional, Final
+from typing import Literal, Iterable, Optional, Final
 
-from attrs import frozen, field
+from attrs import define, frozen, field
 from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError  # type: ignore
 from glypy.structure.glycan import Glycan as GlypyGlycan  # type: ignore
 from glypy.structure.glycan_composition import (  # type: ignore
@@ -177,18 +177,29 @@ class Structure:
         return self.composition.get(key, default)
 
 
-VALID_MONOS: Final = {"H", "N", "F", "S", "L", "E"}
+VALID_MONOS: Final = ["H", "N", "F", "S", "L", "E"]
+# The order here are used in the string representation of a composition.
 
 
 @frozen
 class Composition(Mapping[str, int]):
     """A glycan composition.
 
+    Valid monosaccharides are: H, N, F, S, L, E.
+    Numbers of monosaccharides must be above 0.
+
     Attributes:
         name (str): The name of the glycan.
 
     Methods:
         from_string: classmethod to build a `Composition` instance from a string.
+
+    Examples:
+        >>> comp = Composition("G", {"H": 5, "N": 4, "F": 1, "S": 1})
+        >>> comp
+        Composition(name='G', _comp={'H': 5, 'N': 4, 'F': 1, 'S': 1})
+        >>> str(comp)
+        "H5N4F1S1"
     """
 
     name: str = field()
@@ -246,6 +257,13 @@ class Composition(Mapping[str, int]):
 
     def __iter__(self) -> Iterator[str]:
         return iter(self._comp)
+
+    def __str__(self) -> str:
+        mono_strings: list[str] = []
+        for mono in VALID_MONOS:
+            if self._comp.get(mono, 0) > 0:
+                mono_strings.append(f"{mono}{self._comp[mono]}")
+        return "".join(mono_strings)
 
 
 def get_mono_str(mono: MonosaccharideResidue) -> str:
