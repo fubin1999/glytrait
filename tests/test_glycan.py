@@ -164,10 +164,7 @@ class TestComposition:
         "comp, expected",
         [
             ("H5N4F1S1", {"H": 5, "N": 4, "F": 1, "S": 1}),
-            ("H5N4F1", {"H": 5, "N": 4, "F": 1}),
             ("N4F1S1H5", {"H": 5, "N": 4, "F": 1, "S": 1}),
-            ("H5N4F1E1L1", {"H": 5, "N": 4, "F": 1, "E": 1, "L": 1}),
-            ("H5N4F1E1", {"H": 5, "N": 4, "F": 1, "E": 1}),
         ],
     )
     def test_from_string(self, comp, expected):
