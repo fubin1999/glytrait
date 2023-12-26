@@ -11,9 +11,9 @@ Functions:
 from __future__ import annotations
 
 import re
-from collections.abc import Generator
+from collections.abc import Generator, Mapping, Iterator
 from enum import Enum, auto
-from typing import Literal, NoReturn, Iterable, Optional
+from typing import Literal, NoReturn, Iterable, Optional, Final
 
 from attrs import frozen, field
 from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError  # type: ignore
@@ -177,8 +177,11 @@ class Structure:
         return self.composition.get(key, default)
 
 
+VALID_MONOS: Final = {"H", "N", "F", "S", "L", "E"}
+
+
 @frozen
-class Composition:
+class Composition(Mapping[str, int]):
     """A glycan composition.
 
     Attributes:
@@ -186,8 +189,6 @@ class Composition:
 
     Methods:
         from_string: classmethod to build a `Composition` instance from a string.
-        asdict: convert the `Composition` instance into a dict.
-        get: get the number of the given monosaccharide.
     """
 
     name: str = field()
@@ -197,7 +198,7 @@ class Composition:
     def _check_comp(self, attribute, value):
         """Check the composition."""
         for k, v in value.items():
-            if k not in {"H", "N", "F", "S", "L", "E"}:
+            if k not in VALID_MONOS:
                 raise CompositionParseError(f"Unknown monosaccharide: {k}.")
             if v < 0:
                 raise CompositionParseError(f"Monosacharride must be above 0: {k}={v}.")
@@ -231,13 +232,20 @@ class Composition:
         if not re.fullmatch(pattern, s):
             raise CompositionParseError(f"Invalid composition: {s}.")
 
-    def asdict(self) -> dict[str, int]:
-        """Return the composition as a dict."""
-        return self._comp.copy()
+    def __getitem__(self, __key: str) -> int:
+        try:
+            return self._comp[__key]
+        except KeyError:
+            if __key in VALID_MONOS:
+                return 0
+            else:
+                raise
 
-    def get(self, key: str, default: int = 0):
-        """Get the number of the given monosaccharide."""
-        return self._comp.get(key, default)
+    def __len__(self) -> int:
+        return sum(self._comp.values())
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._comp)
 
 
 def get_mono_str(mono: MonosaccharideResidue) -> str:

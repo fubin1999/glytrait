@@ -159,7 +159,7 @@ class TestComposition:
     )
     def test_from_string(self, comp, expected):
         result = glyc.Composition.from_string(comp, comp)
-        assert result.asdict() == expected
+        assert dict(result) == expected
 
     def test_from_string_name(self):
         result = glyc.Composition.from_string("G", "H5N4F1S1")
@@ -181,12 +181,23 @@ class TestComposition:
             glyc.Composition.from_string("G", "")
         assert "Empty string." in str(excinfo.value)
 
-    def test_get(self):
-        comp = glyc.Composition("H5N4F1S1", dict(H=5, N=4, F=1, S=1))
-        assert comp.get("H") == 5
-        assert comp.get("F") == 1
-        assert comp.get("S") == 1
-        assert comp.get("N") == 4
+    def test_getitem(self):
+        comp = glyc.Composition("G", dict(H=5, N=4, F=1))
+        assert comp["H"] == 5
+        assert comp["N"] == 4
+        assert comp["F"] == 1
+        assert comp["S"] == 0
+        assert comp["L"] == 0
+        with pytest.raises(KeyError):
+            comp["P"]
+
+    def test_len(self):
+        comp = glyc.Composition("G", dict(H=5, N=4, F=1))
+        assert len(comp) == 10
+
+    def test_iter(self):
+        comp = glyc.Composition("G", dict(H=5, N=4, F=1))
+        assert list(comp) == ["H", "N", "F"]
 
 
 def test_load_glycans():
