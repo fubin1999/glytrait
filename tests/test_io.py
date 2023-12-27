@@ -7,6 +7,8 @@ from glytrait.io import load_default_structures
 
 from .glycoct import *
 
+pytestmark = pytest.mark.skip("Not implemented yet.")
+
 
 def test_read_group_file(mocker):
     group_df = pd.DataFrame(

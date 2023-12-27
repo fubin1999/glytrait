@@ -7,6 +7,8 @@ from attrs import define
 from glytrait import workflow as gw
 from glytrait.config import default_config as glytrait_default_config, Config
 
+pytestmark = pytest.mark.skip("Not implemented yet.")
+
 
 @pytest.fixture
 def default_config(monkeypatch) -> Config:

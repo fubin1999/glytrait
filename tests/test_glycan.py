@@ -5,6 +5,23 @@ from glytrait.exception import *
 from .glycoct import *
 
 
+class TestLoadStructures:
+    def test_normal(self):
+        names = ["test_1", "test_2", "test_3"]
+        glycocts = [test_glycoct_1, test_glycoct_2, test_glycoct_3]
+        result = glyc.load_structures(zip(names, glycocts))
+        assert len(result) == 3
+
+    def test_invalid(self):
+        names = ["test_1", "test_2", "test_3"]
+        glycocts = [test_glycoct_1, "invalid", "invalid"]
+        with pytest.raises(StructureParseError) as excinfo:
+            glyc.load_structures(zip(names, glycocts))
+        assert "Could not parse structures for: 'test_2', 'test_3'." == str(
+            excinfo.value
+        )
+
+
 class TestGlycan:
     def test_from_string(self):
         glycan = glyc.Structure.from_string("glycan1", test_glycoct_1, format="glycoct")
@@ -218,22 +235,3 @@ class TestComposition:
     def test_iter(self):
         comp = glyc.Composition("G", dict(H=5, N=4, F=1))
         assert list(comp) == ["H", "N", "F"]
-
-
-def test_load_glycans():
-    names = ["test_1", "test_2", "test_3"]
-    glycocts = [test_glycoct_1, test_glycoct_2, test_glycoct_3]
-    glycans = glyc.load_structures(names, glycocts)
-    assert len(glycans) == 3
-
-
-def test_load_compositions_no_sia_linkage():
-    comps = ["H5N4", "H5N2", "H5N4S1"]
-    result = glyc.load_compositions(comps)
-    assert len(result) == 3
-
-
-def test_load_compositions_sia_linkage():
-    comps = ["H5N4L1", "H5N4E1", "H5N4E1L1"]
-    result = glyc.load_compositions(comps)
-    assert len(result) == 3

@@ -25,6 +25,36 @@ from glypy.structure.glycan_composition import (  # type: ignore
 from glytrait.exception import *
 
 
+def load_structures(__iter: Iterable[tuple[str, str]]) -> list[Structure]:
+    """Load glycan structures from a list of structure strings.
+
+    Args:
+        An iterable of tuples of (name, structure_string).
+
+    Returns:
+        A list of `Structure` instances.
+
+    Raises:
+        StructureParseError: When the string cannot be parsed.
+            The names of the structures that cannot be parsed are included
+            in the error message.
+    """
+    failed_names: list[str] = []
+    structures: list[Structure] = []
+    for name, string in __iter:
+        try:
+            structure = Structure.from_string(name, string)
+        except StructureParseError:
+            failed_names.append(name)
+        else:
+            structures.append(structure)
+    if failed_names:
+        failed_names_str = ", ".join(f"'{name}'" for name in failed_names)
+        msg = f"Could not parse structures for: {failed_names_str}."
+        raise StructureParseError(msg)
+    return structures
+
+
 @frozen
 class Structure:
     """The structure of a glycan.
@@ -322,19 +352,6 @@ def get_mono_str(mono: MonosaccharideResidue) -> str:
         mono (glypy.MonosaccharideResidue): The monosaccharide residue.
     """
     return MonosaccharideResidue.from_monosaccharide(mono).name()
-
-
-def load_structures(names: Iterable[str], structures: Iterable[str]) -> list[Structure]:
-    """Load structures from a list of structures.
-
-    Args:
-        names (Iterable[str]): The names of the glycans.
-        structures (Iterable[str]): The structure strings of the glycans.
-
-    Returns:
-        list[Structure]: The glycan structures.
-    """
-    return [Structure.from_string(n, s) for n, s in zip(names, structures)]
 
 
 def load_compositions(compositions: Iterable[str]) -> list[Composition]:
