@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from glytrait.load_data import load_abundance_table, load_structures
+from glytrait.load_data import load_abundance_table, load_structures, load_compositions
 from glytrait.exception import FileTypeError, FileFormatError, StructureParseError
 
 
@@ -138,3 +138,73 @@ class TestLoadStructures:
         df.to_csv(filepath, index=False)
         with pytest.raises(FileFormatError):
             load_structures(filepath)
+
+
+@pytest.fixture
+def composition_file(clean_dir) -> str:
+    filepath = str(clean_dir / "composition.csv")
+    df = pd.DataFrame(
+        {
+            "GlycanID": ["G1", "G2", "G3"],
+            "Composition": ["comp1", "comp2", "comp3"],
+        }
+    )
+    df.to_csv(filepath, index=False)
+    return filepath
+
+
+@pytest.fixture
+def patch_composition_from_string(monkeypatch):
+    def mock_return(name, string):
+        if string == "invalid":
+            raise StructureParseError
+        return string
+
+    monkeypatch.setattr("glytrait.glycan.Composition.from_string", mock_return)
+
+
+@pytest.mark.usefixtures("patch_composition_from_string")
+class TestLoadCompositions:
+    def test_basic(self, composition_file):
+        result = load_compositions(composition_file)
+        assert result == {
+            "G1": "comp1",
+            "G2": "comp2",
+            "G3": "comp3",
+        }
+
+    def test_not_csv(self, clean_dir):
+        filepath = clean_dir / "composition.txt"
+        filepath.touch()
+        with pytest.raises(FileTypeError):
+            load_compositions(filepath)
+
+    def test_not_exist(self, clean_dir):
+        filepath = clean_dir / "composition.csv"
+        with pytest.raises(FileNotFoundError):
+            load_compositions(filepath)
+
+    @pytest.mark.parametrize("column", ["GlycanID", "Composition"])
+    def test_missing_columns(self, composition_file, clean_dir, column):
+        df = pd.read_csv(composition_file)
+        df = df.drop(column, axis=1)
+        filepath = str(clean_dir / "composition.csv")
+        df.to_csv(filepath, index=False)
+        with pytest.raises(FileFormatError):
+            load_compositions(filepath)
+
+    def test_duplicated_glycan_ids(self, composition_file, clean_dir):
+        df = pd.read_csv(composition_file)
+        df.loc[2, "GlycanID"] = "G1"
+        filepath = str(clean_dir / "composition.csv")
+        df.to_csv(filepath, index=False)
+        with pytest.raises(FileFormatError):
+            load_compositions(filepath)
+
+    def test_duplicated_compositions(self, composition_file, clean_dir):
+        df = pd.read_csv(composition_file)
+        df.loc[2, "Composition"] = "comp1"
+        filepath = str(clean_dir / "composition.csv")
+        df.to_csv(filepath, index=False)
+        with pytest.raises(FileFormatError):
+            load_compositions(filepath)

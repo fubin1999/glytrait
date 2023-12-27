@@ -6,7 +6,12 @@ from typing import NewType
 import pandas as pd
 
 from glytrait.exception import FileTypeError, FileFormatError
-from glytrait.glycan import parse_structures, StructureDict
+from glytrait.glycan import (
+    parse_structures,
+    StructureDict,
+    parse_compositions,
+    CompositionDict,
+)
 
 AbundanceTable = NewType("AbundanceTable", pd.DataFrame)
 """Abundance table type.
@@ -69,6 +74,37 @@ def load_structures(filepath: str) -> StructureDict:
     _check_duplicated_items("glycan ids", ids)
     _check_duplicated_items("glycan structures", strings)
     return parse_structures(zip(ids, strings))
+
+
+def load_compositions(filepath: str) -> CompositionDict:
+    """Load compositions from filepath.
+
+    Args:
+        filepath: Path to compositions file.
+
+    Returns:
+        CompositionDict: A dict with glycan ids with keys and
+            `Composition` objects as values.
+
+    Raises:
+        FileTypeError: If the file is not a csv file.
+        FileNotFoundError: If the file does not exist.
+        FileFormatError: If the file format is incorrect.
+            This includes: (1) the file has duplicated glycan ids; (2) the file has
+            duplicated compositions; (3) the file does not have a "GlycanID" column
+            or a "Composition" column; (4) the file has extra columns.
+        CompositionParseError: If the composition cannot be parsed.
+            All glycan ids not parsed will be listed in the error message.
+    """
+    _check_file_type(filepath, "csv")
+    _check_exist(filepath)
+    _check_columns(
+        "glycan compositions", filepath, ["GlycanID", "Composition"], only=True
+    )
+    ids, strings = _load_glycans(filepath, "Composition")
+    _check_duplicated_items("glycan ids", ids)
+    _check_duplicated_items("glycan compositions", strings)
+    return parse_compositions(zip(ids, strings))
 
 
 def _check_file_type(filepath: str, file_type: str) -> None:
