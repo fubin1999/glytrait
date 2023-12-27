@@ -24,7 +24,7 @@ from openpyxl.worksheet.worksheet import Worksheet
 
 import glytrait
 from glytrait.exception import *
-from glytrait.glycan import Structure, load_structures
+from glytrait.glycan import Structure, parse_structures
 
 
 def check_input_file(df: pd.DataFrame) -> None:
@@ -124,13 +124,13 @@ def _(file, compositions: Iterable[str]) -> list[Structure]:
         struc_strings = _read_structure_string_from_directory(file, compositions)
     else:
         struc_strings = _read_structure_string_from_csv(file, compositions)
-    return load_structures(compositions, struc_strings)
+    return parse_structures(compositions, struc_strings)
 
 
 @read_structure_file.register(pd.DataFrame)
 def _(df, compositions: Iterable[str]) -> list[Structure]:
     struc_strings = _read_structure_string_from_df(df, compositions)
-    return load_structures(compositions, struc_strings)
+    return parse_structures(compositions, struc_strings)
 
 
 def _read_structure_string_from_csv(

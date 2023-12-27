@@ -29,8 +29,8 @@ from glytrait.exception import (
 )
 
 
-def load_structures(__iter: Iterable[tuple[str, str]]) -> list[Structure]:
-    """Load glycan structures from a list of structure strings.
+def parse_structures(__iter: Iterable[tuple[str, str]]) -> list[Structure]:
+    """Parse glycan structures from a list of structure strings.
 
     Args:
         An iterable of tuples of (name, structure_string).
@@ -49,8 +49,8 @@ def load_structures(__iter: Iterable[tuple[str, str]]) -> list[Structure]:
         raise StructureParseError(f"Could not parse structures for: {exc}.")
 
 
-def load_compositions(__iter: Iterable[tuple[str, str]]) -> list[Composition]:
-    """Load glycan compositions from a list of composition strings.
+def parse_compositions(__iter: Iterable[tuple[str, str]]) -> list[Composition]:
+    """Parse glycan compositions from a list of composition strings.
 
     Args:
         An iterable of tuples of (name, composition_string).

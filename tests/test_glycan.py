@@ -9,14 +9,14 @@ class TestLoadStructures:
     def test_normal(self):
         names = ["test_1", "test_2", "test_3"]
         glycocts = [test_glycoct_1, test_glycoct_2, test_glycoct_3]
-        result = glyc.load_structures(zip(names, glycocts))
+        result = glyc.parse_structures(zip(names, glycocts))
         assert len(result) == 3
 
     def test_invalid(self):
         names = ["test_1", "test_2", "test_3"]
         glycocts = [test_glycoct_1, "invalid", "invalid"]
         with pytest.raises(StructureParseError) as excinfo:
-            glyc.load_structures(zip(names, glycocts))
+            glyc.parse_structures(zip(names, glycocts))
         msg = "Could not parse structures for: 'test_2', 'test_3'."
         assert msg == str(excinfo.value)
 
@@ -25,14 +25,14 @@ class TestLoadCompositions:
     def test_normal(self):
         names = ["test_1", "test_2", "test_3"]
         comps = ["H5N4F1S1", "H5N4F1S1", "H5N4F1S1"]
-        result = glyc.load_compositions(zip(names, comps))
+        result = glyc.parse_compositions(zip(names, comps))
         assert len(result) == 3
 
     def test_invalid(self):
         names = ["test_1", "test_2", "test_3"]
         comps = ["H5N4F1S1", "invalid", "invalid"]
         with pytest.raises(CompositionParseError) as excinfo:
-            glyc.load_compositions(zip(names, comps))
+            glyc.parse_compositions(zip(names, comps))
         msg = "Could not parse compositions for: 'test_2', 'test_3'."
         assert msg == str(excinfo.value)
 
