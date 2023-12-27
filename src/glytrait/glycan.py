@@ -195,23 +195,28 @@ class Composition(Mapping[str, int]):
         from_string: classmethod to build a `Composition` instance from a string.
 
     Examples:
-        >>> comp = Composition("G", {"H": 5, "N": 4, "F": 1, "S": 1})
+        >>> comp = Composition("G", {"H": 5, "N": 4, "F": 1})
         >>> comp
-        Composition(name='G', comp={'H': 5, 'N': 4, 'F': 1, 'S': 1})
+        Composition(name='G', comp={'H': 5, 'N': 4, 'F': 1})
         >>> str(comp)
-        "H5N4F1S1"
+        "H5N4F1"
         >>> comp["H"]
         5
+        >>> comp["S"]
+        0  # note that 'S' is not used when initialization
+        >>> comp["P"]
+        # raise KeyError
         >>> comp["H"] = 6
         # raise TypeError (unchangeable)
+        >>> comp.get("P", default=0)
+        0  # default value
         >>> len(comp)
-        11  # 5 + 4 + 1 + 1
+        10  # 5 + 4 + 1
         >>> for mono, num in comp.items():
         ...     print(mono, num)
         H 5
         N 4
         F 1
-        S 1
     """
 
     name: str = field()
