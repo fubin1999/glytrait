@@ -3,7 +3,10 @@
 Functions:
     build_meta_property_table: Build a table of meta-properties for glycans.
 """
+from __future__ import annotations
+
 from collections.abc import Iterable, Sequence
+from enum import Enum, auto
 from functools import singledispatch, cache
 from typing import Literal, Protocol, ClassVar, Type
 
@@ -12,7 +15,15 @@ from attrs import define
 from glypy import Monosaccharide  # type: ignore
 
 from glytrait.exception import SiaLinkageError
-from glytrait.glycan import Structure, Composition, GlycanType, get_mono_str
+from glytrait.glycan import Structure, Composition, get_mono_str
+
+
+class GlycanType(Enum):
+    """The type of glycan."""
+
+    COMPLEX = auto()
+    HIGH_MANNOSE = auto()
+    HYBRID = auto()
 
 
 class MetaProperty(Protocol):
@@ -308,13 +319,13 @@ def _count_fuc(glycan) -> int:
 @_count_fuc.register
 @cache
 def _(glycan: Structure) -> int:
-    return glycan.get("Fuc")
+    return glycan.get("Fuc", 0)
 
 
 @_count_fuc.register
 @cache
 def _(glycan: Composition) -> int:
-    return glycan.get("F")
+    return glycan.get("F", 0)
 
 
 @register_struc
@@ -452,8 +463,8 @@ def _(glycan: Structure) -> int:
 @_count_gal.register
 @cache
 def _(glycan: Composition) -> int:
-    n_H = glycan.get("H")
-    n_N = glycan.get("N")
+    n_H = glycan.get("H", 0)
+    n_N = glycan.get("N", 0)
     if n_H >= 4 and n_N >= n_H - 1:
         return n_H - 3
     return 0

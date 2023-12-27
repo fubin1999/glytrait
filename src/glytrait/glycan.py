@@ -12,10 +12,9 @@ from __future__ import annotations
 
 import re
 from collections.abc import Generator, Mapping, Iterator
-from enum import Enum, auto
 from typing import Literal, Iterable, Optional, Final
 
-from attrs import define, frozen, field
+from attrs import frozen, field
 from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError  # type: ignore
 from glypy.structure.glycan import Glycan as GlypyGlycan  # type: ignore
 from glypy.structure.glycan_composition import (  # type: ignore
@@ -24,14 +23,6 @@ from glypy.structure.glycan_composition import (  # type: ignore
 )
 
 from glytrait.exception import *
-
-
-class GlycanType(Enum):
-    """The type of glycan."""
-
-    COMPLEX = auto()
-    HIGH_MANNOSE = auto()
-    HYBRID = auto()
 
 
 @frozen
@@ -178,6 +169,8 @@ class Structure:
 
 
 VALID_MONOS: Final = ["H", "N", "F", "S", "L", "E"]
+
+
 # The order here are used in the string representation of a composition.
 
 
