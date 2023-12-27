@@ -160,6 +160,12 @@ class TestComposition:
             glyc.Composition("H5N4F-1", dict(H=5, N=4, F=-1))
         assert "Monosacharride must be above 0: F=-1." in str(excinfo.value)
 
+    def test_init_S_and_LE(self):
+        """S must not be with L or E in a glycan composition."""
+        with pytest.raises(CompositionParseError) as excinfo:
+            glyc.Composition("H5N4F1S1", dict(H=5, N=4, F=1, S=1, L=1))
+        assert "S must not be with L or E." in str(excinfo.value)
+
     @pytest.mark.parametrize(
         "comp, expected",
         [

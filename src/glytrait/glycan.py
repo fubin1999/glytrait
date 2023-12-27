@@ -186,6 +186,7 @@ class Composition(Mapping[str, int]):
     """A glycan composition.
 
     Valid monosaccharides are: H, N, F, S, L, E.
+    S must not be with L or E.
     Numbers of monosaccharides must be above 0.
 
     Attributes:
@@ -217,6 +218,8 @@ class Composition(Mapping[str, int]):
         H 5
         N 4
         F 1
+        >>> Composition("G", {"H": 5, "N":4, "S": 1, "L": 1})
+        # raise CompositionParseError (S must not be with L or E)
     """
 
     name: str = field()
@@ -228,11 +231,30 @@ class Composition(Mapping[str, int]):
         self._reorder()
 
     def _validate_comp(self) -> None:
-        for k, v in self._comp.items():
+        """Validate the composition."""
+        self._validate_mono()
+        self._validate_num()
+        self._validate_sia()
+
+    def _validate_mono(self) -> None:
+        """Make sure that the monosaccharides are valid."""
+        for k in self._comp:
             if k not in VALID_MONOS:
                 raise CompositionParseError(f"Unknown monosaccharide: {k}.")
+
+    def _validate_num(self) -> None:
+        """Make sure that the numbers are valid."""
+        for k, v in self._comp.items():
             if v < 0:
                 raise CompositionParseError(f"Monosacharride must be above 0: {k}={v}.")
+
+    def _validate_sia(self) -> None:
+        """Make sure that S is not with L or E."""
+        has_S = self._comp.get("S", 0) > 0
+        has_L = self._comp.get("L", 0) > 0
+        has_E = self._comp.get("E", 0) > 0
+        if has_S and (has_L or has_E):
+            raise CompositionParseError("S must not be with L or E.")
 
     def _remove_zero(self) -> None:
         to_delete: set[str] = set()
