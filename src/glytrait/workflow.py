@@ -9,7 +9,7 @@ import pandas as pd
 from attrs import define, field
 
 from glytrait.config import Config
-from glytrait.exception import InputError
+from glytrait.exception import FileFormatError
 from glytrait.formula import load_formulas
 from glytrait.glycan import load_compositions, load_structures
 from glytrait.io import (
@@ -254,7 +254,7 @@ class CheckHasStructureStep(WorkflowStep):
                 "Must provide either structure_file or database name when the input file "
                 "does not have a 'Structure' column."
             )
-            raise InputError(msg)
+            raise FileFormatError(msg)
 
 
 @Workflow.register_step

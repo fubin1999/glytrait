@@ -42,7 +42,7 @@ def test_read_group_file_wrong_format(mocker):
         index=["Sample1", "Sample2", "Sample3", "Sample4"],
     )
     mocker.patch("pandas.read_csv", return_value=group_df)
-    with pytest.raises(InputError) as excinfo:
+    with pytest.raises(FileFormatError) as excinfo:
         io.read_group_file("fake_path")
     assert "The group file should only have two columns." in str(excinfo.value)
 
@@ -92,7 +92,7 @@ def test_read_structure_file_wrong_format(mocker):
         index=["glycan1", "glycan2", "glycan3"],
     )
     mocker.patch("pandas.read_csv", return_value=structure_df)
-    with pytest.raises(InputError) as excinfo:
+    with pytest.raises(FileFormatError) as excinfo:
         io.read_structure_file("fake_path", ["glycan2", "glycan1"])
     assert "The structure file should only have two columns." in str(excinfo.value)
 
@@ -105,7 +105,7 @@ def test_read_structure_file_with_missing_structure(mocker):
         index=["glycan1", "glycan2", "glycan3"],
     )
     mocker.patch("pandas.read_csv", return_value=structure_df)
-    with pytest.raises(InputError) as excinfo:
+    with pytest.raises(FileFormatError) as excinfo:
         io.read_structure_file("fake_path", ["glycan2", "glycan1", "glycan4"])
     assert "glycan4 is not found in the structure file." in str(excinfo.value)
 

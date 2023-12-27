@@ -30,19 +30,25 @@ from glytrait.glycan import Structure, load_structures
 def check_input_file(df: pd.DataFrame) -> None:
     """Check the input dataframe."""
     if df.columns[0] != "Composition":
-        raise InputError("The first column of the input file should be Composition.")
+        raise FileFormatError(
+            "The first column of the input file should be Composition."
+        )
     if df["Composition"].duplicated().sum() > 0:
-        raise InputError("There are duplicated Compositions in the input file.")
+        raise FileFormatError("There are duplicated Compositions in the input file.")
 
     has_struc_col = "Structure" in df.columns
     if has_struc_col:
         if df.columns[1] != "Structure":
-            raise InputError("The second column of the input file should be Structure.")
+            raise FileFormatError(
+                "The second column of the input file should be Structure."
+            )
         if df["Structure"].duplicated().sum() > 0:
-            raise InputError("There are duplicated Structures in the input file.")
+            raise FileFormatError("There are duplicated Structures in the input file.")
 
     if np.any(df.iloc[:, 2 if has_struc_col else 1 :].dtypes != "float64"):
-        raise InputError("The abundance columns in the input file should be numeric.")
+        raise FileFormatError(
+            "The abundance columns in the input file should be numeric."
+        )
 
 
 @functools.singledispatch
@@ -65,7 +71,7 @@ def read_group_file(file) -> pd.Series:
 
 def _read_group_file(df: pd.DataFrame) -> pd.Series:
     if df.shape[1] != 1:
-        raise InputError("The group file should only have two columns.")
+        raise FileFormatError("The group file should only have two columns.")
     groups = df.squeeze()
     return groups
 
@@ -138,14 +144,14 @@ def _read_structure_string_from_df(
     df: pd.DataFrame, compositions: Iterable[str]
 ) -> list[str]:
     if df.shape[1] != 1:
-        raise InputError("The structure file should only have two columns.")
+        raise FileFormatError("The structure file should only have two columns.")
     structures = df.squeeze()
     struc_strings = []
     for comp in compositions:
         try:
             struc_strings.append(structures[comp])
         except KeyError:
-            raise InputError(f"{comp} is not found in the structure file.")
+            raise FileFormatError(f"{comp} is not found in the structure file.")
     return struc_strings
 
 
@@ -158,7 +164,7 @@ def _read_structure_string_from_directory(
             filename = comp + ".glycoct_condensed"
             struc_strings.append((Path(path) / filename).read_text())
         except FileNotFoundError:
-            raise InputError(f"{comp} is not provided in the structure directory.")
+            raise FileFormatError(f"{comp} is not provided in the structure directory.")
     return struc_strings
 
 

@@ -157,7 +157,7 @@ class TestCheckHasStructureStep:
     def test_no_struc_info(self, default_config, state):
         state.set("has_struc_col", False)
         step = gw.CheckHasStructureStep(default_config, state)
-        with pytest.raises(gw.InputError) as excinfo:
+        with pytest.raises(gw.FileFormatError) as excinfo:
             step.run()
         msg = (
             "Must provide either structure_file or database name when the input file "
