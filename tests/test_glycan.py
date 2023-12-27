@@ -11,6 +11,7 @@ class TestLoadStructures:
         glycocts = [test_glycoct_1, test_glycoct_2, test_glycoct_3]
         result = glyc.parse_structures(zip(names, glycocts))
         assert len(result) == 3
+        assert isinstance(result, dict)
 
     def test_invalid(self):
         names = ["test_1", "test_2", "test_3"]
@@ -27,6 +28,7 @@ class TestLoadCompositions:
         comps = ["H5N4F1S1", "H5N4F1S1", "H5N4F1S1"]
         result = glyc.parse_compositions(zip(names, comps))
         assert len(result) == 3
+        assert isinstance(result, dict)
 
     def test_invalid(self):
         names = ["test_1", "test_2", "test_3"]

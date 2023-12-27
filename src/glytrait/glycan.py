@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Generator, Mapping, Iterator, Callable
-from typing import Literal, Iterable, Optional, Final, Union, TypeVar
+from typing import Literal, Iterable, Optional, Final, Union, TypeVar, NewType
 
 from attrs import frozen, field
 from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError  # type: ignore
@@ -28,15 +28,25 @@ from glytrait.exception import (
     CompositionParseError,
 )
 
+StructureDict = NewType("StructureDict", dict[str, "Structure"])
+"""A type hint for a dictionary of `Structure` instances.
+The keys are the names of the structures, and the values are the structures.
+"""
 
-def parse_structures(__iter: Iterable[tuple[str, str]]) -> list[Structure]:
+CompositionDict = NewType("CompositionDict", dict[str, "Composition"])
+"""A type hint for a dictionary of `Composition` instances.
+The keys are the names of the compositions, and the values are the compositions.
+"""
+
+
+def parse_structures(__iter: Iterable[tuple[str, str]]) -> StructureDict:
     """Parse glycan structures from a list of structure strings.
 
     Args:
         An iterable of tuples of (name, structure_string).
 
     Returns:
-        A list of `Structure` instances.
+        A dictionary of `Structure` instances, with the keys being the names of the structures.
 
     Raises:
         StructureParseError: When the string cannot be parsed.
@@ -44,19 +54,21 @@ def parse_structures(__iter: Iterable[tuple[str, str]]) -> list[Structure]:
             in the error message.
     """
     try:
-        return _load_glycans(__iter, Structure.from_string)
+        result: dict[str, Structure] = _load_glycans(__iter, Structure.from_string)
     except GlycanParseError as exc:
         raise StructureParseError(f"Could not parse structures for: {exc}.")
+    else:
+        return StructureDict(result)
 
 
-def parse_compositions(__iter: Iterable[tuple[str, str]]) -> list[Composition]:
+def parse_compositions(__iter: Iterable[tuple[str, str]]) -> CompositionDict:
     """Parse glycan compositions from a list of composition strings.
 
     Args:
         An iterable of tuples of (name, composition_string).
 
     Returns:
-        A list of `Composition` instances.
+        A dictionary of `Composition` instances, with the keys being the names of the compositions.
 
     Raises:
         CompositionParseError: When the string cannot be parsed.
@@ -64,9 +76,11 @@ def parse_compositions(__iter: Iterable[tuple[str, str]]) -> list[Composition]:
             in the error message.
     """
     try:
-        return _load_glycans(__iter, Composition.from_string)
+        result: dict[str, Composition] = _load_glycans(__iter, Composition.from_string)
     except GlycanParseError as exc:
         raise CompositionParseError(f"Could not parse compositions for: {exc}.")
+    else:
+        return CompositionDict(result)
 
 
 Glycan = TypeVar("Glycan", bound=Union["Structure", "Composition"])
@@ -75,16 +89,16 @@ GlycanBuilder = Callable[[str, str], Glycan]
 
 def _load_glycans(
     __iter: Iterable[tuple[str, str]], builder: GlycanBuilder
-) -> list[Glycan]:
+) -> dict[str, Glycan]:
     failed_names: list[str] = []
-    glycans: list[Glycan] = []
+    glycans: dict[str, Glycan] = {}
     for name, string in __iter:
         try:
             glycan = builder(name, string)
         except GlycanParseError:
             failed_names.append(name)
         else:
-            glycans.append(glycan)
+            glycans[name] = glycan
     if failed_names:
         msg = ", ".join(f"'{name}'" for name in failed_names)
         raise StructureParseError(msg)
