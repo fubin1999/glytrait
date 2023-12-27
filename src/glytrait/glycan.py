@@ -42,7 +42,7 @@ class Structure:
 
     name: str = field()
     _glypy_glycan: GlypyGlycan = field(repr=False)
-    composition: dict[str, int] = field(init=False, repr=False, hash=False)
+    _composition: dict[str, int] = field(init=False, repr=False, hash=False)
 
     def __attrs_post_init__(self):
         self._init_composition()
@@ -50,7 +50,7 @@ class Structure:
     def _init_composition(self):
         glypy_comp = GlycanComposition.from_glycan(self._glypy_glycan)
         comp = {str(k): v for k, v in glypy_comp.items()}
-        object.__setattr__(self, "composition", comp)
+        object.__setattr__(self, "_composition", comp)
 
     @classmethod
     def from_string(
@@ -163,9 +163,10 @@ class Structure:
         """
         yield from self._traversal("dfs", skip=skip, only=only)
 
-    def get(self, key: str, default=0):
-        """Get the number of the given monosaccharide."""
-        return self.composition.get(key, default)
+    @property
+    def composition(self) -> dict[str, int]:
+        """The composition of the glycan."""
+        return self._composition.copy()
 
 
 VALID_MONOS: Final = ["H", "N", "F", "S", "L", "E"]

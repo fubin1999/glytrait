@@ -115,7 +115,7 @@ def _is_bisecting(glycan: Structure) -> bool:
 def _glycan_type(glycan: Structure) -> GlycanType:
     """Decide whether a glycan is a 'complex', 'hybrid', or 'high-mannose' type."""
     # N-glycan core is defined as the complex type.
-    if glycan.composition == {"Glc2NAc": 2, "Man": 3}:
+    if glycan._composition == {"Glc2NAc": 2, "Man": 3}:
         # This type of glycan is actually pausimannose type.
         # However, it is currently regarded as a complex type right now.
         return GlycanType.COMPLEX
@@ -125,7 +125,7 @@ def _glycan_type(glycan: Structure) -> GlycanType:
         return GlycanType.COMPLEX
 
     # If the glycan is not core, and it only has 2 "GlcNAc", it is high-mannose.
-    if glycan.composition["Glc2NAc"] == 2:
+    if glycan._composition["Glc2NAc"] == 2:
         return GlycanType.HIGH_MANNOSE
 
     # If the glycan is mono-antennary and not high-monnose, it is complex.
@@ -134,7 +134,7 @@ def _glycan_type(glycan: Structure) -> GlycanType:
         return GlycanType.COMPLEX
 
     # Then, if it has 3 "Glc2NAc", it must be hybrid.
-    if glycan.composition["Glc2NAc"] == 3:
+    if glycan._composition["Glc2NAc"] == 3:
         return GlycanType.HYBRID
 
     # All rest cases are complex.
@@ -319,7 +319,7 @@ def _count_fuc(glycan) -> int:
 @_count_fuc.register
 @cache
 def _(glycan: Structure) -> int:
-    return glycan.get("Fuc", 0)
+    return glycan.composition.get("Fuc", 0)
 
 
 @_count_fuc.register
@@ -349,7 +349,7 @@ class AntennaryFuc(MetaProperty):
     sia_linkage: ClassVar = False
 
     def __call__(self, glycan: Structure) -> float:
-        return glycan.composition.get("Fuc", 0) - _get_core_fuc(glycan)
+        return glycan._composition.get("Fuc", 0) - _get_core_fuc(glycan)
 
 
 @register_struc
@@ -400,7 +400,7 @@ def _count_sia(glycan) -> int:
 @_count_sia.register
 @cache
 def _(glycan: Structure) -> int:
-    return glycan.get("Neu5Ac", 0) + glycan.get("Neu5Gc", 0)
+    return glycan.composition.get("Neu5Ac", 0) + glycan.composition.get("Neu5Gc", 0)
 
 
 @_count_sia.register
@@ -457,7 +457,7 @@ def _count_gal(glycan) -> int:
 @_count_gal.register
 @cache
 def _(glycan: Structure) -> int:
-    return glycan.get("Gal", 0)
+    return glycan.composition.get("Gal", 0)
 
 
 @_count_gal.register
@@ -479,7 +479,7 @@ def _count_man(glycan) -> int:
 @_count_man.register
 @cache
 def _(glycan: Structure) -> int:
-    return glycan.get("Man", 0)
+    return glycan.composition.get("Man", 0)
 
 
 @_count_man.register

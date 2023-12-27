@@ -130,10 +130,14 @@ class TestGlycan:
                 pass
         assert "Unknown traversal method: wrong" in str(excinfo.value)
 
-    def test_get(self, make_structure):
+    def test_composition(self, make_structure):
         glycan = make_structure(test_glycoct_1)
-        assert glycan.get("Glc2NAc") == 4
-        assert glycan.get("Man") == 3
+        assert dict(glycan.composition) == {
+            "Glc2NAc": 4,
+            "Man": 3,
+            "Gal": 2,
+            "Neu5Ac": 2,
+        }
 
 
 class TestComposition:
