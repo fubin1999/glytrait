@@ -5,11 +5,15 @@ class GlyTraitError(Exception):
     """Base class for exceptions in this module."""
 
 
-class StructureParseError(GlyTraitError):
+class GlycanParseError(GlyTraitError):
+    """Raised when a glycan cannot be parsed."""
+
+
+class StructureParseError(GlycanParseError):
     """Raised when a structure cannot be parsed."""
 
 
-class CompositionParseError(GlyTraitError):
+class CompositionParseError(GlycanParseError):
     """Raised when a composition cannot be parsed."""
 
 
