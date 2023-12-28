@@ -5,26 +5,42 @@ from glytrait import preprocessing as pp
 from glytrait.load_data import GlyTraitInputData
 
 
-@pytest.mark.parametrize(
-    "method, expected",
-    [
-        ("zero", 0),
-        ("min", 0.1),
-        ("lod", 0.02),
-        ("mean", 0.2),
-        ("median", 0.2),
-    ],
-)
-def test_impute(method, expected):
-    df = pd.DataFrame(
-        {
-            "Glycan1": [0.1, None, 0.3],
-            "Glycan2": [0.2, 0.3, 0.4],
-            "Glycan3": [0.3, 0.4, 0.5],
-        }
+class TestImpute:
+    @pytest.mark.parametrize(
+        "method, expected",
+        [
+            ("zero", 0),
+            ("min", 0.1),
+            ("lod", 0.02),
+            ("mean", 0.2),
+            ("median", 0.2),
+        ],
     )
-    result = pp.impute(df, method)
-    assert result.iloc[1, 0] == expected
+    def test_impute_logc(self, method, expected):
+        df = pd.DataFrame(
+            {
+                "Glycan1": [0.1, None, 0.3],
+                "Glycan2": [0.2, 0.3, 0.4],
+                "Glycan3": [0.3, 0.4, 0.5],
+            }
+        )
+        result = pp._impute(df, method)
+        assert result.iloc[1, 0] == expected
+
+    def test_impute_step(self):
+        df = pd.DataFrame(
+            {
+                "G1": [1, 2, None],
+                "G2": [1, 2, 3],
+            },
+            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
+        )
+        data = GlyTraitInputData(
+            abundance_table=df, glycans={"G1": "Glycan1", "G2": "Glycan2"}
+        )
+        step = pp.Impute(method="zero")
+        step(data)
+        assert data.abundance_table.isna().sum().sum() == 0
 
 
 class TestFilterGlycans:

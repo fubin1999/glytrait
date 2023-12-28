@@ -26,7 +26,7 @@ class ProcessingPipeline:
 
 
 @define
-class FilterGlycans:
+class FilterGlycans(ProcessingStep):
     """Filter glycans with too many missing values.
 
     Args:
@@ -50,11 +50,9 @@ def _filter_glycans(abundance_df: AbundanceTable, max_na: float) -> list[str]:
     return glycans_to_keep
 
 
-def impute(
-    abundance_df: pd.DataFrame,
-    method: Literal["zero", "min", "lod", "mean", "median"],
-) -> pd.DataFrame:
-    """Impute the missing values.
+@define
+class Impute(ProcessingStep):
+    """Impute the missing values of the abundance table.
 
     The following imputation methods supported:
         - "zero": Replace the missing values with 0.
@@ -65,13 +63,20 @@ def impute(
         - "median": Replace the missing values with the median value of the corresponding glycan.
 
     Args:
-        abundance_df (pd.DataFrame): The abundance table, with samples as index and Compositions
-            as columns.
-        method (str): The imputation method. Can be "zero", "min", "1/5min", "mean", "median".
-
-    Returns:
-        imputed_df (pd.DataFrame): The imputed abundance table.
+        method (str): The imputation method.
+            Can be "zero", "min", "lod", "mean", "median".
     """
+
+    method: Literal["zero", "min", "lod", "mean", "median"]
+
+    def __call__(self, data: GlyTraitInputData) -> None:
+        data.abundance_table = _impute(data.abundance_table, self.method)
+
+
+def _impute(
+    abundance_df: AbundanceTable,
+    method: Literal["zero", "min", "lod", "mean", "median"],
+) -> AbundanceTable:
     if method == "zero":
         imputed_df = abundance_df.fillna(0)
     elif method == "min":
@@ -84,7 +89,7 @@ def impute(
         imputed_df = abundance_df.fillna(abundance_df.median())
     else:
         raise ValueError("The imputation method is not supported.")
-    return imputed_df
+    return AbundanceTable(imputed_df)
 
 
 def normalization(abundance_df: pd.DataFrame) -> pd.DataFrame:
