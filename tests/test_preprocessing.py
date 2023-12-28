@@ -84,20 +84,36 @@ class TestFilterGlycans:
         assert data.glycans == {"G2": "Glycan2"}
 
 
-def test_normalization():
-    df = pd.DataFrame(
-        {
-            "Glycan1": [0.1, 0.2, 0.3],
-            "Glycan2": [0.2, 0.3, 0.4],
-            "Glycan3": [0.3, 0.4, 0.5],
-        }
-    )
-    result = pp.normalization(df)
-    expected = pd.DataFrame(
-        {
-            "Glycan1": [0.1 / 0.6, 0.2 / 0.9, 0.3 / 1.2],
-            "Glycan2": [0.2 / 0.6, 0.3 / 0.9, 0.4 / 1.2],
-            "Glycan3": [0.3 / 0.6, 0.4 / 0.9, 0.5 / 1.2],
-        }
-    )
-    pd.testing.assert_frame_equal(result, expected)
+class TestNormalize:
+    def test_normalization_logic(self):
+        df = pd.DataFrame(
+            {
+                "Glycan1": [0.1, 0.2, 0.3],
+                "Glycan2": [0.2, 0.3, 0.4],
+                "Glycan3": [0.3, 0.4, 0.5],
+            }
+        )
+        result = pp._normalization(df)
+        expected = pd.DataFrame(
+            {
+                "Glycan1": [0.1 / 0.6, 0.2 / 0.9, 0.3 / 1.2],
+                "Glycan2": [0.2 / 0.6, 0.3 / 0.9, 0.4 / 1.2],
+                "Glycan3": [0.3 / 0.6, 0.4 / 0.9, 0.5 / 1.2],
+            }
+        )
+        pd.testing.assert_frame_equal(result, expected)
+
+    def test_normalization_step(self):
+        df = pd.DataFrame(
+            {
+                "G1": [1, 2, 1],
+                "G2": [1, 2, 1],
+            },
+            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
+        )
+        data = GlyTraitInputData(
+            abundance_table=df, glycans={"G1": "Glycan1", "G2": "Glycan2"}
+        )
+        step = pp.Normalize()
+        step(data)
+        assert data.abundance_table.sum().sum() == len(df.index)

@@ -1,7 +1,6 @@
 """Preprocess the abundance table."""
 from typing import Literal, Protocol
 
-import pandas as pd
 from attrs import define
 
 from glytrait.load_data import GlyTraitInputData, AbundanceTable
@@ -92,16 +91,24 @@ def _impute(
     return AbundanceTable(imputed_df)
 
 
-def normalization(abundance_df: pd.DataFrame) -> pd.DataFrame:
+@define
+class Normalize(ProcessingStep):
+    """Normalize the abundance table by dividing the sum of each sample."""
+
+    def __call__(self, data: GlyTraitInputData) -> None:
+        data.abundance_table = _normalization(data.abundance_table)
+
+
+def _normalization(abundance_df: AbundanceTable) -> AbundanceTable:
     """Normalize the abundance table by dividing the sum of each sample.
 
     Args:
-        abundance_df (pd.DataFrame): The abundance table, with samples as index and Compositions
-            as columns.
+        abundance_df (AbundanceTable): The abundance table,
+            with samples as index and Compositions as columns.
 
     Returns:
-        normalized_df (pd.DataFrame): The normalized abundance table.
+        normalized_df (AbundanceTable): The normalized abundance table.
     """
     row_sums = abundance_df.sum(axis=1)
     normalized_df = abundance_df.div(row_sums, axis=0).round(6)
-    return normalized_df
+    return AbundanceTable(normalized_df)
