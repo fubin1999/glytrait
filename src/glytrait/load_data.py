@@ -72,11 +72,27 @@ def load_structures(filepath: str) -> StructureDict:
         StructureParseError: If the structure cannot be parsed.
             All glycan ids not parsed will be listed in the error message.
     """
-    _check_file_type(filepath, "csv")
     _check_exist(filepath)
+    if Path(filepath).is_dir():
+        return _load_structures_from_dir(filepath)
+    else:
+        return _load_structures_from_csv(filepath)
+
+
+def _load_structures_from_csv(filepath: str) -> StructureDict:
+    """Load structures from a csv file."""
+    _check_file_type(filepath, "csv")
     _check_columns("glycan structures", filepath, ["GlycanID", "Structure"], only=True)
-    ids, strings = _load_glycans(filepath, "Structure")
+    ids, strings = _load_glycans_from_csv(filepath, "Structure")
     _check_duplicated_items("glycan ids", ids)
+    _check_duplicated_items("glycan structures", strings)
+    return parse_structures(zip(ids, strings))
+
+
+def _load_structures_from_dir(dirpath: str) -> StructureDict:
+    """Load structures from a directory."""
+    ids, strings = _load_glycans_from_dir(dirpath, "glycoct")
+    # glycan ids are not checked because they are filenames
     _check_duplicated_items("glycan structures", strings)
     return parse_structures(zip(ids, strings))
 
@@ -106,21 +122,20 @@ def load_compositions(filepath: str) -> CompositionDict:
     _check_columns(
         "glycan compositions", filepath, ["GlycanID", "Composition"], only=True
     )
-    ids, strings = _load_glycans(filepath, "Composition")
+    ids, strings = _load_glycans_from_csv(filepath, "Composition")
     _check_duplicated_items("glycan ids", ids)
     _check_duplicated_items("glycan compositions", strings)
     return parse_compositions(zip(ids, strings))
 
 
-def load_groups(filepath: str) -> pd.Series:
+def load_groups(filepath: str) -> GroupSeries:
     """Load groups from filepath.
 
     Args:
         filepath: Path to groups file.
 
     Returns:
-        dict[str, list[str]]: A dict with group names with keys and
-            lists of glycan ids as values.
+        GroupSeries: A pandas Series with sample names as index and groups as values.
 
     Raises:
         FileTypeError: If the file is not a csv file.
@@ -189,7 +204,9 @@ def _check_columns(
             raise FileFormatError(msg)
 
 
-def _load_glycans(filepath: str, string_col: str) -> tuple[list[str], list[str]]:
+def _load_glycans_from_csv(
+    filepath: str, string_col: str
+) -> tuple[list[str], list[str]]:
     """Helper function for `load_structures` and `load_compositions`."""
     ids: list[str] = []
     strings: list[str] = []
@@ -198,6 +215,16 @@ def _load_glycans(filepath: str, string_col: str) -> tuple[list[str], list[str]]
         for row in reader:
             ids.append(row["GlycanID"])
             strings.append(row[string_col])
+    return ids, strings
+
+
+def _load_glycans_from_dir(dirpath: str, suffix: str) -> tuple[list[str], list[str]]:
+    """Helper function for `load_structures`."""
+    ids: list[str] = []
+    strings: list[str] = []
+    for filepath in Path(dirpath).glob(f"*.{suffix}"):
+        ids.append(filepath.stem)
+        strings.append(filepath.read_text())
     return ids, strings
 
 

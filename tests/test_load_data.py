@@ -1,10 +1,20 @@
+from pathlib import Path
+
 import pandas as pd
 import pytest
 
-from glytrait.load_data import (load_abundance_table, load_structures, load_compositions,
-                                load_groups)
-from glytrait.exception import FileTypeError, FileFormatError, StructureParseError, \
-    NotEnoughGroupsError
+from glytrait.load_data import (
+    load_abundance_table,
+    load_structures,
+    load_compositions,
+    load_groups,
+)
+from glytrait.exception import (
+    FileTypeError,
+    FileFormatError,
+    StructureParseError,
+    NotEnoughGroupsError,
+)
 
 
 @pytest.fixture
@@ -95,9 +105,19 @@ def patch_structure_from_string(monkeypatch):
     monkeypatch.setattr("glytrait.glycan.Structure.from_string", mock_return)
 
 
+@pytest.fixture
+def structure_folder(clean_dir) -> str:
+    dirpath = clean_dir / "structures"
+    dirpath.mkdir()
+    for i in range(1, 4):
+        filepath = dirpath / f"G{i}.glycoct"
+        filepath.write_text(f"glycoct{i}")
+    return str(dirpath)
+
+
 @pytest.mark.usefixtures("patch_structure_from_string")
 class TestLoadStructures:
-    def test_basic(self, structure_file):
+    def test_basic_from_csv(self, structure_file):
         result = load_structures(structure_file)
         assert result == {
             "G1": "glycoct1",
@@ -140,6 +160,25 @@ class TestLoadStructures:
         df.to_csv(filepath, index=False)
         with pytest.raises(FileFormatError):
             load_structures(filepath)
+
+    def test_from_dir(self, structure_folder):
+        result = load_structures(structure_folder)
+        assert result == {
+            "G1": "glycoct1",
+            "G2": "glycoct2",
+            "G3": "glycoct3",
+        }
+
+    def test_from_dir_not_exist(self, clean_dir):
+        filepath = clean_dir / "structures"
+        with pytest.raises(FileNotFoundError):
+            load_structures(filepath)
+
+    def test_from_dir_duplicate_structures(self, structure_folder):
+        filepath = structure_folder + "/G1.glycoct"
+        Path(filepath).write_text("glycoct2")
+        with pytest.raises(FileFormatError):
+            load_structures(structure_folder)
 
 
 @pytest.fixture
