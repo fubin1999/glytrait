@@ -1,42 +1,7 @@
-"""Preprocess the abundance table.
-
-Functions:
-    preprocess_pipeline: Preprocess the abundance table.
-    filter_glycans: Filter glycans with too many missing values.
-    impute: Impute the missing values.
-    normalization: Normalize the abundance table by dividing the sum of each sample.
-"""
+"""Preprocess the abundance table."""
 from typing import Literal
 
 import pandas as pd
-
-
-def preprocess_pipeline(
-    abundance_df: pd.DataFrame,
-    filter_max_na: float,
-    impute_method: Literal["zero", "min", "lod", "mean", "median"],
-) -> pd.DataFrame:
-    """Preprocess the abundance table.
-
-    The following steps will be performed:
-        - Filter glycans with too many missing values.
-        - Impute the missing values.
-        - Normalize the abundance table by dividing the sum of each sample.
-
-    Args:
-        abundance_df (pd.DataFrame): The abundance table, with samples as index and Compositions
-            as columns.
-        filter_max_na (float): The maximum proportion of missing values allowed for a glycan.
-        impute_method (str): The imputation method. Can be "zero", "min", "1/5min", "mean",
-            "median".
-
-    Returns:
-        preprocessed_df (pd.DataFrame): The preprocessed abundance table.
-    """
-    filtered_df = filter_glycans(abundance_df, filter_max_na)
-    imputed_df = impute(filtered_df, impute_method)
-    preprocessed_df = normalization(imputed_df)
-    return preprocessed_df
 
 
 def filter_glycans(abundance_df: pd.DataFrame, max_na: float) -> pd.DataFrame:
