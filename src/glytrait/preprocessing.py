@@ -1,7 +1,28 @@
 """Preprocess the abundance table."""
-from typing import Literal
+from typing import Literal, Protocol
 
 import pandas as pd
+from attrs import define
+
+from glytrait.load_data import GlyTraitInputData
+
+
+class ProcessingStep(Protocol):
+    """The protocol for processing steps."""
+
+    def __call__(self, data: GlyTraitInputData) -> None:
+        ...
+
+
+@define
+class ProcessingPipeline:
+    """The pipeline for processing the abundance table."""
+
+    _steps: list[ProcessingStep]
+
+    def __call__(self, data: GlyTraitInputData) -> None:
+        for step in self._steps:
+            step(data)
 
 
 def filter_glycans(abundance_df: pd.DataFrame, max_na: float) -> pd.DataFrame:
