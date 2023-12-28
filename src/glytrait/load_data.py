@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import NewType, Optional
 
 import pandas as pd
-from attrs import frozen
+from attrs import define
 
 from glytrait.exception import FileTypeError, FileFormatError, NotEnoughGroupsError
 from glytrait.glycan import (
@@ -38,7 +38,7 @@ The index are the sample names and the values are groups.
 # Also see docstrings of `StructureDict` and `CompositionDict` in glycan.py.
 
 
-@frozen(kw_only=True)
+@define(kw_only=True)
 class GlyTraitInputData:
     """GlyTrait input data.
 
@@ -49,7 +49,6 @@ class GlyTraitInputData:
         groups: Sample groups as a pandas Series.
 
     Notes:
-        All attributes are read-only.
         The glycan dict should have the same keys as the abundance table.
         The samples in the abundance table should have the same names as the
         samples in the groups.
