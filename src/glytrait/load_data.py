@@ -1,9 +1,10 @@
 import csv
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import NewType
+from typing import NewType, Optional
 
 import pandas as pd
+from attrs import frozen
 
 from glytrait.exception import FileTypeError, FileFormatError, NotEnoughGroupsError
 from glytrait.glycan import (
@@ -12,6 +13,15 @@ from glytrait.glycan import (
     parse_compositions,
     CompositionDict,
 )
+
+__all__ = [
+    "AbundanceTable",
+    "GroupSeries",
+    "GlyTraitInputData",
+    "load_abundance_table",
+    "load_structures",
+    "load_compositions",
+]
 
 AbundanceTable = NewType("AbundanceTable", pd.DataFrame)
 """Abundance table type.
@@ -23,6 +33,56 @@ GroupSeries = NewType("GroupSeries", pd.Series)
 """Group series type.
 The index are the sample names and the values are groups.
 """
+
+
+# Also see docstrings of `StructureDict` and `CompositionDict` in glycan.py.
+
+
+@frozen(kw_only=True)
+class GlyTraitInputData:
+    """GlyTrait input data.
+
+    Attributes:
+        abundance_table: Abundance table as a pandas DataFrame.
+        glycans: Glycans, either a dict of `Structure` objects or
+            a dict of `Composition` objects.
+        groups: Sample groups as a pandas Series.
+
+    Notes:
+        All attributes are read-only.
+        The glycan dict should have the same keys as the abundance table.
+        The samples in the abundance table should have the same names as the
+        samples in the groups.
+
+    Raises:
+        FileFormatError: If the abundance table has different samples as the groups,
+            or if the glycan dict has different glycans as the abundance table.
+    """
+
+    abundance_table: AbundanceTable
+    glycans: StructureDict | CompositionDict
+    groups: Optional[GroupSeries] = None
+
+    def __attrs_post_init__(self):
+        if self.groups is not None:
+            self._check_samples()
+        self._check_glycans()
+
+    def _check_samples(self):
+        """Check if `groups` has the same samples as `abundance_table`."""
+        if not set(self.abundance_table.columns) == set(self.groups.index):
+            msg = (
+                "The samples in the abundance table and the groups should be the same."
+            )
+            raise FileFormatError(msg)
+
+    def _check_glycans(self):
+        """Check if `glycans` has the same glycans as `abundance_table`."""
+        if not set(self.abundance_table.index) == set(self.glycans.keys()):
+            msg = (
+                "The glycans in the abundance table and the glycans should be the same."
+            )
+            raise FileFormatError(msg)
 
 
 def load_abundance_table(filepath: str) -> AbundanceTable:

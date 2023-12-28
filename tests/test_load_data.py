@@ -3,17 +3,18 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from glytrait.load_data import (
-    load_abundance_table,
-    load_structures,
-    load_compositions,
-    load_groups,
-)
 from glytrait.exception import (
     FileTypeError,
     FileFormatError,
     StructureParseError,
     NotEnoughGroupsError,
+)
+from glytrait.load_data import (
+    load_abundance_table,
+    load_structures,
+    load_compositions,
+    load_groups,
+    GlyTraitInputData,
 )
 
 
@@ -310,3 +311,45 @@ class TestLoadGroupTable:
         group_series.to_csv(filepath, index=True)
         with pytest.raises(NotEnoughGroupsError):
             load_groups(filepath)
+
+
+class TestGlyTraitInputData:
+    @pytest.fixture
+    def glycan_dict(self) -> dict[str, str]:
+        return {"G1": "glycoct1", "G2": "glycoct2", "G3": "glycoct3"}
+
+    def test_input_data(self, abundance_table, glycan_dict, group_series):
+        data = GlyTraitInputData(
+            abundance_table=abundance_table,
+            glycans=glycan_dict,
+            groups=group_series,
+        )
+        assert data.abundance_table.equals(abundance_table)
+        assert data.glycans == {"G1": "glycoct1", "G2": "glycoct2", "G3": "glycoct3"}
+        assert data.groups.equals(group_series)
+
+    def test_no_series(self, abundance_table, glycan_dict):
+        data = GlyTraitInputData(
+            abundance_table=abundance_table,
+            glycans=glycan_dict,
+        )
+        assert data.groups is None
+
+    def test_glycans_not_same_as_in_abundance_table(self, abundance_table, glycan_dict):
+        glycan_dict["G4"] = "glycoct4"
+        with pytest.raises(FileFormatError):
+            GlyTraitInputData(
+                abundance_table=abundance_table,
+                glycans=glycan_dict,
+            )
+
+    def test_samples_not_same_as_in_abundance_table(
+        self, abundance_table, glycan_dict, group_series
+    ):
+        abundance_table.columns = ["sample1", "sample1", "sample3"]
+        with pytest.raises(FileFormatError):
+            GlyTraitInputData(
+                abundance_table=abundance_table,
+                glycans=glycan_dict,
+                groups=group_series,
+            )
