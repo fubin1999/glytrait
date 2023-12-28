@@ -1,8 +1,10 @@
 import pandas as pd
 import pytest
 
-from glytrait.load_data import load_abundance_table, load_structures, load_compositions
-from glytrait.exception import FileTypeError, FileFormatError, StructureParseError
+from glytrait.load_data import (load_abundance_table, load_structures, load_compositions,
+                                load_groups)
+from glytrait.exception import FileTypeError, FileFormatError, StructureParseError, \
+    NotEnoughGroupsError
 
 
 @pytest.fixture
@@ -208,3 +210,64 @@ class TestLoadCompositions:
         df.to_csv(filepath, index=False)
         with pytest.raises(FileFormatError):
             load_compositions(filepath)
+
+
+@pytest.fixture
+def group_series() -> pd.DataFrame:
+    s = pd.Series(
+        ["group1", "group2", "group3"],
+        name="Group",
+        index=pd.Index(["sample1", "sample2", "sample3"], name="Sample"),
+    )
+    return s
+
+
+@pytest.fixture
+def group_series_file(group_series, clean_dir) -> str:
+    filepath = str(clean_dir / "group_table.csv")
+    group_series.to_csv(filepath, index=True)
+    return filepath
+
+
+class TestLoadGroupTable:
+    def test_basic(self, group_series_file, group_series):
+        result = load_groups(group_series_file)
+        pd.testing.assert_series_equal(result, group_series)
+
+    def test_not_csv(self, clean_dir):
+        filepath = clean_dir / "group_table.txt"
+        filepath.touch()
+        with pytest.raises(FileTypeError):
+            load_groups(filepath)
+
+    def test_not_exist(self, clean_dir):
+        filepath = clean_dir / "group_table.csv"
+        with pytest.raises(FileNotFoundError):
+            load_groups(filepath)
+
+    def test_duplicated_samples(self, group_series, clean_dir):
+        group_series.index = pd.Index(["sample1", "sample1", "sample3"], name="Sample")
+        filepath = str(clean_dir / "group_table.csv")
+        group_series.to_csv(filepath, index=True)
+        with pytest.raises(FileFormatError):
+            load_groups(filepath)
+
+    @pytest.mark.parametrize("column", ["Group", "Sample"])
+    def test_missing_columns(self, group_series, clean_dir, column):
+        df = group_series.reset_index()
+        df = df.drop(column, axis=1)
+        filepath = str(clean_dir / "group_table.csv")
+        df.to_csv(filepath, index=True)
+        with pytest.raises(FileFormatError):
+            load_groups(filepath)
+
+    def test_group_number(self, group_series, clean_dir):
+        group_series = pd.Series(
+            ["group1", "group1", "group1"],
+            name="Group",
+            index=group_series.index,
+        )
+        filepath = str(clean_dir / "group_table.csv")
+        group_series.to_csv(filepath, index=True)
+        with pytest.raises(NotEnoughGroupsError):
+            load_groups(filepath)

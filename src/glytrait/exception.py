@@ -25,6 +25,10 @@ class FileTypeError(GlyTraitError):
     """Raised when a file type is not supported."""
 
 
+class NotEnoughGroupsError(GlyTraitError):
+    """Raised when there are not enough groups."""
+
+
 class FormulaError(GlyTraitError):
     """Raised if a formula is invalid."""
 

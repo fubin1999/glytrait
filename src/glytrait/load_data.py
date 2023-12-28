@@ -5,7 +5,7 @@ from typing import NewType
 
 import pandas as pd
 
-from glytrait.exception import FileTypeError, FileFormatError
+from glytrait.exception import FileTypeError, FileFormatError, NotEnoughGroupsError
 from glytrait.glycan import (
     parse_structures,
     StructureDict,
@@ -17,6 +17,11 @@ AbundanceTable = NewType("AbundanceTable", pd.DataFrame)
 """Abundance table type.
 The index are glycans and the columns are samples.
 The abundance table could only be returned by `load_abundance_table` function.
+"""
+
+GroupSeries = NewType("GroupSeries", pd.Series)
+"""Group series type.
+The index are the sample names and the values are groups.
 """
 
 
@@ -107,6 +112,33 @@ def load_compositions(filepath: str) -> CompositionDict:
     return parse_compositions(zip(ids, strings))
 
 
+def load_groups(filepath: str) -> pd.Series:
+    """Load groups from filepath.
+
+    Args:
+        filepath: Path to groups file.
+
+    Returns:
+        dict[str, list[str]]: A dict with group names with keys and
+            lists of glycan ids as values.
+
+    Raises:
+        FileTypeError: If the file is not a csv file.
+        FileNotFoundError: If the file does not exist.
+        FileFormatError: If the file format is incorrect.
+            This includes: (1) the file does not have a "Group" column or a
+            "Sample" column; (2) the file has extra columns; (3) the file has
+            duplicated samples.
+    """
+    _check_file_type(filepath, "csv")
+    _check_exist(filepath)
+    _check_columns("groups", filepath, ["Group", "Sample"], only=True)
+    s = pd.read_csv(filepath, index_col="Sample").squeeze()
+    _check_duplicated_items("samples", s.index)
+    _check_group_number(s)
+    return GroupSeries(s)
+
+
 def _check_file_type(filepath: str, file_type: str) -> None:
     if Path(filepath).suffix != f".{file_type}":
         raise FileTypeError(f"File {filepath} is not a {file_type} file.")
@@ -167,3 +199,8 @@ def _load_glycans(filepath: str, string_col: str) -> tuple[list[str], list[str]]
             ids.append(row["GlycanID"])
             strings.append(row[string_col])
     return ids, strings
+
+
+def _check_group_number(group_series: Iterable[str]) -> None:
+    if len(set(group_series)) < 2:
+        raise NotEnoughGroupsError("There should be at least two groups.")
