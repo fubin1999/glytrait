@@ -5,6 +5,33 @@ from attrs import define
 
 from glytrait.load_data import GlyTraitInputData, AbundanceTable
 
+__all__ = ["preprocess"]
+
+
+# This is the high-level function that client code will use.
+def preprocess(
+    data: GlyTraitInputData,
+    filter_max_na: float,
+    impute_method: Literal["zero", "min", "lod", "mean", "median"],
+) -> None:
+    """Preprocess the abundance table.
+
+    Notes:
+        This function will modify the input data in place.
+
+    Args:
+        data (GlyTraitInputData): The input data.
+        filter_max_na (float): The maximum proportion of missing values allowed for a glycan.
+        impute_method (Literal["zero", "min", "lod", "mean", "median"]): The imputation method.
+    """
+    steps = [
+        FilterGlycans(max_na=filter_max_na),
+        Impute(method=impute_method),
+        Normalize(),
+    ]
+    pipeline = ProcessingPipeline(steps=steps)
+    pipeline(data)
+
 
 class ProcessingStep(Protocol):
     """The protocol for processing steps."""
