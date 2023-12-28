@@ -645,22 +645,19 @@ def test_build_meta_property_table(mocker, make_structure):
         return_value={".": mp.Wildcard, "isComplex": mp.IsComplex},
         autospec=True,
     )
-    glycan_ids = ["glycan1", "glycan2", "glycan3"]
-    glycans = [
-        make_structure(test_glycoct_1),
-        make_structure(test_glycoct_2),
-        make_structure(test_glycoct_3),
-    ]
+    glycans = {
+        "glycan1": make_structure(test_glycoct_1),
+        "glycan2": make_structure(test_glycoct_2),
+        "glycan3": make_structure(test_glycoct_3),
+    }
 
-    result = mp.build_meta_property_table(
-        glycan_ids, glycans, mode="structure", sia_linkage=False
-    )
+    result = mp.build_meta_property_table(glycans, mode="structure", sia_linkage=False)
     expected = pd.DataFrame(
         {
             ".": [1.0, 1.0, 1.0],
             "isComplex": [True, True, False],
         },
-        index=glycan_ids,
+        index=list(glycans.keys()),
     )
 
     pd.testing.assert_frame_equal(result, expected)

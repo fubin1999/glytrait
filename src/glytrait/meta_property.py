@@ -5,17 +5,57 @@ Functions:
 """
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
 from enum import Enum, auto
 from functools import singledispatch, cache
-from typing import Literal, Protocol, ClassVar, Type
+from typing import Literal, Protocol, ClassVar, Type, NewType
 
 import pandas as pd
 from attrs import define
 from glypy import Monosaccharide  # type: ignore
 
 from glytrait.exception import SiaLinkageError
-from glytrait.glycan import Structure, Composition, get_mono_str
+from glytrait.glycan import Structure, Composition, get_mono_str, GlycanDict
+
+__all__ = [
+    "MetaPropertyTable",
+    "build_meta_property_table",
+    "available_meta_properties",
+]
+
+
+MetaPropertyTable = NewType("MetaPropertyTable", pd.DataFrame)
+"""The type of the meta-property table. 
+Only returned by `build_meta_property_table`.
+A pandas DataFrame with `glycan_ids` as the index, 
+and the meta-property names as the columns.
+"""
+
+
+def build_meta_property_table(
+    glycans: GlycanDict,
+    mode: Literal["composition", "structure"],
+    sia_linkage: bool = False,
+) -> MetaPropertyTable:
+    """Build a table of meta-properties for glycans.
+
+    Args:
+        glycans: (GlycanDict): A dict of glycans, with glycan IDs as keys and
+            Compositions or Structures as values.
+        mode (Literal["composition", "structure"]): The calculation mode.
+        sia_linkage (bool, optional): Whether to include the sialic acid linkage
+            meta-properties. Defaults to False.
+
+    Returns:
+        MetaPropertyTable: The table of meta-properties.
+    """
+    mp_series_list: list[pd.Series] = []
+    for mp_name, MpClass in available_meta_properties(mode, sia_linkage).items():
+        mp = MpClass()
+        values = [mp(glycan) for glycan in glycans.values()]
+        s = pd.Series(values, index=pd.Index(glycans.keys()), name=mp_name)
+        mp_series_list.append(s)
+    mp_table_df = pd.concat(mp_series_list, axis=1)
+    return MetaPropertyTable(mp_table_df)
 
 
 class GlycanType(Enum):
@@ -687,34 +727,3 @@ class IsLowBranching(MetaProperty):
 
     def __call__(self, glycan: Composition) -> float:
         return glycan.get("N", 0) <= 4
-
-
-def build_meta_property_table(
-    glycan_ids: Sequence[str],
-    glycans: Iterable[Structure | Composition],
-    mode: Literal["composition", "structure"],
-    sia_linkage: bool = False,
-) -> pd.DataFrame:
-    """Build a table of meta-properties for glycans.
-
-    Args:
-        glycan_ids (Iterable[str]): The IDs of the glycans.
-        glycans (Iterable[Structure | Composition]): The glycans.
-        mode (Literal["composition", "structure"]): The calculation mode.
-        sia_linkage (bool, optional): Whether to include the sialic acid linkage
-            meta-properties. Defaults to False.
-
-    Returns:
-        pd.DataFrame: The table of meta-properties, with `glycan_ids` as the index,
-            and the meta-property names as the columns.
-    """
-    mp_series_list: list[pd.Series] = []
-    for mp_name, MpClass in available_meta_properties(mode, sia_linkage).items():
-        mp_series_list.append(
-            pd.Series(
-                [MpClass()(glycan) for glycan in glycans],
-                index=pd.Index(glycan_ids),
-                name=mp_name,
-            )
-        )
-    return pd.concat(mp_series_list, axis=1)
