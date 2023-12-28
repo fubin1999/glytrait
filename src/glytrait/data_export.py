@@ -4,6 +4,8 @@ from typing import Type, TypeVar, Any
 
 import pandas as pd
 
+from glytrait.formula import TraitFormula
+
 
 def export_all(to_export: Iterable[tuple[str, Any]], base_path: str) -> None:
     """Export all data to the directory given by `base_path`.
@@ -66,3 +68,12 @@ def dummy_exporter(data: Any, filepath: str) -> None:
 def export_dataframe(df: pd.DataFrame, filepath: str) -> None:
     """Export a pandas DataFrame to a CSV file."""
     df.to_csv(filepath, index=True)
+
+
+@register_exporter(TraitFormula, is_list=True)
+def export_formulas(formulas: list[TraitFormula], filepath: str) -> None:
+    """Export a list of TraitFormulas to a CSV file."""
+    with open(filepath, "w", encoding="utf8") as f:
+        for formula in formulas:
+            row = f"{formula.name}: {formula.description}\n"
+            f.write(row)
