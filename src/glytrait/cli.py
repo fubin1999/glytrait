@@ -7,7 +7,6 @@ import emoji
 from glytrait.config import Config
 from glytrait.exception import GlyTraitError
 from glytrait.formula import save_trait_formula_template, save_builtin_formula
-from glytrait.workflow import Workflow
 
 UNDIFINED = "__UNDEFINED__"
 

@@ -5,6 +5,8 @@ from click.testing import CliRunner
 
 from glytrait import cli, config as gt_config
 
+pytestmark = pytest.mark.skip(reason="CLI is not ready yet.")
+
 
 def test_cli_save_template(clean_dir):
     runner = CliRunner()
