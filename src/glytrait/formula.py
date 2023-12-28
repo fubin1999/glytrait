@@ -29,7 +29,12 @@ import glytrait
 from glytrait.exception import FormulaError
 from glytrait.meta_property import available_meta_properties
 
-__all__ = ["TraitFormula", "load_formulas", "save_trait_formula_template", "save_builtin_formula"]
+__all__ = [
+    "TraitFormula",
+    "load_formulas",
+    "save_trait_formula_template",
+    "save_builtin_formula",
+]
 
 default_struc_formula_file = files("glytrait.resources").joinpath("struc_formula.txt")
 default_comp_formula_file = files("glytrait.resources").joinpath("comp_formula.txt")
