@@ -17,7 +17,7 @@ import itertools
 import re
 from importlib.resources import files
 from pathlib import Path
-from typing import Literal, Optional, Generator, Iterable, Annotated
+from typing import Literal, Optional, Generator, Iterable
 
 import attrs
 import numpy as np
@@ -28,6 +28,8 @@ from numpy.typing import NDArray
 import glytrait
 from glytrait.exception import FormulaError
 from glytrait.meta_property import available_meta_properties
+
+__all__ = ["TraitFormula", "load_formulas", "save_trait_formula_template", "save_builtin_formula"]
 
 default_struc_formula_file = files("glytrait.resources").joinpath("struc_formula.txt")
 default_comp_formula_file = files("glytrait.resources").joinpath("comp_formula.txt")
@@ -83,7 +85,7 @@ class TraitFormula:
         sia_linkage (bool): Whether the formula contains sia linkage meta properties.
 
     Examples:
-        >>> from glytrait.trait import TraitFormula
+        >>> from glytrait.formula import TraitFormula
         >>> formula = TraitFormula(
         ...     description="The ratio of high-mannose to complex glycans",
         ...     name="MHy",
