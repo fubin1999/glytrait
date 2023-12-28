@@ -25,7 +25,7 @@ __all__ = [
 
 AbundanceTable = NewType("AbundanceTable", pd.DataFrame)
 """Abundance table type.
-The index are glycans and the columns are samples.
+The index are samples and the columns are glycans.
 The abundance table could only be returned by `load_abundance_table` function.
 """
 
@@ -69,7 +69,7 @@ class GlyTraitInputData:
 
     def _check_samples(self):
         """Check if `groups` has the same samples as `abundance_table`."""
-        if not set(self.abundance_table.columns) == set(self.groups.index):
+        if not set(self.abundance_table.index) == set(self.groups.index):
             msg = (
                 "The samples in the abundance table and the groups should be the same."
             )
@@ -77,7 +77,7 @@ class GlyTraitInputData:
 
     def _check_glycans(self):
         """Check if `glycans` has the same glycans as `abundance_table`."""
-        if not set(self.abundance_table.index) == set(self.glycans.keys()):
+        if not set(self.abundance_table.columns) == set(self.glycans.keys()):
             msg = (
                 "The glycans in the abundance table and the glycans should be the same."
             )
@@ -103,8 +103,8 @@ def load_abundance_table(filepath: str) -> AbundanceTable:
     """
     _check_file_type(filepath, "csv")
     _check_exist(filepath)
-    _check_columns("abundance table", filepath, ["GlycanID"])
-    df = pd.read_csv(filepath, index_col="GlycanID")
+    _check_columns("abundance table", filepath, ["Sample"])
+    df = pd.read_csv(filepath, index_col="Sample")
     _check_numeric("abundance table", df)
     _check_duplicated_index("abundance table", df)
     _check_duplicated_columns("abundance table", df)

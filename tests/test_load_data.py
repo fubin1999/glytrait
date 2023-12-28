@@ -22,11 +22,11 @@ from glytrait.load_data import (
 def abundance_table() -> pd.DataFrame:
     df = pd.DataFrame(
         {
-            "sample1": [1, 2, 3],
-            "sample2": [4, 5, 6],
-            "sample3": [7, 8, 9],
+            "G1": [1, 2, 3],
+            "G2": [4, 5, 6],
+            "G3": [7, 8, 9],
         },
-        index=pd.Index(["G1", "G2", "G3"], name="GlycanID"),
+        index=pd.Index(["sample1", "sample2", "sample3"], name="Sample"),
     )
     return df
 
