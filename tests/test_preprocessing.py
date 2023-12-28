@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 
 from glytrait import preprocessing as pp
+from glytrait.load_data import GlyTraitInputData
 
 
 @pytest.mark.parametrize(
@@ -26,29 +27,45 @@ def test_impute(method, expected):
     assert result.iloc[1, 0] == expected
 
 
-@pytest.mark.parametrize(
-    "ratio, expected",
-    [
-        (0, ["Glycan2"]),
-        (0.3, ["Glycan1", "Glycan2"]),
-        (0.5, ["Glycan1", "Glycan2", "Glycan3"]),
-        (0.7, ["Glycan1", "Glycan2", "Glycan3", "Glycan4"]),
-        (1, ["Glycan1", "Glycan2", "Glycan3", "Glycan4", "Glycan5", "Glycan6"]),
-    ],
-)
-def test_filter_glycans(ratio, expected):
-    df = pd.DataFrame(
-        {
-            "Glycan1": [0.1, None, 0.3, 0.1, 0.2],
-            "Glycan2": [0.2, 0.3, 0.4, 0.2, 0.3],
-            "Glycan3": [0.3, 0.4, None, None, 0.4],
-            "Glycan4": [None, None, None, 0.3, 0.5],
-            "Glycan5": [None, None, None, 0.4, None],
-            "Glycan6": [None, None, None, None, None],
-        }
+class TestFilterGlycans:
+    @pytest.mark.parametrize(
+        "ratio, expected",
+        [
+            (0, ["Glycan2"]),
+            (0.3, ["Glycan1", "Glycan2"]),
+            (0.5, ["Glycan1", "Glycan2", "Glycan3"]),
+            (0.7, ["Glycan1", "Glycan2", "Glycan3", "Glycan4"]),
+            (1, ["Glycan1", "Glycan2", "Glycan3", "Glycan4", "Glycan5", "Glycan6"]),
+        ],
     )
-    result = pp.filter_glycans(df, ratio)
-    assert sorted(result.columns.tolist()) == sorted(expected)
+    def test_filter_glycans_logic(self, ratio, expected):
+        df = pd.DataFrame(
+            {
+                "Glycan1": [0.1, None, 0.3, 0.1, 0.2],
+                "Glycan2": [0.2, 0.3, 0.4, 0.2, 0.3],
+                "Glycan3": [0.3, 0.4, None, None, 0.4],
+                "Glycan4": [None, None, None, 0.3, 0.5],
+                "Glycan5": [None, None, None, 0.4, None],
+                "Glycan6": [None, None, None, None, None],
+            }
+        )
+        result = pp._filter_glycans(df, ratio)
+        assert sorted(result) == sorted(expected)
+
+    def test_filter_glycans_step(self):
+        df = pd.DataFrame(
+            {
+                "G1": [1, 2, None],
+                "G2": [1, 2, 3],
+            },
+            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
+        )
+        glycans = {"G1": "Glycan1", "G2": "Glycan2"}
+        data = GlyTraitInputData(abundance_table=df, glycans=glycans)
+        step = pp.FilterGlycans(max_na=0.2)
+        step(data)
+        assert data.abundance_table.columns.tolist() == ["G2"]
+        assert data.glycans == {"G2": "Glycan2"}
 
 
 def test_normalization():

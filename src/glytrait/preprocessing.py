@@ -4,7 +4,7 @@ from typing import Literal, Protocol
 import pandas as pd
 from attrs import define
 
-from glytrait.load_data import GlyTraitInputData
+from glytrait.load_data import GlyTraitInputData, AbundanceTable
 
 
 class ProcessingStep(Protocol):
@@ -25,19 +25,29 @@ class ProcessingPipeline:
             step(data)
 
 
-def filter_glycans(abundance_df: pd.DataFrame, max_na: float) -> pd.DataFrame:
+@define
+class FilterGlycans:
     """Filter glycans with too many missing values.
 
     Args:
-        abundance_df (pd.DataFrame): The abundance table, with samples as index and Compositions
-            as columns.
         max_na (float): The maximum proportion of missing values allowed for a glycan.
-
-    Returns:
-        filtered_df (pd.DataFrame): The filtered abundance table.
     """
-    filtered_df = abundance_df.loc[:, abundance_df.isna().mean() <= max_na]
-    return filtered_df.copy()
+
+    max_na: float
+
+    def __call__(self, data: GlyTraitInputData) -> None:
+        glycans_to_keep = _filter_glycans(data.abundance_table, self.max_na)
+        data.abundance_table = AbundanceTable(
+            data.abundance_table.filter(items=glycans_to_keep)
+        )
+        for glycan in set(data.glycans).difference(glycans_to_keep):
+            del data.glycans[glycan]
+
+
+def _filter_glycans(abundance_df: AbundanceTable, max_na: float) -> list[str]:
+    to_keep_mask = abundance_df.isna().mean() <= max_na
+    glycans_to_keep = list(abundance_df.columns[to_keep_mask])
+    return glycans_to_keep
 
 
 def impute(
