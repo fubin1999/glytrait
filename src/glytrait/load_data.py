@@ -21,6 +21,7 @@ __all__ = [
     "load_abundance_table",
     "load_structures",
     "load_compositions",
+    "load_groups",
 ]
 
 AbundanceTable = NewType("AbundanceTable", pd.DataFrame)
