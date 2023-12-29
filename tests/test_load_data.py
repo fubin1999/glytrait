@@ -10,6 +10,7 @@ from glytrait.exception import (
     NotEnoughGroupsError,
 )
 from glytrait.load_data import (
+    load_input_data,
     load_abundance_table,
     load_structures,
     load_compositions,
@@ -353,3 +354,25 @@ class TestGlyTraitInputData:
                 glycans=glycan_dict,
                 groups=group_series,
             )
+
+
+@pytest.mark.usefixtures("patch_structure_from_string")
+def test_load_input_data(
+    abundance_table_file,
+    group_series_file,
+    structure_file,
+    abundance_table,
+    group_series,
+):
+    data = load_input_data(
+        abundance_file=abundance_table_file,
+        glycan_file=structure_file,
+        mode="structure",
+        group_file=group_series_file,
+    )
+    assert data.abundance_table.equals(abundance_table)
+    assert data.groups.equals(group_series)
+    assert data.glycans == {
+        row["GlycanID"]: row["Structure"]
+        for row in pd.read_csv(structure_file).to_dict(orient="records")
+    }

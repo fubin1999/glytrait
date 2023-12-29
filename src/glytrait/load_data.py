@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import csv
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Literal
 
 import pandas as pd
 from attrs import define
@@ -16,10 +18,12 @@ from glytrait.glycan import (
     parse_compositions,
     StructureDict,
     CompositionDict,
+    GlycanDict,
 )
 
 __all__ = [
     "GlyTraitInputData",
+    "load_input_data",
     "load_abundance_table",
     "load_structures",
     "load_compositions",
@@ -27,7 +31,51 @@ __all__ = [
 ]
 
 
-# Also see docstrings of `StructureDict` and `CompositionDict` in glycan.py.
+# ===== The highest-level API =====
+def load_input_data(
+    *,
+    abundance_file: str,
+    glycan_file: str,
+    mode: Literal["structure", "composition"] = "structure",
+    group_file: Optional[str] = None,
+) -> GlyTraitInputData:
+    """Load all the input data for GlyTrait.
+
+    Notes:
+        If `group_file` is not provided, the `groups` attribute of the returned
+        `GlyTraitInputData` will be `None`.
+
+    Args:
+        abundance_file: Path to the abundance table file.
+        glycan_file: Path to the glycan file.
+        mode: Either "structure" or "composition".
+        group_file: Path to the group file. Optional.
+
+    Returns:
+        GlyTraitInputData: Input data for GlyTrait.
+
+    Raises:
+        FileTypeError: If any of the files is not a csv file.
+        FileNotFoundError: If any of the files does not exist.
+        FileFormatError: If any of the files has incorrect format.
+            See docstrings of `load_abundance_table`, `load_structures`,
+            `load_compositions`, and `load_groups` for details.
+    """
+    abundance_table = load_abundance_table(abundance_file)
+    glycans: GlycanDict
+    if mode == "structure":
+        glycans = load_structures(glycan_file)
+    elif mode == "composition":
+        glycans = load_compositions(glycan_file)
+    else:
+        raise ValueError(f"Invalid mode {mode}.")
+    if group_file is not None:
+        groups = load_groups(group_file)
+    else:
+        groups = None
+    return GlyTraitInputData(
+        abundance_table=abundance_table, glycans=glycans, groups=groups
+    )
 
 
 @define(kw_only=True)
@@ -76,6 +124,7 @@ class GlyTraitInputData:
             raise FileFormatError(msg)
 
 
+# ===== Functions for loading individual files =====
 def load_abundance_table(filepath: str) -> AbundanceTable:
     """Load abundance table from filepath.
 
@@ -205,6 +254,7 @@ def load_groups(filepath: str) -> GroupSeries:
     return GroupSeries(s)
 
 
+# ===== Helper functions =====
 def _check_file_type(filepath: str, file_type: str) -> None:
     if Path(filepath).suffix != f".{file_type}":
         raise FileTypeError(f"File {filepath} is not a {file_type} file.")
