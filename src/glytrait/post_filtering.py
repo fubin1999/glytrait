@@ -6,6 +6,7 @@ from glytrait.formula import TraitFormula
 from glytrait.data_type import DerivedTraitTable
 
 
+# TODO: Formulas should not be filtered
 def filter_invalid(
     formulas: Iterable[TraitFormula], trait_df: DerivedTraitTable
 ) -> tuple[list[TraitFormula], DerivedTraitTable]:
