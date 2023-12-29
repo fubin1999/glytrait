@@ -22,9 +22,7 @@ from typing import Literal, Optional, Generator, Iterable
 import numpy as np
 import pandas as pd
 from attrs import field, frozen, validators
-from numpy.typing import NDArray
 
-import glytrait
 from glytrait.exception import FormulaError
 from glytrait.meta_property import available_meta_properties
 
@@ -81,15 +79,37 @@ def _check_denominator(instance, attribute, value):
 class TraitFormula:
     """The trait formula.
 
+    The `TraitFormula` is used to represent a trait formula,
+    and to calculate the trait values for each sample.
+    To use it, you need to
+    1. Make sure the index of the meta-property table (glycans) and the columns of the
+    abundance table (also glycans) are in the same order.
+    2. Initialize the formula by calling `initialize` method with a meta-property table.
+    3. Calculate the trait values by calling `calcu_trait` method with an abundance table.
+
+    Notes:
+        Please make sure that the index of the meta-property table
+        and the columns of the abundance table are in the same order.
+        Otherwise, an assertion error will be raised.
+        This can be easily achieved by using the `reindex` method of pandas DataFrame
+        (see the example below).
+        The reason why `TraitFormula` does not do this automatically is for efficiency.
+        Reindexing the meta-property table on each call of `calcu_trait` is time-consuming
+        and unnecessary.
+
     Attributes:
         description (str): The description of the trait.
         name (str): The name of the trait.
         type (str): The type of the trait. Either "structure" or "composition".
+        numerator_properties (list[str]): The meta properties in the numerator.
+        denominator_properties (list[str]): The meta properties in the denominator.
         coefficient (float): The coefficient of the trait.
         sia_linkage (bool): Whether the formula contains sia linkage meta properties.
 
     Examples:
         >>> from glytrait.formula import TraitFormula
+        >>> meta_property_table = ...
+        >>> abundance_table = ...
         >>> formula = TraitFormula(
         ...     description="The ratio of high-mannose to complex glycans",
         ...     name="MHy",
@@ -97,8 +117,10 @@ class TraitFormula:
         ...     numerator_properties=["isHighMannose"],
         ...     denominator_properties=["isComplex"],
         ... )
+        >>> meta_property_table = meta_property_table.reindex(abundance_table.columns)
+        >>> pd.testing.assert_index_equal(meta_property_table.index, abundance_table.columns)
         >>> formula.initialize(meta_property_table)
-        >>> trait_df[formula.name] = glytrait.trait.calcu_derived_trait(abundance_table)
+        >>> trait_values = formula.calcu_trait(abundance_table)  # a Series
     """
 
     description: str = field()
@@ -163,7 +185,7 @@ class TraitFormula:
     ) -> pd.Series:
         return meta_property_table[properties].prod(axis=1)
 
-    def calcu_trait(self, abundance_table: pd.DataFrame) -> NDArray:
+    def calcu_trait(self, abundance_table: pd.DataFrame) -> pd.Series:
         """Calculate the trait.
 
         Args:
@@ -171,7 +193,7 @@ class TraitFormula:
                 and glycans as columns.
 
         Returns:
-            NDArray: An array of trait values for each sample.
+            pd.Series: An array of trait values for each sample.
         """
         if not self._initialized:
             raise RuntimeError("TraitFormula is not initialized.")
@@ -181,7 +203,10 @@ class TraitFormula:
         numerator = abundance_table.values @ self._numerator.values
         denominator = abundance_table.values @ self._denominator.values
         denominator[denominator == 0] = np.nan
-        return numerator / denominator * self.coefficient
+        values = numerator / denominator * self.coefficient
+        return pd.Series(
+            values, index=abundance_table.index, name=self.name, dtype=float
+        )
 
     def is_child_of(self, other: TraitFormula) -> bool:
         """Whether this formula is a child of the other formula.

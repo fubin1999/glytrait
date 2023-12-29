@@ -43,13 +43,7 @@ def calcu_derived_trait(
     trait_series: list[pd.Series] = []
     for formula in formulas:
         formula.initialize(meta_prop_df_ordered)
-        trait_s = pd.Series(
-            data=formula.calcu_trait(abund_df),
-            index=abund_df.index,
-            name=formula.name,
-            dtype=float,
-        )
-        trait_series.append(trait_s)
+        trait_series.append(formula.calcu_trait(abund_df))
     derived_trait_df = pd.concat(trait_series, axis=1)
     derived_trait_df = derived_trait_df.round(6)
     return DerivedTraitTable(derived_trait_df)
