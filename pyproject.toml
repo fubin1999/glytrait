@@ -37,7 +37,7 @@ mypy = "^1.7.1"
 pandas-stubs = "^2.1.1.230928"
 
 [tool.poetry.scripts]
-glytrait = "glytrait.cli:cli"
+glytrait = "glytrait_cli:cli"
 
 [tool.mypy]
 exclude = [

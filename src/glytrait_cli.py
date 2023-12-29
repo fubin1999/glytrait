@@ -4,27 +4,11 @@ from pathlib import Path
 import click
 import emoji
 
+from glytrait.api import GlyTrait
 from glytrait.exception import GlyTraitError
-from glytrait.formula import save_trait_formula_template, save_builtin_formula
+from glytrait.formula import save_builtin_formula
 
 UNDIFINED = "__UNDEFINED__"
-
-
-def save_template_callback(ctx, param, value):
-    """Save a template for the user to fill in."""
-    if value == UNDIFINED:
-        return
-    if Path(value).exists() and not Path(value).is_dir():
-        raise click.BadParameter("The path to save the template must be a directory.")
-    else:
-        save_trait_formula_template(value)
-        msg = (
-            f"Template saved to {value}/trait_formula.txt.\n"
-            f"You can edit the template and use `glytrait INPUT_FILE OUTPUT_FILE -f "
-            f"TEMPLATE_FILE` to provide additional traits to glyTrait."
-        )
-        click.echo(emoji.emojize(msg))
-        ctx.exit()
 
 
 def save_builtin_formulas_callback(ctx, param, value):
@@ -46,14 +30,19 @@ def save_builtin_formulas_callback(ctx, param, value):
 
 @click.command()
 @click.argument(
-    "input-file",
-    type=click.Path(),
+    "abundance-file",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    required=False,
+)
+@click.argument(
+    "glycan-file",
+    type=click.Path(exists=True, file_okay=True, dir_okay=True),
     required=False,
 )
 @click.option(
     "-o",
-    "--output-file",
-    type=click.Path(),
+    "--output-dir",
+    type=click.Path(dir_okay=True, file_okay=False),
     help="Output file path. Default is the input file name with '_glytrait.xlsx' "
     "suffix.",
 )
@@ -81,7 +70,10 @@ def save_builtin_formulas_callback(ctx, param, value):
     help="Method to impute missing values.",
 )
 @click.option(
-    "-l", "--sia-linkage", is_flag=True, help="Include sialic acid linkage traits."
+    "-l",
+    "--sia-linkage",
+    is_flag=True,
+    help="Include sialic acid linkage traits.",
 )
 @click.option(
     "-f",
@@ -90,46 +82,19 @@ def save_builtin_formulas_callback(ctx, param, value):
     help="User formula file.",
 )
 @click.option(
-    "-t",
-    "--save-template",
-    type=click.Path(),
-    callback=save_template_callback,
-    is_eager=True,
-    expose_value=False,
-    default=UNDIFINED,
-    help="The directory path to save the formular template file.",
-)
-@click.option(
     "--filter/--no-filter",
     default=True,
     help="Filter out invalid derived traits. Default is filtering."
     "Use --no-filter to disable filtering.",
 )
 @click.option(
+    "-c",
     "--corr-threshold",
     type=click.FLOAT,
     default=1,
     help="Threshold for correlation between traits. "
     "Default is 1, which means only traits with perfect collinearity "
     "will be filtered.",
-)
-@click.option(
-    "--corr-method",
-    type=click.Choice(["pearson", "spearman"]),
-    default="pearson",
-    help="Method to calculate correlation between traits. " "Default is 'pearson'.",
-)
-@click.option(
-    "-s",
-    "--structure-file",
-    type=click.Path(exists=True),
-    help="Structure file for hypothesis test.",
-)
-@click.option(
-    "-d",
-    "--database",
-    type=click.STRING,
-    help="Built-in database to use, either 'serum' or 'IgG'.",
 )
 @click.option(
     "-b",
@@ -143,8 +108,9 @@ def save_builtin_formulas_callback(ctx, param, value):
 )
 @click.version_option()
 def cli(
-    input_file,
-    output_file,
+    abundance_file,
+    glycan_file,
+    output_dir,
     mode,
     filter_glycan_ratio,
     impute_method,
@@ -152,12 +118,9 @@ def cli(
     formula_file,
     filter,
     corr_threshold,
-    corr_method,
-    structure_file,
-    database,
 ):
     """Run the glytrait workflow."""
-    if input_file is None:
+    if abundance_file is None:
         msg = r"""
 Welcome to GlyTrait!
 
@@ -175,35 +138,31 @@ Use `glytrait --help` for more information.
         click.echo(msg)
         return
 
-    if output_file is None:
-        output_file = str(
-            Path(input_file).with_name(Path(input_file).stem + "_glytrait.xlsx")
+    if output_dir is None:
+        output_dir = Path(abundance_file).with_name(
+            Path(abundance_file).stem + "_glytrait"
         )
-    else:
-        Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
     mode = "composition" if mode.lower() in ["c", "composition"] else "structure"
     try:
-        config = Config(
-            dict(
-                input_file=input_file,
-                output_file=output_file,
-                mode=mode,
-                filter_glycan_max_na=filter_glycan_ratio,
-                impute_method=impute_method,
-                corr_threshold=corr_threshold,
-                corr_method=corr_method,
-                sia_linkage=sia_linkage,
-                formula_file=formula_file,
-                post_filtering=filter,
-                structure_file=structure_file,
-                database=database,
-            )
+        gt = GlyTrait(
+            mode=mode,
+            filter_max_na=filter_glycan_ratio,
+            impute_method=impute_method,
+            post_filtering=filter,
+            correlation_threshold=corr_threshold,
+            sia_linkage=sia_linkage,
+            custom_formula_file=formula_file,
         )
-        workflow = Workflow(config)
-        workflow.run()
+        gt.run(
+            output_dir=output_dir,
+            abundance_file=abundance_file,
+            glycan_file=glycan_file,
+            group_file=None,
+        )
     except GlyTraitError as e:
         raise click.UsageError(str(e) + emoji.emojize(" :thumbs_down:"))
-    msg = f"Done :thumbs_up:! Output written to {output_file}."
+    msg = f"Done :thumbs_up:! Output written to {output_dir}."
     click.echo(emoji.emojize(msg))
 
 
