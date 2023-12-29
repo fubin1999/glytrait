@@ -22,7 +22,7 @@ class GlyTrait:
         default="zero"
     )
     post_filtering: bool = field(default=True)
-    correlation_threshold: bool = field(default=0.9)
+    correlation_threshold: float = field(default=0.9)
     sia_linkage: bool = field(default=False)
     custom_formula_file: Optional[str] = field(default=None)
 
