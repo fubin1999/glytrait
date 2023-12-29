@@ -3,7 +3,8 @@ from typing import Literal, Protocol
 
 from attrs import define
 
-from glytrait.load_data import GlyTraitInputData, AbundanceTable
+from glytrait.load_data import GlyTraitInputData
+from glytrait.data_type import AbundanceTable
 
 __all__ = ["preprocess"]
 

@@ -5,16 +5,11 @@ Functions:
     filter_invalid: Rule out the invalid traits.
     filter_colinearity: Reduce the traits that are highly correlated.
 """
-from typing import NewType
 
 import pandas as pd
 
 from glytrait.formula import TraitFormula
-from glytrait.load_data import AbundanceTable
-from glytrait.meta_property import MetaPropertyTable
-
-
-DerivedTraitTable = NewType("DerivedTraitTable", pd.DataFrame)
+from glytrait.data_type import AbundanceTable, MetaPropertyTable, DerivedTraitTable
 
 
 def calcu_derived_trait(

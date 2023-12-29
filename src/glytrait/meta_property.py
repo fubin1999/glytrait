@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 from functools import singledispatch, cache
-from typing import Literal, Protocol, ClassVar, Type, NewType
+from typing import Literal, Protocol, ClassVar, Type
 
 import pandas as pd
 from attrs import define
@@ -15,20 +15,12 @@ from glypy import Monosaccharide  # type: ignore
 
 from glytrait.exception import SiaLinkageError
 from glytrait.glycan import Structure, Composition, get_mono_str, GlycanDict
+from glytrait.data_type import MetaPropertyTable
 
 __all__ = [
-    "MetaPropertyTable",
     "build_meta_property_table",
     "available_meta_properties",
 ]
-
-
-MetaPropertyTable = NewType("MetaPropertyTable", pd.DataFrame)
-"""The type of the meta-property table. 
-Only returned by `build_meta_property_table`.
-A pandas DataFrame with `glycan_ids` as the index, 
-and the meta-property names as the columns.
-"""
 
 
 def build_meta_property_table(

@@ -38,7 +38,11 @@ CompositionDict = NewType("CompositionDict", dict[str, "Composition"])
 The keys are the names of the compositions, and the values are the compositions.
 """
 
-GlycanDict = Union[StructureDict, CompositionDict]
+GlycanDict = NewType("GlycanDict", dict[str, Union["Structure", "Composition"]])
+"""A type hint for a dictionary of `Structure` or `Composition` instances.
+The keys are the names of the structures or compositions, 
+and the values are the structures or compositions.
+"""
 
 
 def parse_structures(__iter: Iterable[tuple[str, str]]) -> StructureDict:

@@ -3,7 +3,7 @@ from typing import Iterable, Literal
 import numpy as np
 
 from glytrait.formula import TraitFormula
-from glytrait.trait import DerivedTraitTable
+from glytrait.data_type import DerivedTraitTable
 
 
 def filter_invalid(

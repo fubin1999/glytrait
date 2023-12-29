@@ -1,39 +1,30 @@
 import csv
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import NewType, Optional
+from typing import Optional
 
 import pandas as pd
 from attrs import define
 
+from glytrait.data_type import (
+    AbundanceTable,
+    GroupSeries,
+)
 from glytrait.exception import FileTypeError, FileFormatError, NotEnoughGroupsError
 from glytrait.glycan import (
     parse_structures,
-    StructureDict,
     parse_compositions,
+    StructureDict,
     CompositionDict,
 )
 
 __all__ = [
-    "AbundanceTable",
-    "GroupSeries",
     "GlyTraitInputData",
     "load_abundance_table",
     "load_structures",
     "load_compositions",
     "load_groups",
 ]
-
-AbundanceTable = NewType("AbundanceTable", pd.DataFrame)
-"""Abundance table type.
-The index are samples and the columns are glycans.
-The abundance table could only be returned by `load_abundance_table` function.
-"""
-
-GroupSeries = NewType("GroupSeries", pd.Series)
-"""Group series type.
-The index are the sample names and the values are groups.
-"""
 
 
 # Also see docstrings of `StructureDict` and `CompositionDict` in glycan.py.
