@@ -3,8 +3,6 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from glytrait import cli, config as gt_config
-
 pytestmark = pytest.mark.skip(reason="CLI is not ready yet.")
 
 
