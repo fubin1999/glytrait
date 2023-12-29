@@ -3,12 +3,8 @@ import pandas as pd
 import pytest
 from attr import define
 
-import glytrait.post_filtering
-from glytrait.post_filtering import (
-    _relationship_matrix,
-    _correlation_matrix,
-    filter_colinearity,
-)
+import glytrait.post_filtering as pf
+import glytrait.formula as fml
 
 
 def test_filter_invalid():
@@ -27,7 +23,7 @@ def test_filter_invalid():
             "F": [0.5, 0.5, 0.5],
         }
     )
-    result_formulas, result_df = glytrait.post_filtering.filter_invalid(formulas, df)
+    result_formulas, result_df = pf.filter_invalid(formulas, df)
     expected_formulas = [FakeFormula(name="A")]
     expected_df = pd.DataFrame(
         {
@@ -39,17 +35,23 @@ def test_filter_invalid():
 
 
 def test_relationship_matrix(mocker):
+    def mock_is_child_of(trait1, trai2):
+        if trait1.name == "trait1":
+            return False
+        elif trait1.name == "trait2":
+            return trai2.name == "trait1"
+        elif trait1.name == "trait3":
+            return trai2.name in ["trait1", "trait2"]
+
     trait1 = mocker.Mock()
     trait1.name = "trait1"
-    trait1.is_child_of.return_value = False
     trait2 = mocker.Mock()
     trait2.name = "trait2"
-    trait2.is_child_of.side_effect = lambda x: x.name == "trait1"
     trait3 = mocker.Mock()
     trait3.name = "trait3"
-    trait3.is_child_of.side_effect = lambda x: x.name in ["trait1", "trait2"]
 
-    result = _relationship_matrix(
+    mocker.patch("glytrait.post_filtering._is_child_of", side_effect=mock_is_child_of)
+    result = pf._relationship_matrix(
         ["trait1", "trait2", "trait3"], [trait1, trait2, trait3]
     )
     expected = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0]])
@@ -96,7 +98,7 @@ def test_correlation_matrix(threshold, expected):
             "trait4": [2, 3, 1, 5, 4],  # 与trait1的相关性为0.6
         }
     )
-    result = _correlation_matrix(df, threshold, method="pearson")
+    result = pf._correlation_matrix(df, threshold, method="pearson")
     assert np.array_equal(result, expected)
 
 
@@ -138,7 +140,7 @@ def test_filter_colinearity(mocker):
         ),
         autospec=True,
     )
-    result_formulas, result_df = filter_colinearity(
+    result_formulas, result_df = pf.filter_colinearity(
         formulas, trait_table, 0.5, "pearson"
     )
     expected_formulas = [FakeTrait(name=n) for n in ["trait2", "trait3", "trait4"]]
@@ -156,3 +158,26 @@ def test_filter_colinearity(mocker):
         ["trait1", "trait2", "trait3", "trait4"], formulas
     )
     correlation_matrix_mock.assert_called_once_with(trait_table, 0.5, "pearson")
+
+
+@pytest.mark.parametrize(
+    "trait1, trait2, expected",
+    [
+        ("A2G", "CG", True),
+        ("A2Fa", "CFa", True),
+        ("A2Fc", "CFc", True),
+        ("A2S", "CS", True),
+        ("A2E", "CE", True),
+        ("A2SG", "A2G", True),
+        ("A2FSG", "A2FG", True),
+        ("A2FSG", "A2SG", True),
+        ("A2F0G", "A2FG", False),
+        ("A2FSG", "A2G", False),
+    ],
+)
+def test_is_child_of(trait1, trait2, expected):
+    formulas = fml.load_formulas("structure", sia_linkage=True)
+    formula_map = {f.name: f for f in formulas}
+    formulas1 = formula_map[trait1]
+    formulas2 = formula_map[trait2]
+    assert pf._is_child_of(formulas1, formulas2) == expected

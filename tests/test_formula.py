@@ -206,28 +206,6 @@ class TestTraitFormula:
         numerator.append("new_property")
         assert formula1.numerator_properties == before_change
 
-    @pytest.mark.parametrize(
-        "trait1, trait2, expected",
-        [
-            ("A2G", "CG", True),
-            ("A2Fa", "CFa", True),
-            ("A2Fc", "CFc", True),
-            ("A2S", "CS", True),
-            ("A2E", "CE", True),
-            ("A2SG", "A2G", True),
-            ("A2FSG", "A2FG", True),
-            ("A2FSG", "A2SG", True),
-            ("A2F0G", "A2FG", False),
-            ("A2FSG", "A2G", False),
-        ],
-    )
-    def test_is_child_of(self, trait1, trait2, expected):
-        formulas = fml.load_formulas("structure", sia_linkage=True)
-        formula_map = {f.name: f for f in formulas}
-        formulas1 = formula_map[trait1]
-        formulas2 = formula_map[trait2]
-        assert formulas1.is_child_of(formulas2) == expected
-
 
 @pytest.mark.parametrize(
     "expression, name, num_props, den_props, coef",

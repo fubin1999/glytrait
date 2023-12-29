@@ -209,45 +209,6 @@ class TraitFormula:
             values, index=abundance_table.index, name=self.name, dtype=float
         )
 
-    def is_child_of(self, other: TraitFormula) -> bool:
-        """Whether this formula is a child of the other formula.
-
-        A formula is a child of another formula
-        if both numerator and denominator of this formula have the same additional meta
-        property as the other formula.
-
-        For example,
-        - A2FG is a child of A2G
-        - A2FSG is a child of A2FG, and also a child of A2SG.
-
-        Note that A2FSG is not a child of A2G, for it is a grandchild of A2G.
-        Also, A2FG is not a child of CG.
-        """
-        if self.name in ("A1S", "A2S", "A3S", "A4S") and other.name == "CS":
-            return True
-        if self.name in ("A1E", "A2E", "A3E", "A4E") and other.name == "CE":
-            return True
-        if self.name in ("A1L", "A2L", "A3L", "A4L") and other.name == "CL":
-            return True
-
-        num1 = set(self.numerator_properties)
-        den1 = set(self.denominator_properties)
-        try:
-            num2 = set(other.numerator_properties)
-            den2 = set(other.denominator_properties)
-        except AttributeError:
-            raise TypeError("The other formula is not a TraitFormula instance.")
-
-        # General case
-        condition = (
-            not (num2 - num1)
-            and not (den2 - den1)
-            and num1 - num2 == den1 - den2
-            and len(num1 - num2) == 1
-        )
-
-        return condition
-
 
 def load_formulas(
     type_: Literal["structure", "composition"],
