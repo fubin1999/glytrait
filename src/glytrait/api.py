@@ -12,7 +12,41 @@ from glytrait.data_export import export_all
 
 
 class GlyTrait:
-    """GlyTrait API."""
+    """GlyTrait API.
+
+    Args:
+        mode (str): "structure" or "composition". Default: "structure".
+        filter_max_na (float): The maximum ratio of missing values in a sample.
+            If the ratio of missing values in a sample is greater than this value,
+            the sample will be removed. Default: 0.0.
+        impute_method (str): The method to impute missing values.
+            "zero": fill with 0.
+            "min": fill with the minimum value of the column.
+            "lod": fill with the limit of detection of the column.
+            "mean": fill with the mean value of the column.
+            "median": fill with the median value of the column.
+            Default: "zero".
+        post_filtering (bool): Whether to perform post filtering.
+            If True, the invalid traits and the highly correlated traits will be removed.
+            Default: True.
+        correlation_threshold (float): The correlation threshold for post filtering.
+            If the correlation between two traits is greater than this value,
+            one of them will be removed. Default: 0.9.
+        sia_linkage (bool): Whether to consider the linkage of sialic acid.
+            If True, the linkage of sialic acid will be considered in the calculation of
+            meta properties. Default: False.
+        custom_formula_file (str): Path to the custom formula file.
+
+    Examples:
+        >>> from glytrait import GlyTrait
+        >>> glytrait = GlyTrait()
+        >>> glytrait.run(
+        ...     output_dir="output",
+        ...     abundance_file="glycan_abundance.csv",
+        ...     glycan_file="glycan_structure.csv",
+        ...     group_file="group.csv",
+        ... )
+    """
 
     def __init__(self, **kwargs):
         self._config = _Config(**kwargs)
