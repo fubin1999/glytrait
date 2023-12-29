@@ -39,7 +39,7 @@ def calcu_derived_trait(
     # `TraitFormula.calcu_trait` will raise an assertion error if the orders
     # of the glycans are different.
     # # (See `TraitFormula`)
-    meta_prop_df_ordered = meta_prop_df.reindex(abund_df.columns)
+    meta_prop_df_ordered = MetaPropertyTable(meta_prop_df.reindex(abund_df.columns))
     trait_series: list[pd.Series] = []
     for formula in formulas:
         formula.initialize(meta_prop_df_ordered)
