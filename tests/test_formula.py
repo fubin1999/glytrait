@@ -222,7 +222,7 @@ class TestTraitFormula:
         ],
     )
     def test_is_child_of(self, trait1, trait2, expected):
-        formulas = fml.load_formulas("structure")
+        formulas = fml.load_formulas("structure", sia_linkage=True)
         formula_map = {f.name: f for f in formulas}
         formulas1 = formula_map[trait1]
         formulas2 = formula_map[trait2]

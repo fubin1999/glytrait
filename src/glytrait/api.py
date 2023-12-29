@@ -52,7 +52,9 @@ class GlyTrait:
         if not isinstance(value, str):
             raise ValueError("impute_method must be a string.")
         if value not in {"zero", "min", "lod", "mean", "median"}:
-            raise ValueError("impute_method must be one of: zero, min, lod, mean, median.")
+            raise ValueError(
+                "impute_method must be one of: zero, min, lod, mean, median."
+            )
 
     @post_filtering.validator
     def _validate_post_filtering(self, attribute, value):  # type: ignore
@@ -78,7 +80,9 @@ class GlyTrait:
                 raise ValueError("custom_formula_file must be a string.")
 
     def __attrs_post_init__(self):
-        self._formulas = load_formulas(self.mode, self.custom_formula_file, self.sia_linkage)
+        self._formulas = load_formulas(
+            self.mode, self.custom_formula_file, self.sia_linkage
+        )
 
     def run(
         self,
