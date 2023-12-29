@@ -122,26 +122,23 @@ class GlyTrait:
             group_file=group_file,
             mode=self.mode,
         )
-        formulas = self._formulas
         preprocess(input_data, self.filter_max_na, self.impute_method)
         meta_property_table = build_meta_property_table(
             input_data.glycans, self.mode, self.sia_linkage
         )
         derived_trait_table = calcu_derived_trait(
-            input_data.abundance_table, meta_property_table, formulas
+            input_data.abundance_table, meta_property_table, self._formulas
         )
         if self.post_filtering:
-            formulas, derived_trait_table = filter_invalid(
-                formulas, derived_trait_table
-            )
-            formulas, derived_trait_table = filter_colinearity(
-                formulas,
+            derived_trait_table = filter_invalid(derived_trait_table)
+            derived_trait_table = filter_colinearity(
+                self._formulas,
                 derived_trait_table,
                 self.correlation_threshold,
                 method="pearson",
             )
         data_to_export = [
-            ("formulas.txt", formulas),
+            ("formulas.txt", self._formulas),
             ("meta_properties.csv", meta_property_table),
             ("derived_traits.csv", derived_trait_table),
             ("glycan_abundance_processed.csv", input_data.abundance_table),

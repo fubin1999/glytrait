@@ -6,10 +6,7 @@ from glytrait.formula import TraitFormula
 from glytrait.data_type import DerivedTraitTable
 
 
-# TODO: Formulas should not be filtered
-def filter_invalid(
-    formulas: Iterable[TraitFormula], trait_df: DerivedTraitTable
-) -> tuple[list[TraitFormula], DerivedTraitTable]:
+def filter_invalid(trait_df: DerivedTraitTable) -> DerivedTraitTable:
     """Rule out the invalid traits.
 
     A trait is invalid if it:
@@ -17,17 +14,14 @@ def filter_invalid(
     2. Is NaN for all samples.
 
     Args:
-        formulas (Iterable[TraitFormula]): The formulas to be filtered.
-        trait_df (DerivedTraitTable): The trait values, with samples as index and trait names
-            as columns.
+        trait_df (DerivedTraitTable): The derived traits table.
 
     Returns:
         DerivedTraitTable: The filtered trait values.
     """
     trait_df = _filter_all_same(trait_df)
     trait_df = _filter_all_nan(trait_df)
-    formulas = [f for f in formulas if f.name in trait_df.columns]
-    return formulas, trait_df
+    return trait_df
 
 
 def _filter_all_same(trait_df: DerivedTraitTable) -> DerivedTraitTable:
@@ -45,7 +39,7 @@ def filter_colinearity(
     trait_df: DerivedTraitTable,
     threshold: float,
     method: Literal["pearson", "spearman"],
-) -> tuple[list[TraitFormula], DerivedTraitTable]:
+) -> DerivedTraitTable:
     """Filter the colinearity of the formulas.
 
     Args:
@@ -55,8 +49,7 @@ def filter_colinearity(
         method (Literal["pearson", "spearman"]): The method to calculate the correlation.
 
     Returns:
-        tuple[list[TraitFormula],DerivedTraitTable]: The filtered formulas and the filtered
-            derived traits table.
+        DerivedTraitTable: The filtered derived traits table.
     """
     trait_names = list(trait_df.columns)
 
@@ -82,8 +75,7 @@ def filter_colinearity(
 
     # Finally, filter the formulas and the derived traits table.
     filtered_trait_table = trait_df.loc[:, to_keep]
-    formulas = [f for f in formulas if f.name in filtered_trait_table.columns]
-    return formulas, DerivedTraitTable(filtered_trait_table)
+    return DerivedTraitTable(filtered_trait_table)
 
 
 def _relationship_matrix(trait_names: Iterable[str], formulas: Iterable[TraitFormula]):

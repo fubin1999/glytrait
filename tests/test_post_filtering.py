@@ -8,11 +8,6 @@ import glytrait.formula as fml
 
 
 def test_filter_invalid():
-    @define
-    class FakeFormula:
-        name: str
-
-    formulas = [FakeFormula(name=n) for n in "ABCDEF"]
     df = pd.DataFrame(
         {
             "A": [1, 2, 3],
@@ -23,14 +18,12 @@ def test_filter_invalid():
             "F": [0.5, 0.5, 0.5],
         }
     )
-    result_formulas, result_df = pf.filter_invalid(formulas, df)
-    expected_formulas = [FakeFormula(name="A")]
+    result_df = pf.filter_invalid(df)
     expected_df = pd.DataFrame(
         {
             "A": [1, 2, 3],
         }
     )
-    assert result_formulas == expected_formulas
     pd.testing.assert_frame_equal(result_df, expected_df, check_dtype=False)
 
 
@@ -103,10 +96,6 @@ def test_correlation_matrix(threshold, expected):
 
 
 def test_filter_colinearity(mocker):
-    @define
-    class FakeTrait:
-        name: str
-
     trait_table = pd.DataFrame(
         {  # This df is just a place-holder. The values are not important.
             "trait1": [1, 2, 3, 4, 5],
@@ -115,7 +104,6 @@ def test_filter_colinearity(mocker):
             "trait4": [2, 3, 1, 5, 4],
         }
     )
-    formulas = [FakeTrait(name=n) for n in trait_table.columns]
     relationship_matrix_mock = mocker.patch(
         "glytrait.post_filtering._relationship_matrix",
         return_value=np.array(
@@ -140,10 +128,7 @@ def test_filter_colinearity(mocker):
         ),
         autospec=True,
     )
-    result_formulas, result_df = pf.filter_colinearity(
-        formulas, trait_table, 0.5, "pearson"
-    )
-    expected_formulas = [FakeTrait(name=n) for n in ["trait2", "trait3", "trait4"]]
+    result_df = pf.filter_colinearity("formulas", trait_table, 0.5, "pearson")
     expected_df = pd.DataFrame(
         {
             "trait2": [1, 2, 3, 4, 5],
@@ -152,10 +137,9 @@ def test_filter_colinearity(mocker):
         }
     )
 
-    assert result_formulas == expected_formulas
     pd.testing.assert_frame_equal(result_df, expected_df, check_dtype=False)
     relationship_matrix_mock.assert_called_once_with(
-        ["trait1", "trait2", "trait3", "trait4"], formulas
+        ["trait1", "trait2", "trait3", "trait4"], "formulas"
     )
     correlation_matrix_mock.assert_called_once_with(trait_table, 0.5, "pearson")
 
