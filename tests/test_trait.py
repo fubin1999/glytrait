@@ -1,21 +1,23 @@
+from itertools import permutations
+
 import pandas as pd
+import pytest
 
-import glytrait.formula
-import glytrait.meta_property
-import glytrait.post_filtering
-from glytrait import trait
+from glytrait.formula import TraitFormula
+from glytrait.trait import calcu_derived_trait
 
 
-def test_calcu_trait():
-    trait_formulas = [
-        glytrait.formula.TraitFormula(
+@pytest.fixture
+def trait_formulas() -> list[TraitFormula]:
+    return [
+        TraitFormula(
             description="Relative abundance of high mannose type glycans within total spectrum",
             name="TM",
             type="structure",
             numerator_properties=["isHighMannose"],
             denominator_properties=["."],
         ),
-        glytrait.formula.TraitFormula(
+        TraitFormula(
             description="The ratio of high-mannose to hybrid glycans",
             name="MHy",
             type="structure",
@@ -24,7 +26,10 @@ def test_calcu_trait():
         ),
     ]
 
-    abundance_df = pd.DataFrame(
+
+@pytest.fixture
+def abundance_table() -> pd.DataFrame:
+    return pd.DataFrame(
         {
             "G1": [1, 2, 3],
             "G2": [4, 5, 6],
@@ -34,7 +39,10 @@ def test_calcu_trait():
         dtype=float,
     )
 
-    meta_prop_df = pd.DataFrame(
+
+@pytest.fixture
+def meta_property_table() -> pd.DataFrame:
+    return pd.DataFrame(
         {
             ".": [1, 1, 1],
             "isHighMannose": [True, False, False],
@@ -44,12 +52,30 @@ def test_calcu_trait():
         index=["G1", "G2", "G3"],
     )
 
-    result = trait.calcu_derived_trait(abundance_df, meta_prop_df, trait_formulas)
-    expected = pd.DataFrame(
+
+@pytest.fixture
+def expected_derived_trait_table() -> pd.DataFrame:
+    return pd.DataFrame(
         {
             "TM": [1 / 12, 2 / 15, 3 / 18],
             "MHy": [1 / 7, 2 / 8, 3 / 9],
         },
         index=["S1", "S2", "S3"],
     )
-    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_calcu_trait(
+    trait_formulas, abundance_table, meta_property_table, expected_derived_trait_table
+):
+    result = calcu_derived_trait(abundance_table, meta_property_table, trait_formulas)
+    pd.testing.assert_frame_equal(result, expected_derived_trait_table)
+
+
+def test_calcu_trait_glycan_order_not_the_same(
+    trait_formulas, abundance_table, meta_property_table, expected_derived_trait_table
+):
+    glycans = abundance_table.columns.tolist()
+    for perm in permutations(glycans):
+        new_mp_table = meta_property_table.reindex(perm)
+        result = calcu_derived_trait(abundance_table, new_mp_table, trait_formulas)
+        pd.testing.assert_frame_equal(result, expected_derived_trait_table)

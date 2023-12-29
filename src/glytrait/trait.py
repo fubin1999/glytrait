@@ -34,9 +34,15 @@ def calcu_derived_trait(
     Returns:
         DerivedTraitTable: The trait values, with samples as index and trait names as columns.
     """
+    # The meta-property table the formulas use for initialization must have
+    # the same order of index as the abundance table's columns (glycans).
+    # `TraitFormula.calcu_trait` will raise an assertion error if the orders
+    # of the glycans are different.
+    # # (See `TraitFormula`)
+    meta_prop_df_ordered = meta_prop_df.reindex(abund_df.columns)
     trait_series: list[pd.Series] = []
     for formula in formulas:
-        formula.initialize(meta_prop_df)
+        formula.initialize(meta_prop_df_ordered)
         trait_s = pd.Series(
             data=formula.calcu_trait(abund_df),
             index=abund_df.index,
