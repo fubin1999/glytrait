@@ -250,13 +250,18 @@ class TraitFormula:
 
 
 def load_formulas(
-    type_: Literal["structure", "composition"], user_file: Optional[str] = None
+    type_: Literal["structure", "composition"],
+    user_file: Optional[str] = None,
+    sia_linkage: bool = False,
 ) -> list[TraitFormula]:
     """Load both the default formulas and the user-defined formulas.
 
     Args:
         type_ (Literal["structure", "composition"]): The type of the formulas.
         user_file (Optional[str], optional): The path of the user-defined formula file.
+            Defaults to None.
+        sia_linkage (bool, optional): Whether to include formulas with sia-linkage
+            meta-properties. Defaults to False.
 
     Returns:
         list[TraitFormula]: The formulas.
@@ -265,19 +270,18 @@ def load_formulas(
         FormulaError: If a formula string cannot be parsed,
             or the user-provided formula file is in a wrong format.
     """
-    default_formulas = list(load_default_formulas(type_=type_))
-    if user_file is None:
-        return default_formulas
+    formulas = list(load_default_formulas(type_=type_))
 
-    default_formula_names = [f.name for f in default_formulas]
-    user_formulas = list(load_formulas_from_file(user_file, type_=type_))
+    if user_file is not None:
+        default_formula_names = {f.name for f in formulas}
+        user_formulas = load_formulas_from_file(user_file, type_=type_)
+        for f in user_formulas:
+            if f.name in default_formula_names:
+                continue
+            formulas.append(f)
 
-    formulas: list[TraitFormula] = []
-    formulas.extend(default_formulas)
-    for f in user_formulas:
-        if f.name in default_formula_names:
-            continue
-        formulas.append(f)
+    if not sia_linkage:
+        formulas = [f for f in formulas if not f.sia_linkage]
     return formulas
 
 
