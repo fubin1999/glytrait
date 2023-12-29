@@ -324,13 +324,6 @@ class TestLoadFormulasFromFile:
         assert "Duplicate formula name: MHy." in str(excinfo.value)
 
 
-def test_save_trait_formula_template(clean_dir):
-    fml.save_trait_formula_template(clean_dir)
-    template_file = clean_dir / "trait_formula.txt"
-    assert template_file.exists()
-    assert "Trait Formula Overview" in template_file.read_text()
-
-
 def test_save_builtin_formula(clean_dir):
     fml.save_builtin_formula(clean_dir)
     struc_file = clean_dir / "struc_builtin_formulas.txt"

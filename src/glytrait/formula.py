@@ -30,15 +30,11 @@ from glytrait.meta_property import available_meta_properties
 __all__ = [
     "TraitFormula",
     "load_formulas",
-    "save_trait_formula_template",
     "save_builtin_formula",
 ]
 
 default_struc_formula_file = files("glytrait.resources").joinpath("struc_formula.txt")
 default_comp_formula_file = files("glytrait.resources").joinpath("comp_formula.txt")
-formula_template_file = files("glytrait.resources").joinpath(
-    "trait_formula_template.txt"
-)
 
 
 def _check_length(instance, attribute, value):
@@ -406,20 +402,6 @@ def parse_formula_expression(expr: str) -> tuple[str, list[str], list[str], floa
         coef = 1.0
 
     return name, num_prop, den_prop, coef
-
-
-def save_trait_formula_template(dirpath: str | Path) -> None:
-    """Copy the template of trait formula file to the given path.
-
-    Args:
-        dirpath (str): The path to save the template.
-    """
-    dirpath = Path(dirpath)
-    dirpath.mkdir(parents=True, exist_ok=True)
-    file = dirpath / "trait_formula.txt"
-    content = formula_template_file.open("r").read()
-    with open(file, "w", encoding="utf8") as f:
-        f.write(content)
 
 
 def save_builtin_formula(dirpath: str | Path) -> None:
