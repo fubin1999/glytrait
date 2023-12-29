@@ -1,3 +1,5 @@
+from itertools import permutations
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -158,6 +160,14 @@ class TestTraitFormula:
         result = formula1.calcu_trait(abundance_table)
         expected = [5 / 10, 7 / 11, 9 / 12]
         np.testing.assert_array_equal(result, expected)
+
+    def test_calcu_trait_glycan_order_not_same(
+        self, formula1, meta_property_table, abundance_table
+    ):
+        meta_property_table = meta_property_table.reindex(["G2", "G1", "G3", "G4"])
+        formula1.initialize(meta_property_table)
+        with pytest.raises(AssertionError) as excinfo:
+            formula1.calcu_trait(abundance_table)
 
     def test_calcu_trait_with_dot(self, formula2, meta_property_table, abundance_table):
         formula2.initialize(meta_property_table)

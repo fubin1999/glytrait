@@ -19,10 +19,9 @@ from importlib.resources import files
 from pathlib import Path
 from typing import Literal, Optional, Generator, Iterable
 
-import attrs
 import numpy as np
 import pandas as pd
-from attrs import field, frozen
+from attrs import field, frozen, validators
 from numpy.typing import NDArray
 
 import glytrait
@@ -104,7 +103,7 @@ class TraitFormula:
 
     description: str = field()
     name: str = field()
-    type: str = field(validator=attrs.validators.in_(["structure", "composition"]))
+    type: str = field(validator=validators.in_(["structure", "composition"]))
     _numerator_properties: list[str] = field(
         converter=list,
         validator=[_check_length, _check_meta_properties, _check_numerator],
@@ -113,12 +112,12 @@ class TraitFormula:
         converter=list,
         validator=[_check_length, _check_meta_properties, _check_denominator],
     )
-    coefficient: float = field(default=1.0, validator=attrs.validators.gt(0))
+    coefficient: float = field(default=1.0, validator=validators.gt(0))
 
     sia_linkage: bool = field(init=False, default=False)
-    _initialized = field(init=False, default=False)
-    _numerator = field(init=False, default=None)
-    _denominator = field(init=False, default=None)
+    _initialized: bool = field(init=False, default=False)
+    _numerator: pd.Series = field(init=False, default=None)
+    _denominator: pd.Series = field(init=False, default=None)
 
     def __attrs_post_init__(self):
         object.__setattr__(self, "sia_linkage", self._init_sia_linkage())
@@ -161,8 +160,8 @@ class TraitFormula:
     @staticmethod
     def _initialize(
         meta_property_table: pd.DataFrame, properties: list[str]
-    ) -> NDArray:
-        return np.asarray(meta_property_table[properties].prod(axis=1))
+    ) -> pd.Series:
+        return meta_property_table[properties].prod(axis=1)
 
     def calcu_trait(self, abundance_table: pd.DataFrame) -> NDArray:
         """Calculate the trait.
@@ -176,9 +175,11 @@ class TraitFormula:
         """
         if not self._initialized:
             raise RuntimeError("TraitFormula is not initialized.")
+        pd.testing.assert_index_equal(abundance_table.columns, self._numerator.index)
+        pd.testing.assert_index_equal(abundance_table.columns, self._denominator.index)
 
-        numerator = abundance_table.values @ self._numerator
-        denominator = abundance_table.values @ self._denominator
+        numerator = abundance_table.values @ self._numerator.values
+        denominator = abundance_table.values @ self._denominator.values
         denominator[denominator == 0] = np.nan
         return numerator / denominator * self.coefficient
 
