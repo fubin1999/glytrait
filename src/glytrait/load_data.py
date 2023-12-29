@@ -292,7 +292,7 @@ def _check_columns(
     def _format_columns() -> str:
         return ", ".join(f"'{col}'" for col in columns)
 
-    with open(filepath) as f:
+    with open(filepath, encoding="utf-8-sig") as f:
         header = f.readline().strip().split(",")
 
     if only:
@@ -311,7 +311,7 @@ def _load_glycans_from_csv(
     """Helper function for `load_structures` and `load_compositions`."""
     ids: list[str] = []
     strings: list[str] = []
-    with open(filepath) as f:
+    with open(filepath, encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
         for row in reader:
             ids.append(row["GlycanID"])
