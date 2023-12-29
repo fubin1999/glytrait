@@ -15,18 +15,18 @@ from __future__ import annotations
 
 import itertools
 import re
-from importlib.resources import files
+from importlib.resources import files, as_file
 from pathlib import Path
-from typing import Literal, Optional, Generator, Iterable
+from typing import Literal, Optional, Generator
 
 import numpy as np
 import pandas as pd
 from attrs import field, frozen, validators
 
 from glytrait.exception import FormulaError
-from glytrait.meta_property import available_meta_properties
 from glytrait.load_data import AbundanceTable
 from glytrait.meta_property import MetaPropertyTable
+from glytrait.meta_property import available_meta_properties
 
 __all__ = [
     "TraitFormula",
@@ -251,12 +251,12 @@ class TraitFormula:
 
 
 def load_formulas(
-    type: Literal["structure", "composition"], user_file: Optional[str] = None
+    type_: Literal["structure", "composition"], user_file: Optional[str] = None
 ) -> list[TraitFormula]:
     """Load both the default formulas and the user-defined formulas.
 
     Args:
-        type (Literal["structure", "composition"]): The type of the formulas.
+        type_ (Literal["structure", "composition"]): The type of the formulas.
         user_file (Optional[str], optional): The path of the user-defined formula file.
 
     Returns:
@@ -266,12 +266,12 @@ def load_formulas(
         FormulaError: If a formula string cannot be parsed,
             or the user-provided formula file is in a wrong format.
     """
-    default_formulas = list(_load_default_formulas(type=type))
+    default_formulas = list(load_default_formulas(type_=type_))
     if user_file is None:
         return default_formulas
 
     default_formula_names = [f.name for f in default_formulas]
-    user_formulas = list(_load_user_formulas(user_file, type=type))
+    user_formulas = list(load_formulas_from_file(user_file, type_=type_))
 
     formulas: list[TraitFormula] = []
     formulas.extend(default_formulas)
@@ -282,44 +282,49 @@ def load_formulas(
     return formulas
 
 
-def _load_default_formulas(
-    type: Literal["structure", "composition"]
+def load_default_formulas(
+    type_: Literal["structure", "composition"]
 ) -> Generator[TraitFormula, None, None]:
     """Load the default formulas.
 
     Args:
-        type (Literal["structure", "composition"]): The type of the formulas.
+        type_ (Literal["structure", "composition"]): The type of the formulas.
 
     Yields:
         The formulas parsed.
     """
-    if type == "composition":
-        default_file = default_comp_formula_file
+    if type_ == "composition":
+        file_traversable = default_comp_formula_file
+    elif type_ == "structure":
+        file_traversable = default_struc_formula_file
     else:
-        default_file = default_struc_formula_file
-    file_reader = default_file.open("r")
-    yield from _load_formulas(file_reader, type=type)
+        raise ValueError("Invalid formula type.")
+    with as_file(file_traversable) as file:
+        yield from load_formulas_from_file(str(file), type_=type_)
 
 
-def _load_user_formulas(
-    file: str, type: Literal["structure", "composition"]
+def load_formulas_from_file(
+    filepath: str, type_: Literal["structure", "composition"]
 ) -> Generator[TraitFormula, None, None]:
-    """Load the user-defined formulas.
-
-    If the formula name is duplicated, the first one will be used.
+    """Load formulas from a file.
 
     Args:
-        file (str): The path of the user-defined formula file.
-        type (Literal["structure", "composition"]): The type of the formulas.
+        filepath (str): The path of the formula file.
+        type_ (Literal["structure", "composition"]): The type of the formulas.
 
     Yields:
         The formulas parsed.
+
+    Raises:
+        FormulaError: If a formula string cannot be parsed,
+            or the user-provided formula file is in a wrong format,
+            or there are duplicate formula names.
     """
     formulas_parsed: set[str] = set()
-    file_reader = Path(file).open("r")
-    for formula in _load_formulas(file_reader, type=type):
+    for description, expression in deconvolute_formula_file(filepath):
+        formula = create_formula(description, expression, type_=type_)
         if formula.name in formulas_parsed:
-            continue
+            raise FormulaError(f"Duplicate formula name: {formula.name}.")
         yield formula
         formulas_parsed.add(formula.name)
 
@@ -327,7 +332,17 @@ def _load_user_formulas(
 def deconvolute_formula_file(
     formula_file: str,
 ) -> Generator[tuple[str, str], None, None]:
-    """A generator that yields the formula description and the formula expression."""
+    """A generator that yields the formula description and the formula expression.
+
+    Args:
+        formula_file (str): The path of the formula file.
+
+    Yields:
+        tuple[str, str]: The formula description and the formula expression.
+
+    Raises:
+        FormulaError: If the user-provided formula file is in a wrong format.
+    """
     description = None
     expression = None
     with open(formula_file, "r", encoding="utf8") as f:
@@ -352,66 +367,34 @@ def deconvolute_formula_file(
         raise FormulaError(f"No expression follows description '{description}'.")
 
 
-def _load_formulas(
-    formula_file_reader: Iterable[str], type: Literal["structure", "composition"]
-) -> Generator[TraitFormula, None, None]:
-    """Load the formulas from a file.
+def create_formula(
+    description: str, expression: str, type_: Literal["structure", "composition"]
+) -> TraitFormula:
+    """Create a formula from the description and the expression.
 
     Args:
-        formula_file_reader (Iterable[str]): The path of the formula file.
-        type (Literal["structure", "composition"]): The type of the formulas.
+        description (str): The description of the formula.
+        expression (str): The expression of the formula.
+        type_ (Literal["structure", "composition"]): The type of the formula.
 
     Returns:
-        Generator[TraitFormula, None, None]: The generator of the formulas.
+        TraitFormula: The formula.
 
     Raises:
-        FormulaError: If a formula string cannot be parsed,
-            or the user-provided formula file is in a wrong format.
+        FormulaError: If the expression is invalid, or the meta properties are invalid.
     """
-    description = None
-    expression = None
-    for line in formula_file_reader:
-        line = line.strip()
-        if line.startswith("@"):
-            if description is not None:
-                raise FormulaError(
-                    f"Invalid line: '{line}'.\n"
-                    f"One description line must follow a formula line."
-                )
-            description = line[1:].strip()
-
-        if line.startswith("$"):
-            if description is None:
-                raise FormulaError(
-                    f"Invalid line: '{line}'.\n"
-                    "One formula line must follow a description line."
-                )
-            expression = line[1:].strip()
-            name, num_prop, den_prop, coef = _parse_expression(expression)
-            try:
-                yield TraitFormula(
-                    description=description,
-                    name=name,
-                    type=type,
-                    numerator_properties=num_prop,  # type: ignore
-                    denominator_properties=den_prop,  # type: ignore
-                    coefficient=coef,
-                )
-            except FormulaError as e:
-                raise FormulaError(
-                    f"Invalid line: '{line}'.\n" f"Error in formula '{expression}': {e}"
-                )
-            description = None
-            expression = None
-
-    if description is not None and expression is None:
-        raise FormulaError(
-            f"Invalid line: '{line}'.\n"
-            f"One description line must follow a formula line."
-        )
+    name, num_prop, den_prop, coef = parse_formula_expression(expression)
+    return TraitFormula(
+        description=description,
+        name=name,
+        type=type_,
+        numerator_properties=num_prop,  # type: ignore
+        denominator_properties=den_prop,  # type: ignore
+        coefficient=coef,
+    )
 
 
-def _parse_expression(expr: str) -> tuple[str, list[str], list[str], float]:
+def parse_formula_expression(expr: str) -> tuple[str, list[str], list[str], float]:
     """Parse the expression of a formula.
 
     Args:

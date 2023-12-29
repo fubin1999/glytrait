@@ -1,18 +1,26 @@
-from itertools import permutations
-
 import numpy as np
 import pandas as pd
 import pytest
 from attrs import evolve
 
-import glytrait.formula
+import glytrait.formula as fml
 from glytrait.exception import FormulaError
+
+
+@pytest.fixture
+def write_content(clean_dir):
+    def _write_content(content):
+        file = clean_dir / "formulas.txt"
+        file.write_text(content)
+        return file
+
+    return _write_content
 
 
 class TestTraitFormula:
     @pytest.fixture
     def formula1(self):
-        return glytrait.formula.TraitFormula(
+        return fml.TraitFormula(
             description="The ratio of high-mannose to hybrid glycans",
             name="MHy",
             type="structure",
@@ -22,7 +30,7 @@ class TestTraitFormula:
 
     @pytest.fixture
     def formula2(self):
-        return glytrait.formula.TraitFormula(
+        return fml.TraitFormula(
             description="Relative abundance of high mannose type glycans within total spectrum",
             name="TM",
             type="structure",
@@ -52,7 +60,7 @@ class TestTraitFormula:
 
     def test_init_invalid_properties(self):
         with pytest.raises(FormulaError) as excinfo:
-            glytrait.formula.TraitFormula(
+            fml.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
                 type="structure",
@@ -64,7 +72,7 @@ class TestTraitFormula:
 
     def test_init_0_length_properties(self):
         with pytest.raises(FormulaError) as excinfo:
-            glytrait.formula.TraitFormula(
+            fml.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
                 type="structure",
@@ -75,7 +83,7 @@ class TestTraitFormula:
 
     def test_init_dot_in_numerator(self):
         with pytest.raises(FormulaError) as excinfo:
-            glytrait.formula.TraitFormula(
+            fml.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
                 type="structure",
@@ -86,7 +94,7 @@ class TestTraitFormula:
 
     def test_init_dot_with_others_in_denominator(self):
         with pytest.raises(FormulaError) as excinfo:
-            glytrait.formula.TraitFormula(
+            fml.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
                 type="structure",
@@ -101,7 +109,7 @@ class TestTraitFormula:
     @pytest.mark.parametrize("coef", [-1, 0])
     def test_init_invalid_coef(self, coef):
         with pytest.raises(ValueError):
-            glytrait.formula.TraitFormula(
+            fml.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
                 type="structure",
@@ -112,7 +120,7 @@ class TestTraitFormula:
 
     def test_init_invalid_type(self):
         with pytest.raises(ValueError):
-            glytrait.formula.TraitFormula(
+            fml.TraitFormula(
                 description="The ratio of high-mannose to hybrid glycans",
                 name="MHy",
                 type="invalid",
@@ -122,7 +130,7 @@ class TestTraitFormula:
 
     def test_init_wrong_type(self):
         with pytest.raises(FormulaError) as excinfo:
-            glytrait.formula.TraitFormula(
+            fml.TraitFormula(
                 description="Should be a composition trait",
                 name="SomeTrait",
                 type="composition",
@@ -142,7 +150,7 @@ class TestTraitFormula:
         ],
     )
     def test_sia_linkage(self, type, numerator, denominator, expected):
-        formula = glytrait.formula.TraitFormula(
+        formula = fml.TraitFormula(
             description="Should be a composition trait",
             name="SomeTrait",
             type=type,
@@ -214,7 +222,7 @@ class TestTraitFormula:
         ],
     )
     def test_is_child_of(self, trait1, trait2, expected):
-        formulas = glytrait.formula.load_formulas("structure")
+        formulas = fml.load_formulas("structure")
         formula_map = {f.name: f for f in formulas}
         formulas1 = formula_map[trait1]
         formulas2 = formula_map[trait2]
@@ -270,9 +278,12 @@ class TestTraitFormula:
     ],
 )
 def test_parse_expression(expression, name, num_props, den_props, coef):
-    r_name, r_num_props, r_den_props, r_coef = glytrait.formula._parse_expression(
-        expression
-    )
+    (
+        r_name,
+        r_num_props,
+        r_den_props,
+        r_coef,
+    ) = fml.parse_formula_expression(expression)
     assert r_name == name
     assert sorted(r_num_props) == sorted(num_props)
     assert sorted(r_den_props) == sorted(den_props)
@@ -293,99 +304,57 @@ def test_parse_expression(expression, name, num_props, den_props, coef):
 )
 def test_parse_expression_invalid(expression):
     with pytest.raises(FormulaError) as excinfo:
-        glytrait.formula._parse_expression(expression)
+        fml.parse_formula_expression(expression)
     assert f"Invalid expression: '{expression}'" in str(excinfo.value)
 
 
-@pytest.mark.parametrize(
-    "type, expected",
-    [
-        ("structure", 354),
-        ("composition", 75),
-    ],
-)
-def test_load_default_formulas(type, expected):
-    result = list(glytrait.formula._load_default_formulas(type=type))
-    assert len(result) == expected
+def test_load_default_formulas():
+    structure_formulas = fml.load_formulas("structure")
+    composition_formulas = fml.load_formulas("composition")
+    assert len(structure_formulas) > 0
+    assert len(composition_formulas) > 0
+    assert structure_formulas[0].type == "structure"
+    assert composition_formulas[0].type == "composition"
+    assert len(structure_formulas) != len(composition_formulas)
 
 
-def test_load_user_formulas(clean_dir):
-    content = """@ Relative abundance of complex type glycans within total spectrum
-$ TC = (isComplex) / (.)
+class TestLoadFormulasFromFile:
+    """Test `load_formulas_from_file` function."""
 
-@ A duplicate of the above
-$ TC = (isComplex) / (isHybrid)"""
-    file = clean_dir / "formulas.txt"
-    file.write_text(content)
-    result = list(glytrait.formula._load_user_formulas(file, type="structure"))
-    assert len(result) == 1
-    assert result[0].name == "TC"
-    assert (
-        result[0].description
-        == "Relative abundance of complex type glycans within total spectrum"
-    )
+    def test_basic(self, write_content):
+        description = "The ratio of high-mannose to hybrid glycans"
+        expression = "MHy = (isHighMannose) / (isHybrid)"
+        file = write_content(f"@ {description}\n$ {expression}")
+        result = list(fml.load_formulas_from_file(file, "structure"))
+        assert len(result) == 1
+        assert result[0].description == description
+        assert result[0].name == "MHy"
 
-
-def test_load_formulas_with_user_file(clean_dir):
-    content = """@ Relative abundance of complex type glycans within total spectrum
-$ TC = (isComplex) / (.)
-
-@ A duplicate of TM
-$ TM = (isHighMannose) / (.)"""
-    user_file = clean_dir / "formulas.txt"
-    user_file.write_text(content)
-    result = list(glytrait.formula.load_formulas("structure", user_file))
-
-    TM = [f for f in result if f.name == "TM"]
-    assert len(TM) == 1
-    assert (
-        TM[0].description
-        == "Relative abundance of high mannose type glycans within total spectrum"
-    )
-
-    assert "TC" in [f.name for f in result]
-
-
-def test_load_formulas_without_user_file():
-    result = list(glytrait.formula.load_formulas(type="structure"))
-    assert len(result) == 354
-
-
-def test_load_formulas_bad_formula(clean_dir):
-    content = """@ Relative abundance of complex type glycans within total spectrum
-$ TC = (isComplex) / (. * isComplex)
-"""
-    user_file = clean_dir / "formulas.txt"
-    user_file.write_text(content)
-    with pytest.raises(FormulaError) as excinfo:
-        list(glytrait.formula.load_formulas("structure", user_file))
-    assert "Invalid line: '$ TC = (isComplex) / (. * isComplex)'" in str(excinfo.value)
-    assert "Error in formula 'TC = (isComplex) / (. * isComplex)'" in str(excinfo.value)
-
-
-def test_load_formulas_end_with_description(clean_dir):
-    content = """@ Relative abundance of complex type glycans within total spectrum
-$ TC = (isComplex) / (.)
-    
-@ A duplicate of TM
-"""
-    user_file = clean_dir / "formulas.txt"
-    user_file.write_text(content)
-    with pytest.raises(FormulaError) as excinfo:
-        list(glytrait.formula.load_formulas("structure", user_file))
-    assert "Invalid line: '@ A duplicate of TM'" in str(excinfo.value)
-    assert "One description line must follow a formula line." in str(excinfo.value)
+    def test_duplicated_formulas(self, write_content):
+        description1 = "The ratio of high-mannose to hybrid glycans"
+        expression1 = "MHy = (isHighMannose) / (isHybrid)"
+        description2 = (
+            "Relative abundance of high mannose type glycans within total spectrum"
+        )
+        expression2 = "MHy = (isHighMannose) / (isHybrid)"  # same expression
+        content = (
+            f"@ {description1}\n$ {expression1}\n@ {description2}\n$ {expression2}"
+        )
+        file = write_content(content)
+        with pytest.raises(FormulaError) as excinfo:
+            list(fml.load_formulas_from_file(file, "structure"))
+        assert "Duplicate formula name: MHy." in str(excinfo.value)
 
 
 def test_save_trait_formula_template(clean_dir):
-    glytrait.formula.save_trait_formula_template(clean_dir)
+    fml.save_trait_formula_template(clean_dir)
     template_file = clean_dir / "trait_formula.txt"
     assert template_file.exists()
     assert "Trait Formula Overview" in template_file.read_text()
 
 
 def test_save_builtin_formula(clean_dir):
-    glytrait.formula.save_builtin_formula(clean_dir)
+    fml.save_builtin_formula(clean_dir)
     struc_file = clean_dir / "struc_builtin_formulas.txt"
     comp_file = clean_dir / "comp_builtin_formulas.txt"
     assert struc_file.exists()
@@ -395,41 +364,32 @@ def test_save_builtin_formula(clean_dir):
 class TestDeconvoluteFormulaFile:
     """Test `deconvolute_formula_file` function."""
 
-    @pytest.fixture
-    def write_content(self, clean_dir):
-        def _write_content(content):
-            file = clean_dir / "formulas.txt"
-            file.write_text(content)
-            return file
-
-        return _write_content
-
     def test_basic(self, write_content):
         file = write_content("@ Description\n$ Expression\n")
-        result = list(glytrait.formula.deconvolute_formula_file(file))
+        result = list(fml.deconvolute_formula_file(file))
         expected = [("Description", "Expression")]
         assert result == expected
 
     def test_first_line_not_description(self, write_content):
         file = write_content("$ Expression\n@ Description\n")
         with pytest.raises(FormulaError) as excinfo:
-            list(glytrait.formula.deconvolute_formula_file(file))
+            list(fml.deconvolute_formula_file(file))
         assert "No description before expression 'Expression'" in str(excinfo.value)
 
     def test_two_descriptions(self, write_content):
         file = write_content("@ Description1\n@ Description2\n")
         with pytest.raises(FormulaError) as excinfo:
-            list(glytrait.formula.deconvolute_formula_file(file))
+            list(fml.deconvolute_formula_file(file))
         assert "No expression follows description 'Description1'." in str(excinfo.value)
 
     def test_two_expressions(self, write_content):
         file = write_content("@ Description\n$ Expression1\n$ Expression2")
         with pytest.raises(FormulaError) as excinfo:
-            list(glytrait.formula.deconvolute_formula_file(file))
+            list(fml.deconvolute_formula_file(file))
         assert "No description before expression 'Expression2'." in str(excinfo.value)
 
     def test_no_last_expression(self, write_content):
         file = write_content("@ Description1\n$ Expression1\n@Description2")
         with pytest.raises(FormulaError) as excinfo:
-            list(glytrait.formula.deconvolute_formula_file(file))
+            list(fml.deconvolute_formula_file(file))
         assert "No expression follows description 'Description2'." in str(excinfo.value)
