@@ -7,7 +7,7 @@ from glytrait.load_data import load_input_data, GlyTraitInputData
 from glytrait.preprocessing import preprocess
 from glytrait.meta_property import build_meta_property_table
 from glytrait.trait import calcu_derived_trait
-from glytrait.post_filtering import filter_invalid, filter_colinearity
+from glytrait.post_filtering import post_filter
 from glytrait.data_export import export_all
 
 
@@ -104,11 +104,10 @@ class GlyTrait:
             input_data.abundance_table, meta_property_table, self._formulas
         )
         if self._config.post_filtering:
-            derived_trait_table = filter_invalid(derived_trait_table)
-            derived_trait_table = filter_colinearity(
-                self._formulas,
-                derived_trait_table,
-                self._config.correlation_threshold,
+            derived_trait_table = post_filter(
+                formulas=self._formulas,
+                trait_df=derived_trait_table,
+                threshold=self._config.correlation_threshold,
                 method="pearson",
             )
         data_to_export = [

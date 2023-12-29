@@ -1,9 +1,41 @@
+"""Post-filtering the derived traits table.
+
+The only function in this module is `post_filter`.
+"""
 from typing import Iterable, Literal
 
 import numpy as np
 
 from glytrait.formula import TraitFormula
 from glytrait.data_type import DerivedTraitTable
+
+__all__ = ["post_filter"]
+
+
+def post_filter(
+    formulas: Iterable[TraitFormula],
+    trait_df: DerivedTraitTable,
+    threshold: float,
+    method: Literal["pearson", "spearman"],
+) -> DerivedTraitTable:
+    """Post-filter the derived traits table.
+
+    The post-filtering consists of two steps:
+    1. Rule out the invalid traits.
+    2. Reduce the colinearity of the traits.
+
+    Args:
+        formulas (Iterable[TraitFormula]): The formulas to be filtered.
+        trait_df (DerivedTraitTable): The derived traits table.
+        threshold (float): The threshold of the correlation coefficient.
+        method (Literal["pearson", "spearman"]): The method to calculate the correlation.
+
+    Returns:
+        DerivedTraitTable: The filtered derived traits table.
+    """
+    trait_df = filter_invalid(trait_df)
+    trait_df = filter_colinearity(formulas, trait_df, threshold, method)
+    return trait_df
 
 
 def filter_invalid(trait_df: DerivedTraitTable) -> DerivedTraitTable:
