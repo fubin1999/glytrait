@@ -309,8 +309,8 @@ def test_parse_expression_invalid(expression):
 
 
 def test_load_default_formulas():
-    structure_formulas = fml.load_formulas("structure")
-    composition_formulas = fml.load_formulas("composition")
+    structure_formulas = list(fml.load_default_formulas("structure"))
+    composition_formulas = list(fml.load_default_formulas("composition"))
     assert len(structure_formulas) > 0
     assert len(composition_formulas) > 0
     assert structure_formulas[0].type == "structure"
