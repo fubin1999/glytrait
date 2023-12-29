@@ -324,6 +324,34 @@ def _load_user_formulas(
         formulas_parsed.add(formula.name)
 
 
+def deconvolute_formula_file(
+    formula_file: str,
+) -> Generator[tuple[str, str], None, None]:
+    """A generator that yields the formula description and the formula expression."""
+    description = None
+    expression = None
+    with open(formula_file, "r", encoding="utf8") as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("@"):
+                if description is not None:
+                    raise FormulaError(
+                        f"No expression follows description '{description}'."
+                    )
+                description = line[1:].strip()
+            elif line.startswith("$"):
+                expression = line[1:].strip()
+                if description is None:
+                    raise FormulaError(
+                        f"No description before expression '{expression}'."
+                    )
+                yield description, expression
+                description = None
+                expression = None
+    if description is not None:
+        raise FormulaError(f"No expression follows description '{description}'.")
+
+
 def _load_formulas(
     formula_file_reader: Iterable[str], type: Literal["structure", "composition"]
 ) -> Generator[TraitFormula, None, None]:

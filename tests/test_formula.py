@@ -390,3 +390,46 @@ def test_save_builtin_formula(clean_dir):
     comp_file = clean_dir / "comp_builtin_formulas.txt"
     assert struc_file.exists()
     assert comp_file.exists()
+
+
+class TestDeconvoluteFormulaFile:
+    """Test `deconvolute_formula_file` function."""
+
+    @pytest.fixture
+    def write_content(self, clean_dir):
+        def _write_content(content):
+            file = clean_dir / "formulas.txt"
+            file.write_text(content)
+            return file
+
+        return _write_content
+
+    def test_basic(self, write_content):
+        file = write_content("@ Description\n$ Expression\n")
+        result = list(glytrait.formula.deconvolute_formula_file(file))
+        expected = [("Description", "Expression")]
+        assert result == expected
+
+    def test_first_line_not_description(self, write_content):
+        file = write_content("$ Expression\n@ Description\n")
+        with pytest.raises(FormulaError) as excinfo:
+            list(glytrait.formula.deconvolute_formula_file(file))
+        assert "No description before expression 'Expression'" in str(excinfo.value)
+
+    def test_two_descriptions(self, write_content):
+        file = write_content("@ Description1\n@ Description2\n")
+        with pytest.raises(FormulaError) as excinfo:
+            list(glytrait.formula.deconvolute_formula_file(file))
+        assert "No expression follows description 'Description1'." in str(excinfo.value)
+
+    def test_two_expressions(self, write_content):
+        file = write_content("@ Description\n$ Expression1\n$ Expression2")
+        with pytest.raises(FormulaError) as excinfo:
+            list(glytrait.formula.deconvolute_formula_file(file))
+        assert "No description before expression 'Expression2'." in str(excinfo.value)
+
+    def test_no_last_expression(self, write_content):
+        file = write_content("@ Description1\n$ Expression1\n@Description2")
+        with pytest.raises(FormulaError) as excinfo:
+            list(glytrait.formula.deconvolute_formula_file(file))
+        assert "No expression follows description 'Description2'." in str(excinfo.value)
