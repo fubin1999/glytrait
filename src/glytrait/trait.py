@@ -1,15 +1,14 @@
 """This module provides the functions to calculate and filter the derived traits.
 
-Functions:
-    calcu_derived_trait: Calculate the derived trait values.
-    filter_invalid: Rule out the invalid traits.
-    filter_colinearity: Reduce the traits that are highly correlated.
+This module implements only one function: `calcu_derived_trait`.
 """
 
 import pandas as pd
 
 from glytrait.formula import TraitFormula
 from glytrait.data_type import AbundanceTable, MetaPropertyTable, DerivedTraitTable
+
+__all__ = ["calcu_derived_trait"]
 
 
 def calcu_derived_trait(

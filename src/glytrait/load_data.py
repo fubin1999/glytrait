@@ -1,3 +1,16 @@
+"""Functions for loading data for GlyTrait.
+
+This module provides functions for loading data for GlyTrait.
+
+Classes:
+    GlyTraitInputData: Encapsulates all the input data for GlyTrait.
+
+Functions:
+    load_input_data: Load all the input data for GlyTrait, including
+        abundance table, glycans, and groups.
+        Returns a `GlyTraitInputData` object.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -24,10 +37,6 @@ from glytrait.glycan import (
 __all__ = [
     "GlyTraitInputData",
     "load_input_data",
-    "load_abundance_table",
-    "load_structures",
-    "load_compositions",
-    "load_groups",
 ]
 
 

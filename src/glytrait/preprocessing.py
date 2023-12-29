@@ -1,4 +1,7 @@
-"""Preprocess the abundance table."""
+"""Preprocess the abundance table.
+
+The only high-level function that client code will use is `preprocess`.
+"""
 from typing import Literal, Protocol
 
 from attrs import define

@@ -1,12 +1,13 @@
 """This module implements classes about representing glycans.
 
 Classes:
-    NGlycan: A class representing an N-glycan structure.
-    Composition: A class representing the composition of a glycan.
+    Structure: A class representing a glycan structure.
+    Composition: A class representing a glycan composition.
 
 Functions:
-    load_glycans: Load glycan structures from a list of structure strings.
-    load_compositions: Load glycan compositions from a list of composition strings.
+    parse_structures: Parse a list of glycan structures.
+    parse_compositions: Parse a list of glycan compositions.
+    get_mono_str: Helper function for checking the identity of a `glypy.MonosaccarideResidue`.
 """
 from __future__ import annotations
 
@@ -27,6 +28,17 @@ from glytrait.exception import (
     StructureParseError,
     CompositionParseError,
 )
+
+__all__ = [
+    "StructureDict",
+    "CompositionDict",
+    "GlycanDict",
+    "parse_structures",
+    "parse_compositions",
+    "Structure",
+    "Composition",
+    "get_mono_str",
+]
 
 StructureDict = NewType("StructureDict", dict[str, "Structure"])
 """A type hint for a dictionary of `Structure` instances.

@@ -1,3 +1,18 @@
+"""Export data to files.
+
+This module contains a function `export_all` that exports all data to files.
+The data is provided as an Iterable of tuples (filename, data object).
+This module will handle different data types by using the appropriate exporter.
+
+Examples:
+    >>> from glytrait.data_export import export_all
+    >>> data_to_export = [
+    ...     ("data.csv", pd.DataFrame(...)),
+    ...     ("formulas.txt", [TraitFormula(...), TraitFormula(...)]),
+    ... ]
+    >>> export_all(data_to_export, base_path="data")
+"""
+
 from collections.abc import Iterable, Callable
 from pathlib import Path
 from typing import Type, TypeVar, Any
@@ -6,9 +21,14 @@ import pandas as pd
 
 from glytrait.formula import TraitFormula
 
+__all__ = ["export_all"]
+
 
 def export_all(to_export: Iterable[tuple[str, Any]], base_path: str) -> None:
     """Export all data to the directory given by `base_path`.
+
+    Notes:
+        `base_path` will not be created if it does not exist.
 
     Args:
         to_export: An iterable of tuples (filename, data object).
