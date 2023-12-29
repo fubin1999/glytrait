@@ -2,13 +2,14 @@ from typing import Literal, Optional
 
 from attrs import define, field
 
+from glytrait.data_export import export_all
 from glytrait.formula import TraitFormula, load_formulas
 from glytrait.load_data import load_input_data, GlyTraitInputData
-from glytrait.preprocessing import preprocess
 from glytrait.meta_property import build_meta_property_table
-from glytrait.trait import calcu_derived_trait
 from glytrait.post_filtering import post_filter
-from glytrait.data_export import export_all
+from glytrait.preprocessing import preprocess
+from glytrait.trait import calcu_derived_trait
+from glytrait.data_type import MetaPropertyTable, DerivedTraitTable
 
 
 class GlyTrait:
@@ -90,26 +91,62 @@ class GlyTrait:
             glycan_file (str): Path to the glycan file.
             group_file (str): Path to the group file. Optional.
         """
-        input_data: GlyTraitInputData = load_input_data(
+        input_data = self._load_input_data(
+            abundance_file=abundance_file,
+            glycan_file=glycan_file,
+            group_file=group_file,
+        )
+        self._preprocess(input_data)
+        meta_property_table = self._calcu_meta_property(input_data)
+        derived_trait_table = self._calcu_derived_trait(input_data, meta_property_table)
+        if self._config.post_filtering:
+            derived_trait_table = self._post_filtering(derived_trait_table)
+        self._export_data(
+            output_dir, input_data, meta_property_table, derived_trait_table
+        )
+
+    def _load_input_data(
+        self, abundance_file: str, glycan_file: str, group_file: Optional[str] = None
+    ) -> GlyTraitInputData:
+        return load_input_data(
             abundance_file=abundance_file,
             glycan_file=glycan_file,
             group_file=group_file,
             mode=self._config.mode,
         )
+
+    def _preprocess(self, input_data: GlyTraitInputData) -> None:
         preprocess(input_data, self._config.filter_max_na, self._config.impute_method)
-        meta_property_table = build_meta_property_table(
+
+    def _calcu_meta_property(self, input_data: GlyTraitInputData) -> MetaPropertyTable:
+        return build_meta_property_table(
             input_data.glycans, self._config.mode, self._config.sia_linkage
         )
-        derived_trait_table = calcu_derived_trait(
+
+    def _calcu_derived_trait(
+        self, input_data: GlyTraitInputData, meta_property_table: MetaPropertyTable
+    ) -> DerivedTraitTable:
+        return calcu_derived_trait(
             input_data.abundance_table, meta_property_table, self._formulas
         )
-        if self._config.post_filtering:
-            derived_trait_table = post_filter(
-                formulas=self._formulas,
-                trait_df=derived_trait_table,
-                threshold=self._config.correlation_threshold,
-                method="pearson",
-            )
+
+    def _post_filtering(
+        self, derived_trait_table: DerivedTraitTable
+    ) -> DerivedTraitTable:
+        return post_filter(
+            formulas=self._formulas,
+            trait_df=derived_trait_table,
+            threshold=self._config.correlation_threshold,
+            method="pearson",
+        )
+
+    def _export_data(
+        self,
+        output_dir: str,
+        input_data: GlyTraitInputData,
+        meta_property_table: MetaPropertyTable,
+        derived_trait_table: DerivedTraitTable,
+    ) -> None:
         data_to_export = [
             ("formulas.txt", self._formulas),
             ("meta_properties.csv", meta_property_table),
