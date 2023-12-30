@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 from glytrait import meta_property as mp
-from unit.glycoct import *
+from .glycoct import *
 
 struc_meta_properties_no_sl = {
     ".",
