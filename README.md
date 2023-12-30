@@ -22,7 +22,6 @@ glycan structures.
     - [Input file format](#input-file-format)
     - [Specify output path](#specify-output-path)
     - [Structure file](#structure-file)
-    - [Built-in database](#built-in-database)
     - [Preprocessing](#preprocessing)
     - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
     - [Post-filtering](#post-filtering)
@@ -56,48 +55,45 @@ Install pipx following its [Document](https://pypa.github.io/pipx/installation/)
 pipx install glytrait
 ```
 
-#### Or install GlyTrait locally
+### Using Conda environment
 
-1. Clone the repository (or download it manually):
+#### Create a new environment
 
 ```shell
-git clone https://github.com/fubin1999/glytrait.git
+conda create -n glytrait python=3.10
 ```
 
-2. Move to the repository:
+#### Activate the environment
 
 ```shell
-cd glytrait
+conda activate glytrait
 ```
 
-3. Install glyTrait with pipx:
+#### Install GlyTrait from PyPi
 
 ```shell
-pipx install .
+pip install glytrait
 ```
 
 ## Usage
 
 ### Quick start
 
+Download the example files: (to be added).
+
 ```shell
-glytrait data.csv
+glytrait abundance.csv structures.csv
 ```
 
-That's it! If everything goes well, a xlsx file named "data_glytrait.xlsx" will be saved to the
-same directory with data.csv.
-Inside the xlsx file are four (five) sheets:
+That's it! 
+If everything goes well, a folder named "abundance_glytrait" will be created
+in the same directory with the abundnce.csv file.
+Inside the directory are four files:
 
-1. The summary;
-2. The trait values for each sample, including the direct trait
-   (glycan relative abundance) and the derived traits (calculated by GlyTrait);
-3. The definitions for the derived traits;
-4. The meta properties GlyTrait generated to calculate derived traits;
-5. The univariate analysis results for each trait if group information is provided.
-6. The ROC analysis results for each trait if group information is provided.
-
-You don't need the fifth one for common situations,
-but a peek of it might help you better understand how GlyTrait works.
+1. `derived_traits.csv`: the derived traits calculated by GlyTrait.
+2. `glycan_abundance_processed.csv`: the glycan abundance after preprocessing.
+3. `meta_properties.csv`: the meta properties of all glycans.
+4. `formulas.txt`: the definations of all derived traits.
 
 The detailed format of the input file will be introduced in the
 [Input file format](#input-file-format) section.
@@ -114,16 +110,12 @@ As a glance, GlyTrait supports the following options:
 |          --help           | Show the help message and exit.                                                                                 |
 |        -m, --mode         | The mode. "S" or "structure" for structure mode, "C" or "composition" for composition mode. Default: structure. |
 |       -o, --output        | The output path. Default: the same directory with the input file.                                               |
-|   -s, --structure-file    | The structure file.                                                                                             |
-|      -d, --database       | The built-in database to use, "serum" or "IgG".                                                                 |
 | -r, --filter-glycan-ratio | The proportion of missing values for a glycan to be ruled out. Default: 0.5.                                    |
 |    -i, --inpute-method    | The imputation method. "min", "mean", "median", "zero", or "lod". Default: "min".                               |
-|     --corr-threshold      | The correlation threshold for collinearity filtering. Default to 1.0.                                           |
-|       --corr-method       | The correlation method for collinearity filtering. Default to "pearson".                                        |
+|   -c, --corr-threshold    | The correlation threshold for collinearity filtering. Default to 1.0.                                           |
 |     -l, --sia-linkage     | Flag to include the sialic acid linkage traits.                                                                 |
 |        --no-filter        | Flag to turn off post-filtering of derived traits.                                                              |
 |        -g, --group        | The group file.                                                                                                 |
-|    -t, --save-template    | The directory to save the formula trait template file.                                                          |
 |    -f, --formula-file     | The custom formula file to use.                                                                                 |
 |  -b, --builtin-formulas   | The directory path to save a copy of the built-in formulas.                                                     |
 
@@ -131,12 +123,13 @@ The following sections will introduce these options in detail.
 
 ### Mode
 
-GlyTrait has two modes: the **structure** mode and the **composition** mode.
-In the structure mode,
+GlyTrait has two modes: the **"structure"** mode and the **"composition"** mode.
+In the "structure" mode,
 GlyTrait will calculate derived traits based on the topology properties of glycan structures.
-In the composition mode, GlyTrait will calculate derived traits based on the compositions.
+In the "composition" mode, GlyTrait will make educated guesses on the structure properties 
+based on the glycan composition.
 
-Note that the composition mode has uncertainties to some extent. Specifically:
+Note that the "composition" mode has uncertainties to some extent. Specifically:
 
 1. Estimating the number of Gal based on composition is not possible for hybrid glycans,
    so GlyTrait will calculate the number of Gal assuming there are no hybrid glycans.
@@ -149,127 +142,73 @@ Note that the composition mode has uncertainties to some extent. Specifically:
 3. Telling hybrid glycans from mono-antenary complex glycans is not possible based on composition,
    so GlyTrait will not classify glycans into complex, hybrid and high-mannose.
 
-Due to the ambiguities above, we recommend using the structure mode if possible.
-If structure information is not available but your samples are serum or plasma,
-you can use the built-in structure database.
-(See the [Built-in database](#built-in-database) section for more information.)
+Due to the ambiguities above, we recommend using the "structure" mode if possible.
 
-The default mode is the structure mode, as in the quick start example. You can specify the mode
-by the "-m" or the "--mode" option:
+You can specify the mode by the "-m" or the "--mode" option:
 
 ```shell
-glytrait data.csv -m composition
+glytrait abundance.csv composition.csv -m composition
 ```
 
 Or in short:
 
 ```shell
-glytrait data.csv -m C
+glytrait abundance.csv composition.csv -m C
 ```
 
-Using `glytrait -m structure` or `glytrait -m S` is equivalent to `glytrait` alone.
+The default mode is the "structure" mode, as in the quick start example. 
+Thus, using `glytrait -m structure` or `glytrait -m S` is equivalent to `glytrait` alone.
+If you might use both modes in a project, 
+we recommend using the "-m" option to specify the mode explicitly.
 
 ### Input file format
 
-The input csv file should have at least 3 columns:
+At least two files are needed for GlyTrait to work:
 
-1. The **first** column with header "Composition" is the condensed composition representation of
-   the glycans, e.g. "H5N4F1S2".
-2. The **second** column with header "Structure" is the structure string of the glycans.
-   We only support condensed GlycoCT now as it can be exported from GlycoWorkbench.
-   A complete structure with all linkage specified is not necessary,
-   because GlyTrait actually use the topology properties of glycan structures regardless of the
-   linkage information.
-   However, sialic acid linkage is needed if you want to calculate the sialic-acid-linkage traits.
-   (See the [Sialic-acid-linkage traits](#sialic-acid-linkage-traits) section for more
-   information.)
-3. **From the third column on** is the glycan abundance for different samples, with sample names
-   as the headers.
-   Normalization is not necessary because GllyTrait will carry out a Total Abundance Normalization
-   for all samples before calculating derived traits.
+#### 1. The abundance file
 
-**Note that Compositions and Structures should all be unique!**
-If glycans with the same composition but different structures are present,
-please modify the "Composition" to make them unique, e.g. "H5N4F1S2_1" and "H5N4F1S2_2",
-as in the structure mode GlyTrait will use the "Composition" column perely as glycan identifiers.
+A csv file with samples as rows and glycan IDs as columns.
+An example file would be like:
 
-An example input file would be like:
+| Sample | Glycan1 | Glycan2 | Glycan3 |
+|--------|---------|---------|---------|
+| Sample1 | 0.0417  | 0.0503  | 0.0354  |
+| Sample2 | 0.0233  | 0.0533  | 0.0593  |
+| Sample3 | 0.0123  | 0.0133  | 0.0194  |
 
-| Composition | Structrue | Sample1 | Sample2 | Sample3 |
-|-------------|-----------|---------|---------|---------|
-| H3N3F1      | RES...    | 0.0417  | 0.0503  | 0.0354  |
-| H3N4        | RES...    | 0.0233  | 0.0533  | 0.0593  |
-| H3N4F1      | RES...    | 0.0123  | 0.0133  | 0.0194  |
+The header of the first column should be "Sample",
+and the header of the other columns should be glycan IDs.
+Glycan IDs can be any string, e.g. the composition strings ("H3N4").
 
-This file contains 3 glycans (H3N3F1, N3N4 and N3N4F1) and three samples (Sample 1, 2, and 3).
+**Both glycan IDs and samples should be unique.**
 
-The "Structure" column is not necessary in the composition mode,
-and also not necessary if you use the built-in structure database
-(see [Built-in database](#built-in-database) section) or provide a structure file
-(see [Structure file](#structure-file) section) in the structure mode.
-In these cases, the input file would be like:
+#### 2. The structure file (or the composition file)
 
-| Composition | Sample1 | Sample2 | Sample3 |
-|-------------|---------|---------|---------|
-| H3N3F1      | 0.0417  | 0.0503  | 0.0354  |
-| H3N4        | 0.0233  | 0.0533  | 0.0593  |
-| H3N4F1      | 0.0123  | 0.0133  | 0.0194  |
+A csv file with two columns: "GlycanID" and "Structure" (or "Composition").
+An example file would be like:
+
+| GlycanID | Structure |
+|----------|-----------|
+| Glycan1  | RES...    |
+| Glycan2  | RES...    |
+| Glycan3  | RES...    |
+
+The "GlycanID" column should contain all glycan IDs in the abundance file.
+The "Structure" column should contain the structure strings of the glycans.
+For now, only the GlycoCT format is supported.
+In the "composition" mode, the second column should be "Composition" instead of "Structure",
+and the composition strings should be used instead of the structure strings.
+Condensed format ("H3N4F1S1") is supported.
 
 ### Specify output path
 
-You might noticed before that GlyTrait save the output file to the same directory as the input
-file with a "_glytrait" suffix.
+You might have noticed before that GlyTrait saves the output file to the same directory 
+as the abundance file with a "_glytrait" suffix.
 You can specify the output file path by using the "-o" or "--output-file" option:
 
 ```shell
-glytrait data.csv -o output.xlsx
+glytrait abundance.csv structure.csv -o output
 ```
-
-Note that a ".xlsx" suffix is needed.
-
-### Structure file
-
-You could provide glycan structures in a separate "structure file" using the "-s" or the
-"--structure-file" option:
-
-```shell
-glytrait data.csv -s structure.csv
-```
-
-The format of structure.csv is:
-
-| Composition | Structure |
-|-------------|-----------|
-| H3N3F1      | RES...    |
-| ...         | ...       |
-
-If a structure file is provided, the "Structure" column in the input file is not necessary.
-
-If the abundance file has compositions without corresponding structure in the structure
-file, an error will be raised.
-However, the structure file could contain glycans not in the abundance file,
-and GlyTrait will just ignore these glycans.
-This feature is useful if you have a pre-defined structure database
-and want to calculate derived traits for many sets of samples.
-
-### Built-in database
-
-N-glycans of some common sample types are well-studied, e.g. serum and plasma.
-If your samples are serum or plasma,
-you can use the built-in structure database by the "-d" or the "--database" option:
-
-```shell
-glytrait data.csv -d serum
-```
-
-If a built-in database is used, the "Structure" column in the input file is not necessary.
-
-The supported database
-names are:
-
-- serum: for serum or plasma N-glycans.
-  ([Song, T. Anal. Chem. 2015](https://pubs.acs.org/doi/10.1021/acs.analchem.5b01340))
-- IgG: for N-glycans on serum or plasma IgG.
 
 ### Preprocessing
 
@@ -286,7 +225,7 @@ The default value is 1, which means no glycan will be removed.
 You can change this value to 0.5 by:
 
 ```shell
-glytrait data.csv -r 0.5
+glytrait abundance.csv structure.csv -r 0.5
 ```
 
 The imputation method could be specified by the "-i" or the "--impute-method" option.
@@ -296,7 +235,7 @@ Other supported methods are "mean", "median", "zero", "lod".
 You can change imputation method to "min" by:
 
 ```shell
-glytrait data.csv -i min
+glytrait abundance.csv structure.csv -i min
 ```
 
 A full list of supported imputation methods are:
@@ -329,7 +268,7 @@ a2,3-linked.
 You can use the "-l" or "--sia-linkage" option to include sialic-acid-linkage traits:
 
 ```shell
-glytrait data.csv -l
+glytrait abundance.csv structure.csv -l
 ```
 
 Note that if you use this option, all glycans with sialic acids should have linkage information.
@@ -357,22 +296,17 @@ user-defined traits will also be considered in this filtering process.
 
 By default, GlyTrait only filtering trarits with Pearson correlation coefficient of 1,
 i.e. traits with perfect collinearity.
-This threshold can be changed by the "--corr-threshold" option:
+This threshold can be changed by the "-c" or "--corr-threshold" option:
 
 ```shell
-glytrait data.csv --corr-threshold 0.9
+glytrait abundance.csv structure.csv -c 0.9
 ```
 
-The correlation method can be changed to Spearman by the "--corr-method" option:
+Setting the threshold to -1 will turn off the colinearity filtering. 
+To turn off postfiltering all together, use the "--no-filtering" option:
 
 ```shell
-glytrait data.csv --corr-method spearman
-```
-
-Post-filtering can be turned off by the "--no-filtering" option:
-
-```shell
-glytrait data.csv --no-filtering
+glytrait abundance.csv structure.csv --no-filtering
 ```
 
 ### The GlyTrait Formula (Advanced)
@@ -409,22 +343,6 @@ As an overview, the formula should be in the format of:
   The coefficient part (`* <Coefficient>`) is optional. 
   If omitted, the coefficient is assumed to be 1.
 
-For more details and step-by-step instructions on how to write a formula, refer to the template
-file generated by `glytrait -t some_dir` (see setion below).
-
-#### Get the formula template file
-
-To start using **GlyTrait Formula**, you first need to get a formula template file by using the "
--t" or "--save_template" option:
-
-```shell
-glytrait -t some_dir
-```
-
-An template txt file will be saved in the given "some_dir" directory.
-"some_dir" needed to exist, GlyTrait will create this folder for you if it doesn't exist.
-A detailed instruction on how to write trait formulas is in that file.
-
 #### Built-in formulas
 
 To see all the built-in formulas for inspiration, use the "-b" or "--built-in" option to save a
@@ -436,7 +354,7 @@ glytrait -b some_dir
 
 #### Using the custom formulas
 
-Once you have editing the template file with new formulas in, you can try them out.
+Once you have a custom txt file with your own formulas, you can try them out.
 For incoperating the custom formulas, use the "-f" or "--formula-file" option:
 
 ```shell
