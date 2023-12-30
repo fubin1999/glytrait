@@ -1,8 +1,7 @@
 import pytest
 from click.testing import CliRunner
 
-import glytrait_cli
-from glytrait_cli import cli
+from glytrait import cli
 
 
 @pytest.fixture
@@ -49,16 +48,16 @@ def glytrait_mock(mocker):
 
 @pytest.fixture(autouse=True)
 def patch_glytrait(mocker, glytrait_mock):
-    mocker.patch("glytrait_cli.GlyTrait", return_value=glytrait_mock)
+    mocker.patch("glytrait.cli.GlyTrait", return_value=glytrait_mock)
 
 
 class TestCLI:
     def test_no_options(self, abundance_file, glycan_file, glytrait_mock):
         runner = CliRunner()
         args = [abundance_file, glycan_file]
-        result = runner.invoke(cli, args)
+        result = runner.invoke(cli.cli, args)
         assert result.exit_code == 0
-        glytrait_cli.GlyTrait.assert_called_once_with(
+        cli.GlyTrait.assert_called_once_with(
             mode="structure",
             filter_max_na=1.0,
             impute_method="zero",
@@ -80,9 +79,9 @@ class TestCLI:
     ):
         runner = CliRunner()
         args = [abundance_file, glycan_file, "-o", output_dir]
-        result = runner.invoke(cli, args)
+        result = runner.invoke(cli.cli, args)
         assert result.exit_code == 0
-        glytrait_cli.GlyTrait.assert_called_once()
+        cli.GlyTrait.assert_called_once()
         glytrait_mock.run.assert_called_once_with(
             output_dir=output_dir,
             abundance_file=abundance_file,
@@ -94,9 +93,9 @@ class TestCLI:
     def test_mode(self, abundance_file, glycan_file, glytrait_mock, option):
         runner = CliRunner()
         args = [abundance_file, glycan_file, "-m", "composition"]
-        result = runner.invoke(cli, args)
+        result = runner.invoke(cli.cli, args)
         assert result.exit_code == 0
-        glytrait_cli.GlyTrait.assert_called_once_with(
+        cli.GlyTrait.assert_called_once_with(
             mode="composition",
             filter_max_na=1.0,
             impute_method="zero",
@@ -113,9 +112,9 @@ class TestCLI:
     ):
         runner = CliRunner()
         args = [abundance_file, glycan_file, "-r", "0.5"]
-        result = runner.invoke(cli, args)
+        result = runner.invoke(cli.cli, args)
         assert result.exit_code == 0
-        glytrait_cli.GlyTrait.assert_called_once_with(
+        cli.GlyTrait.assert_called_once_with(
             mode="structure",
             filter_max_na=0.5,
             impute_method="zero",
@@ -130,9 +129,9 @@ class TestCLI:
     def test_impute_method(self, abundance_file, glycan_file, glytrait_mock, option):
         runner = CliRunner()
         args = [abundance_file, glycan_file, "-i", "mean"]
-        result = runner.invoke(cli, args)
+        result = runner.invoke(cli.cli, args)
         assert result.exit_code == 0
-        glytrait_cli.GlyTrait.assert_called_once_with(
+        cli.GlyTrait.assert_called_once_with(
             mode="structure",
             filter_max_na=1.0,
             impute_method="mean",
@@ -147,9 +146,9 @@ class TestCLI:
     def test_sia_linkage(self, abundance_file, glycan_file, glytrait_mock, option):
         runner = CliRunner()
         args = [abundance_file, glycan_file, "-l"]
-        result = runner.invoke(cli, args)
+        result = runner.invoke(cli.cli, args)
         assert result.exit_code == 0
-        glytrait_cli.GlyTrait.assert_called_once_with(
+        cli.GlyTrait.assert_called_once_with(
             mode="structure",
             filter_max_na=1.0,
             impute_method="zero",
@@ -166,9 +165,9 @@ class TestCLI:
     ):
         runner = CliRunner()
         args = [abundance_file, glycan_file, "-f", formula_file]
-        result = runner.invoke(cli, args)
+        result = runner.invoke(cli.cli, args)
         assert result.exit_code == 0
-        glytrait_cli.GlyTrait.assert_called_once_with(
+        cli.GlyTrait.assert_called_once_with(
             mode="structure",
             filter_max_na=1.0,
             impute_method="zero",
@@ -189,9 +188,9 @@ class TestCLI:
     def test_filter(self, abundance_file, glycan_file, glytrait_mock, option, filter):
         runner = CliRunner()
         args = [abundance_file, glycan_file, option]
-        result = runner.invoke(cli, args)
+        result = runner.invoke(cli.cli, args)
         assert result.exit_code == 0
-        glytrait_cli.GlyTrait.assert_called_once_with(
+        cli.GlyTrait.assert_called_once_with(
             mode="structure",
             filter_max_na=1.0,
             impute_method="zero",
@@ -206,9 +205,9 @@ class TestCLI:
     def test_corr_threshold(self, abundance_file, glycan_file, glytrait_mock, option):
         runner = CliRunner()
         args = [abundance_file, glycan_file, "-c", "0.5"]
-        result = runner.invoke(cli, args)
+        result = runner.invoke(cli.cli, args)
         assert result.exit_code == 0
-        glytrait_cli.GlyTrait.assert_called_once_with(
+        cli.GlyTrait.assert_called_once_with(
             mode="structure",
             filter_max_na=1.0,
             impute_method="zero",
@@ -221,13 +220,13 @@ class TestCLI:
 
     @pytest.mark.parametrize("option", ["-b", "--builtin-formulas"])
     def test_builtin_formulas(self, option, clean_dir, mocker):
-        mocker.patch("glytrait_cli.save_builtin_formula", autospec=True)
+        mocker.patch("glytrait.cli.save_builtin_formula", autospec=True)
         dirpath = clean_dir / "formulas"
         dirpath.mkdir()
 
         runner = CliRunner()
         args = [option, str(dirpath)]
-        result = runner.invoke(cli, args)
+        result = runner.invoke(cli.cli, args)
         assert result.exit_code == 0
-        glytrait_cli.GlyTrait.assert_not_called()
-        glytrait_cli.save_builtin_formula.assert_called_once_with(str(dirpath))
+        cli.GlyTrait.assert_not_called()
+        cli.save_builtin_formula.assert_called_once_with(str(dirpath))
