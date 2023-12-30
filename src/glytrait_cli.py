@@ -155,7 +155,7 @@ Use `glytrait --help` for more information.
             custom_formula_file=formula_file,
         )
         gt.run(
-            output_dir=output_dir,
+            output_dir=str(output_dir),
             abundance_file=abundance_file,
             glycan_file=glycan_file,
             group_file=None,
