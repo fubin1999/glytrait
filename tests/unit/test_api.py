@@ -160,8 +160,9 @@ class TestGlyTrait:
         to_export = [
             ("formulas.txt", "formulas"),
             ("meta_properties.csv", "meta_property_table"),
-            ("derived_traits.csv", "filtered_derived_trait_table"),
+            ("derived_traits.csv", "derived_trait_table"),
             ("glycan_abundance_processed.csv", "abundance_table"),
+            ("derived_traits_filtered.csv", "filtered_derived_trait_table"),
         ]
         glytrait_api.export_all.assert_called_once_with(to_export, output_path)
 
@@ -245,6 +246,15 @@ class TestGlyTrait:
         )
 
         glytrait_api.post_filter.assert_not_called()
+        glytrait_api.export_all.assert_called_once_with(
+            [
+                ("formulas.txt", "formulas"),
+                ("meta_properties.csv", "meta_property_table"),
+                ("derived_traits.csv", "derived_trait_table"),
+                ("glycan_abundance_processed.csv", "abundance_table"),
+            ],
+            output_path,
+        )
 
     def test_run_correlation_threshold(
         self, default_config_dict, mock_input_data, clean_dir

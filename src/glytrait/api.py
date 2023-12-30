@@ -96,9 +96,15 @@ class GlyTrait:
         meta_property_table = self._calcu_meta_property(input_data)
         derived_trait_table = self._calcu_derived_trait(input_data, meta_property_table)
         if self._config.post_filtering:
-            derived_trait_table = self._post_filtering(derived_trait_table)
+            filtered_derived_trait_table = self._post_filtering(derived_trait_table)
+        else:
+            filtered_derived_trait_table = None
         self._export_data(
-            output_dir, input_data, meta_property_table, derived_trait_table
+            output_dir,
+            input_data,
+            meta_property_table,
+            derived_trait_table,
+            filtered_derived_trait_table,
         )
 
     def _load_input_data(
@@ -142,6 +148,7 @@ class GlyTrait:
         input_data: GlyTraitInputData,
         meta_property_table: MetaPropertyTable,
         derived_trait_table: DerivedTraitTable,
+        filtered_derived_trait_table: Optional[DerivedTraitTable] = None,
     ) -> None:
         data_to_export = [
             ("formulas.txt", self._formulas),
@@ -149,6 +156,10 @@ class GlyTrait:
             ("derived_traits.csv", derived_trait_table),
             ("glycan_abundance_processed.csv", input_data.abundance_table),
         ]
+        if filtered_derived_trait_table is not None:
+            data_to_export.append(
+                ("derived_traits_filtered.csv", filtered_derived_trait_table)
+            )
         export_all(data_to_export, output_dir)
 
 
