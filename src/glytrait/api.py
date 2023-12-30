@@ -91,11 +91,7 @@ class GlyTrait:
             glycan_file (str): Path to the glycan file.
             group_file (str): Path to the group file. Optional.
         """
-        input_data = self._load_input_data(
-            abundance_file=abundance_file,
-            glycan_file=glycan_file,
-            group_file=group_file,
-        )
+        input_data = self._load_input_data(abundance_file, glycan_file, group_file)
         self._preprocess(input_data)
         meta_property_table = self._calcu_meta_property(input_data)
         derived_trait_table = self._calcu_derived_trait(input_data, meta_property_table)
