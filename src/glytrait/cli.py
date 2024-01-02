@@ -100,7 +100,7 @@ def save_builtin_formulas_callback(ctx, param, value):
     default=1,
     help="Threshold for correlation between traits. "
     "Default is 1, which means only traits with perfect collinearity "
-    "will be filtered.",
+    "will be filtered. Use -1 to disable filtering.",
 )
 @click.option(
     "-b",

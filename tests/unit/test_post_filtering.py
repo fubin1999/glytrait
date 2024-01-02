@@ -1,10 +1,39 @@
 import numpy as np
 import pandas as pd
 import pytest
-from attr import define
 
 import glytrait.post_filtering as pf
 import glytrait.formula as fml
+
+
+class TestPostFilter:
+    @pytest.fixture(autouse=True)
+    def mock_filter_invalid(self, mocker):
+        self.mock_filter_invalid = mocker.patch(
+            "glytrait.post_filtering.filter_invalid",
+            autospec=True,
+            return_value="trait_df_1",
+        )
+
+    @pytest.fixture(autouse=True)
+    def mock_filter_colinearity(self, mocker):
+        self.mock_filter_colinearity = mocker.patch(
+            "glytrait.post_filtering.filter_colinearity",
+            autospec=True,
+            return_value="trait_df_2",
+        )
+
+    def test_basic(self):
+        pf.post_filter("formulas", "trait_df", 0.5, "pearson")
+        pf.filter_invalid.assert_called_once_with("trait_df")
+        pf.filter_colinearity.assert_called_once_with(
+            "formulas", self.mock_filter_invalid.return_value, 0.5, "pearson"
+        )
+
+    def test_skip_colinearity(self):
+        pf.post_filter("formulas", "trait_df", -1, "pearson")
+        pf.filter_invalid.assert_called_once_with("trait_df")
+        self.mock_filter_colinearity.assert_not_called()
 
 
 def test_filter_invalid():

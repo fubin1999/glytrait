@@ -28,13 +28,15 @@ def post_filter(
         formulas (Iterable[TraitFormula]): The formulas to be filtered.
         trait_df (DerivedTraitTable): The derived traits table.
         threshold (float): The threshold of the correlation coefficient.
+            If set to -1, the colinearity filtering will be skipped.
         method (Literal["pearson", "spearman"]): The method to calculate the correlation.
 
     Returns:
         DerivedTraitTable: The filtered derived traits table.
     """
     trait_df = filter_invalid(trait_df)
-    trait_df = filter_colinearity(formulas, trait_df, threshold, method)
+    if threshold != -1:
+        trait_df = filter_colinearity(formulas, trait_df, threshold, method)
     return trait_df
 
 

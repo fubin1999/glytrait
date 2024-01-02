@@ -37,7 +37,9 @@ class GlyTrait:
             Default: True.
         correlation_threshold (float): The correlation threshold for post filtering.
             If the correlation between two traits is greater than this value,
-            one of them will be removed. Default: 1.0.
+            one of them will be removed.
+            Setting to -1.0 means no correlation filtering.
+            Default: 1.0.
         sia_linkage (bool): Whether to consider the linkage of sialic acid.
             If True, the linkage of sialic acid will be considered in the calculation of
             meta properties. Default: False.
