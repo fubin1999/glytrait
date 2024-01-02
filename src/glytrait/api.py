@@ -1,15 +1,17 @@
 from typing import Literal, Optional
 
+import pandas as pd
 from attrs import define, field
 
 from glytrait.data_export import export_all
+from glytrait.data_type import MetaPropertyTable, DerivedTraitTable
+from glytrait.diff import differential_analysis
 from glytrait.formula import TraitFormula, load_formulas
 from glytrait.load_data import load_input_data, GlyTraitInputData
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
 from glytrait.preprocessing import preprocess
 from glytrait.trait import calcu_derived_trait
-from glytrait.data_type import MetaPropertyTable, DerivedTraitTable
 
 
 class GlyTrait:
@@ -99,12 +101,17 @@ class GlyTrait:
             filtered_derived_trait_table = self._post_filtering(derived_trait_table)
         else:
             filtered_derived_trait_table = None
+        if group_file is not None and self._config.post_filtering:
+            diff_result = self._diff_analysis(filtered_derived_trait_table, input_data)  # type: ignore
+        else:
+            diff_result = None
         self._export_data(
             output_dir,
             input_data,
             meta_property_table,
             derived_trait_table,
             filtered_derived_trait_table,
+            diff_result,
         )
 
     def _load_input_data(
@@ -142,6 +149,11 @@ class GlyTrait:
             method="pearson",
         )
 
+    def _diff_analysis(
+        self, derived_trait_table: DerivedTraitTable, input_data: GlyTraitInputData
+    ) -> pd.DataFrame:
+        return differential_analysis(derived_trait_table, input_data.groups)  # type: ignore
+
     def _export_data(
         self,
         output_dir: str,
@@ -149,6 +161,7 @@ class GlyTrait:
         meta_property_table: MetaPropertyTable,
         derived_trait_table: DerivedTraitTable,
         filtered_derived_trait_table: Optional[DerivedTraitTable] = None,
+        diff_result: Optional[pd.DataFrame] = None,
     ) -> None:
         data_to_export = [
             ("formulas.txt", self._formulas),
@@ -160,6 +173,8 @@ class GlyTrait:
             data_to_export.append(
                 ("derived_traits_filtered.csv", filtered_derived_trait_table)
             )
+        if diff_result is not None:
+            data_to_export.append(("differential_analysis.csv", diff_result))
         export_all(data_to_export, output_dir)
 
 
