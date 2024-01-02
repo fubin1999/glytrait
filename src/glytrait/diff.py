@@ -3,15 +3,39 @@ import warnings
 import pandas as pd
 import pingouin as pg
 
-from glytrait.exception import HypothesisTestingError
+from glytrait.data_type import DerivedTraitTable, GroupSeries
+
+__all__ = ["differential_analysis", "mwu", "kruskal"]
 
 
-def mwu(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
+def differential_analysis(
+    trait_df: DerivedTraitTable, groups: GroupSeries
+) -> pd.DataFrame:
+    """Automatically perform hypothesis test for the trait data.
+
+    If `groups` has two unique values, Mann-Whitney U Test will be performed.
+    Otherwise, Kruskal-Wallis H-test will be performed.
+
+    Args:
+        trait_df (DerivedTraitTable): Dataframe containing the trait data.
+        groups (GroupSeries): Series containing the group information.
+
+    Returns:
+        pd.DataFrame: Dataframe containing the differential analysis results,
+            with trait names as index.
+    """
+    if groups.nunique() == 2:
+        return mwu(trait_df, groups)
+    else:
+        return kruskal(trait_df, groups)
+
+
+def mwu(trait_df: DerivedTraitTable, groups: GroupSeries) -> pd.DataFrame:
     """Perform Mann-Whitney U Test for two groups.
 
     Args:
-        trait_df (pd.DataFrame): Dataframe containing the trait data.
-        groups (pd.Series): Series containing the group information, with the same index as df.
+        trait_df (DerivedTraitTable): Dataframe containing the trait data.
+        groups (GroupSeries): Series containing the group information, with the same index as df.
             Only two groups are allowed.
 
     Returns:
@@ -34,12 +58,12 @@ def mwu(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
     return result_df
 
 
-def kruskal(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
+def kruskal(trait_df: DerivedTraitTable, groups: GroupSeries) -> pd.DataFrame:
     """Perform Kruskal-Wallis H-test for multiple groups.
 
     Args:
-        trait_df (pd.DataFrame): Dataframe containing the trait data.
-        groups (pd.Series): Series containing the group information, with the same index as df.
+        trait_df (DerivedTraitTable): Dataframe containing the trait data.
+        groups (GroupSeries): Series containing the group information, with the same index as df.
 
     Returns:
         pd.DataFrame: Dataframe containing the Kruskal-Wallis H-test results,
@@ -48,7 +72,7 @@ def kruskal(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
     anove_results = []
     trait_names = trait_df.columns
     groups = groups.rename("group")
-    trait_df = trait_df.merge(groups, left_index=True, right_index=True)
+    trait_df = trait_df.merge(groups, left_index=True, right_index=True)  # type: ignore
     for trait in trait_names:
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=RuntimeWarning)
@@ -75,33 +99,3 @@ def kruskal(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
 
     result_df = result_df.drop(["reject", "ddof1"], axis=1)
     return result_df
-
-
-def differential_analysis(trait_df: pd.DataFrame, groups: pd.Series) -> pd.DataFrame:
-    """Automatically perform hypothesis test for the trait data.
-
-    If `groups` has two unique values, Mann-Whitney U Test will be performed.
-    Otherwise, Kruskal-Wallis H-test will be performed.
-
-    Args:
-        trait_df (pd.DataFrame): Dataframe containing the trait data.
-        groups (pd.Series): Series containing the group information, with the same index as df.
-
-    Returns:
-        pd.DataFrame: Dataframe containing the hypothesis test results,
-            with trait names as index.
-
-    Raises:
-        HypothesisTestingError: If only one group is provided, or when the index of
-            `groups` and `trait_df` are not the same.
-    """
-    if set(groups.index) != set(trait_df.index):
-        raise HypothesisTestingError(
-            "The index of groups and trait_df must be the same."
-        )
-    if groups.nunique() == 1:
-        raise HypothesisTestingError("Only one group is provided.")
-    elif groups.nunique() == 2:
-        return mwu(trait_df, groups)
-    else:
-        return kruskal(trait_df, groups)

@@ -3,7 +3,6 @@ import pandas as pd
 import pytest
 
 import glytrait.diff
-from glytrait.exception import HypothesisTestingError
 
 
 def test_mwu():
@@ -72,24 +71,6 @@ def test_differential_analysis_3_groups(mocker):
     groups = pd.Series(["a", "a", "b", "b", "c", "c"], index=[1, 2, 3, 4, 5, 6])
     glytrait.diff.differential_analysis(trait_df, groups)
     kruskal_mock.assert_called_once_with(trait_df, groups)
-
-
-def test_differential_analysis_1_group(mocker):
-    trait_df = mocker.Mock()
-    trait_df.index = pd.Index([1, 2, 3])
-    groups = pd.Series(["a", "a", "a"], index=[1, 2, 3])
-    with pytest.raises(HypothesisTestingError) as excinfo:
-        glytrait.diff.differential_analysis(trait_df, groups)
-    assert "Only one group is provided." in str(excinfo.value)
-
-
-def test_differential_analysis_index_not_same(mocker):
-    trait_df = mocker.Mock()
-    trait_df.index = pd.Index([1, 2, 3])
-    groups = pd.Series(["a", "a", "b"], index=[1, 2, 4])
-    with pytest.raises(HypothesisTestingError) as excinfo:
-        glytrait.diff.differential_analysis(trait_df, groups)
-    assert "The index of groups and trait_df must be the same." in str(excinfo.value)
 
 
 def test_differential_analysis_index_not_same_order(mocker):
