@@ -40,6 +40,12 @@ def save_builtin_formulas_callback(ctx, param, value):
     required=False,
 )
 @click.option(
+    "-g",
+    "--group-file",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    help="Group file path.",
+)
+@click.option(
     "-o",
     "--output-dir",
     type=click.Path(dir_okay=True, file_okay=False),
@@ -110,6 +116,7 @@ def save_builtin_formulas_callback(ctx, param, value):
 def cli(
     abundance_file,
     glycan_file,
+    group_file,
     output_dir,
     mode,
     filter_glycan_ratio,
@@ -158,7 +165,7 @@ Use `glytrait --help` for more information.
             output_dir=str(output_dir),
             abundance_file=abundance_file,
             glycan_file=glycan_file,
-            group_file=None,
+            group_file=group_file,
         )
     except GlyTraitError as e:
         raise click.UsageError(str(e) + emoji.emojize(" :thumbs_down:"))

@@ -73,6 +73,22 @@ class TestCLI:
             group_file=None,
         )
 
+    @pytest.mark.parametrize("option", ["-g", "--group-file"])
+    def test_group_file(
+        self, abundance_file, glycan_file, group_file, glytrait_mock, option
+    ):
+        runner = CliRunner()
+        args = [abundance_file, glycan_file, "-g", group_file]
+        result = runner.invoke(cli.cli, args)
+        assert result.exit_code == 0
+        cli.GlyTrait.assert_called_once()
+        glytrait_mock.run.assert_called_once_with(
+            output_dir=abundance_file.replace(".csv", "_glytrait"),
+            abundance_file=abundance_file,
+            glycan_file=glycan_file,
+            group_file=group_file,
+        )
+
     @pytest.mark.parametrize("option", ["-o", "--otuput-dir"])
     def test_output_dir(
         self, abundance_file, glycan_file, output_dir, glytrait_mock, option
