@@ -55,6 +55,7 @@ def mwu(trait_df: DerivedTraitTable, groups: GroupSeries) -> pd.DataFrame:
     result_df = pd.concat(ttest_results, axis=0)
     _, result_df["p-val-adjusted"] = pg.multicomp(result_df["p-val"], method="fdr_bh")
     result_df = result_df[["U-val", "p-val", "p-val-adjusted", "CLES"]]
+    result_df.index.name = "trait"
     return result_df
 
 
@@ -98,4 +99,5 @@ def kruskal(trait_df: DerivedTraitTable, groups: GroupSeries) -> pd.DataFrame:
             )
 
     result_df = result_df.drop(["reject", "ddof1"], axis=1)
+    result_df.index.name = "trait"
     return result_df

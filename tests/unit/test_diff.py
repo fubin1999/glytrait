@@ -23,6 +23,7 @@ def test_mwu():
     ]
     assert result.columns.tolist() == expected_columns
     assert result.index.tolist() == trait_df.columns.tolist()
+    assert result.index.name == "trait"
 
 
 def test_kruskal(mocker):
@@ -53,6 +54,7 @@ def test_kruskal(mocker):
     assert multicomp_mock.call_count == 1
     assert result.columns.tolist() == expected_columns
     assert result.index.tolist() == trait_df.columns.tolist()
+    assert result.index.name == "trait"
 
 
 def test_differential_analysis_2_groups(mocker):
