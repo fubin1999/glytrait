@@ -21,7 +21,10 @@ class GlyTrait:
         mode (str): "structure" or "composition". Default: "structure".
         filter_max_na (float): The maximum ratio of missing values in a sample.
             If the ratio of missing values in a sample is greater than this value,
-            the sample will be removed. Default: 0.0.
+            the sample will be removed.
+            Setting to 1.0 means no filtering.
+            Setting to 0.0 means only keeping glycans with no missing values.
+            Default: 1.0.
         impute_method (str): The method to impute missing values.
             "zero": fill with 0.
             "min": fill with the minimum value of the column.
@@ -34,7 +37,7 @@ class GlyTrait:
             Default: True.
         correlation_threshold (float): The correlation threshold for post filtering.
             If the correlation between two traits is greater than this value,
-            one of them will be removed. Default: 0.9.
+            one of them will be removed. Default: 1.0.
         sia_linkage (bool): Whether to consider the linkage of sialic acid.
             If True, the linkage of sialic acid will be considered in the calculation of
             meta properties. Default: False.
@@ -186,12 +189,12 @@ class _Config:
     """
 
     mode: Literal["structure", "composition"] = field(default="structure")
-    filter_max_na: float = field(default=0.0)
+    filter_max_na: float = field(default=1.0)
     impute_method: Literal["zero", "min", "lod", "mean", "median"] = field(
         default="zero"
     )
     post_filtering: bool = field(default=True)
-    correlation_threshold: float = field(default=0.9)
+    correlation_threshold: float = field(default=1.0)
     sia_linkage: bool = field(default=False)
     custom_formula_file: Optional[str] = field(default=None)
 
