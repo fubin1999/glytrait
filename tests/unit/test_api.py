@@ -30,6 +30,16 @@ class TestConfig:
         assert config.sia_linkage is False
         assert config.custom_formula_file is None
 
+    def test_default_config(self):
+        config = _Config()
+        assert config.mode == "structure"
+        assert config.filter_max_na == 1.0
+        assert config.impute_method == "zero"
+        assert config.post_filtering is True
+        assert config.correlation_threshold == 1.0
+        assert config.sia_linkage is False
+        assert config.custom_formula_file is None
+
     @pytest.mark.parametrize("mode", ["invalid", 1, None])
     def test_invalid_mode(self, config_dict, mode):
         config_dict["mode"] = mode
