@@ -19,6 +19,7 @@ def test_mwu():
         "U-val",
         "p-val",
         "p-val-adjusted",
+        "RBC",
         "CLES",
     ]
     assert result.columns.tolist() == expected_columns

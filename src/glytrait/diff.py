@@ -54,7 +54,7 @@ def mwu(trait_df: DerivedTraitTable, groups: GroupSeries) -> pd.DataFrame:
         ttest_results.append(ttest_result)
     result_df = pd.concat(ttest_results, axis=0)
     _, result_df["p-val-adjusted"] = pg.multicomp(result_df["p-val"], method="fdr_bh")
-    result_df = result_df[["U-val", "p-val", "p-val-adjusted", "CLES"]]
+    result_df = result_df[["U-val", "p-val", "p-val-adjusted", "RBC", "CLES"]]
     result_df.index.name = "trait"
     return result_df
 
