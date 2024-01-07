@@ -112,7 +112,7 @@ def structure_folder(clean_dir) -> str:
     dirpath = clean_dir / "structures"
     dirpath.mkdir()
     for i in range(1, 4):
-        filepath = dirpath / f"G{i}.glycoct"
+        filepath = dirpath / f"G{i}.glycoct_condensed"
         filepath.write_text(f"glycoct{i}")
     return str(dirpath)
 
@@ -177,7 +177,7 @@ class TestLoadStructures:
             load_structures(filepath)
 
     def test_from_dir_duplicate_structures(self, structure_folder):
-        filepath = structure_folder + "/G1.glycoct"
+        filepath = structure_folder + "/G1.glycoct_condensed"
         Path(filepath).write_text("glycoct2")
         with pytest.raises(FileFormatError):
             load_structures(structure_folder)

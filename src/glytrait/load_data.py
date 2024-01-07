@@ -200,7 +200,7 @@ def _load_structures_from_csv(filepath: str) -> StructureDict:
 
 def _load_structures_from_dir(dirpath: str) -> StructureDict:
     """Load structures from a directory."""
-    ids, strings = _load_glycans_from_dir(dirpath, "glycoct")
+    ids, strings = _load_glycans_from_dir(dirpath, "glycoct_condensed")
     # glycan ids are not checked because they are filenames
     _check_duplicated_items("glycan structures", strings)
     return parse_structures(zip(ids, strings))
