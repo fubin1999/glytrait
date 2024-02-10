@@ -11,7 +11,7 @@ from functools import singledispatch, cache
 from typing import Literal, Protocol, ClassVar, Type
 
 import pandas as pd
-from attrs import define
+from attrs import define, field
 from glypy import Monosaccharide  # type: ignore
 
 from glytrait.exception import SiaLinkageError
@@ -59,13 +59,44 @@ class GlycanType(Enum):
     HYBRID = auto()
 
 
-class MetaProperty(Protocol):
-    """The protocol of a meta-property class."""
+@define
+class MetaProperty:
+    """The base class for meta-properties.
+
+    A meta-property is a function that takes a glycan as input and returns a value.
+    The glycan can be either a `Composition` or a `Structure`.
+    The value can be an integer, a boolean, or a string.
+    """
 
     name: ClassVar[str]
-    sia_linkage: ClassVar[bool]
+    supported_mode: ClassVar[Literal["composition", "structure", "both"]]
 
-    def __call__(self, glycan) -> float: ...
+    def __call__(self, glycan: Structure | Composition) -> int | bool | str:
+        raise NotImplementedError
+
+
+@define
+class IntegerMetaProperty(MetaProperty):
+    """Meta-property that returns an integer value."""
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        raise NotImplementedError
+
+
+@define
+class BooleanMetaProperty(MetaProperty):
+    """Meta-property that returns a boolean value."""
+
+    def __call__(self, glycan: Structure | Composition) -> bool:
+        raise NotImplementedError
+
+
+@define
+class StringMetaProperty(MetaProperty):
+    """Meta-property that returns a string value."""
+
+    def __call__(self, glycan: Structure | Composition) -> str:
+        raise NotImplementedError
 
 
 struc_meta_properties: list[Type[MetaProperty]] = []
