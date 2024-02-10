@@ -99,6 +99,20 @@ class StringMetaProperty(MetaProperty):
         raise NotImplementedError
 
 
+@define
+class CountAntenna(IntegerMetaProperty):
+    """The number of antennas."""
+
+    name: ClassVar = "nAnt"
+    supported_mode: ClassVar = "structure"
+
+    def __call__(self, glycan: Structure) -> int:
+        if _glycan_type(glycan) != GlycanType.COMPLEX:
+            return 0
+        node1, node2 = _get_branch_core_man(glycan)
+        return len(node1.links) + len(node2.links) - 2
+
+
 struc_meta_properties: list[Type[MetaProperty]] = []
 comp_meta_properties: list[Type[MetaProperty]] = []
 
