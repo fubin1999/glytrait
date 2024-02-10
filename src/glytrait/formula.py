@@ -11,6 +11,7 @@ Functions:
     save_trait_formulas_tepmlate: Save a template of trait formulas to a file.
     save_builtin_formula: Save a built-in trait formulas to a file.
 """
+
 from __future__ import annotations
 
 import itertools

@@ -1,4 +1,5 @@
 """GlyTrait"""
+
 from glytrait.api import GlyTrait
 
 

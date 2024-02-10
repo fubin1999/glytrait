@@ -2,6 +2,7 @@
 
 The only high-level function that client code will use is `preprocess`.
 """
+
 from typing import Literal, Protocol
 
 from attrs import define
@@ -40,8 +41,7 @@ def preprocess(
 class ProcessingStep(Protocol):
     """The protocol for processing steps."""
 
-    def __call__(self, data: GlyTraitInputData) -> None:
-        ...
+    def __call__(self, data: GlyTraitInputData) -> None: ...
 
 
 @define

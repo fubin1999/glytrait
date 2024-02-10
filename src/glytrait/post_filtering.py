@@ -2,6 +2,7 @@
 
 The only function in this module is `post_filter`.
 """
+
 from typing import Iterable, Literal
 
 import numpy as np

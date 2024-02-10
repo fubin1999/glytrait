@@ -9,6 +9,7 @@ Functions:
     parse_compositions: Parse a list of glycan compositions.
     get_mono_str: Helper function for checking the identity of a `glypy.MonosaccarideResidue`.
 """
+
 from __future__ import annotations
 
 import re
