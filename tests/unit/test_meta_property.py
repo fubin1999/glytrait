@@ -58,6 +58,29 @@ comp_meta_properties_sl = {
 }
 
 
+class TestCountAntenna:
+
+    @pytest.fixture
+    def count_antenna(self):
+        return mp.CountAntenna()
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, 2),
+            (test_glycoct_2, 2),
+            (test_glycoct_3, 0),  # High-mannose
+            (test_glycoct_4, 0),  # Hybrid
+            (test_glycoct_6, 1),
+            (test_glycoct_8, 3),
+            (test_glycoct_14, 4),
+        ]
+    )
+    def test_count_antenna(self, count_antenna, glycoct, expected, make_structure):
+        glycan = make_structure(glycoct)
+        assert count_antenna(glycan) == expected
+
+
 def test_available_meta_properties_structure_no_sl():
     result = mp.available_meta_properties("structure", sia_linkage=False)
     assert set(result) == struc_meta_properties_no_sl
