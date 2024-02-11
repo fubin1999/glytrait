@@ -34,8 +34,8 @@ def _test_meta_property(meta_property_type, string, expected, make_glycan):
         (test_glycoct_14, 4),
     ]
 )
-def test_count_antenna(glycoct, expected, make_structure):
-    _test_meta_property(mp.CountAntenna, glycoct, expected, make_structure)
+def test_count_antenna_mp(glycoct, expected, make_structure):
+    _test_meta_property(mp.CountAntennaMP, glycoct, expected, make_structure)
 
 
 @pytest.mark.parametrize(
@@ -46,8 +46,8 @@ def test_count_antenna(glycoct, expected, make_structure):
         (test_glycoct_9, 3),
     ],
 )
-def test_count_fuc_struc(glycoct, expected, make_structure):
-    _test_meta_property(mp.CountFuc, glycoct, expected, make_structure)
+def test_count_fuc_mp_struc(glycoct, expected, make_structure):
+    _test_meta_property(mp.CountFucMP, glycoct, expected, make_structure)
 
 
 @pytest.mark.parametrize(
@@ -58,8 +58,8 @@ def test_count_fuc_struc(glycoct, expected, make_structure):
         ("H5N4F2E1", 2),
     ],
 )
-def test_count_fuc_comp(comp, expected, make_composition):
-    _test_meta_property(mp.CountFuc, comp, expected, make_composition)
+def test_count_fuc_mp_comp(comp, expected, make_composition):
+    _test_meta_property(mp.CountFucMP, comp, expected, make_composition)
 
 
 @pytest.mark.parametrize(
@@ -70,8 +70,8 @@ def test_count_fuc_comp(comp, expected, make_composition):
         (test_glycoct_9, 1),
     ],
 )
-def test_count_core_fuc(glycoct, expected, make_structure):
-    _test_meta_property(mp.CountCoreFuc, glycoct, expected, make_structure)
+def test_count_core_fuc_mp(glycoct, expected, make_structure):
+    _test_meta_property(mp.CountCoreFucMP, glycoct, expected, make_structure)
 
 
 @pytest.mark.parametrize(
@@ -82,8 +82,8 @@ def test_count_core_fuc(glycoct, expected, make_structure):
         (test_glycoct_9, 2),
     ],
 )
-def test_count_antennary_fuc(glycoct, expected, make_structure):
-    _test_meta_property(mp.CountAntennaryFuc, glycoct, expected, make_structure)
+def test_count_antennary_fuc_mp(glycoct, expected, make_structure):
+    _test_meta_property(mp.CountAntennaryFucMP, glycoct, expected, make_structure)
 
 
 @pytest.mark.parametrize(
@@ -96,8 +96,8 @@ def test_count_antennary_fuc(glycoct, expected, make_structure):
         (test_glycoct_10, 2),
     ],
 )
-def test_count_sia_struc(glycoct, expected, make_structure):
-    _test_meta_property(mp.CountSia, glycoct, expected, make_structure)
+def test_count_sia_struc_mp(glycoct, expected, make_structure):
+    _test_meta_property(mp.CountSiaMP, glycoct, expected, make_structure)
 
 
 @pytest.mark.parametrize(
@@ -108,8 +108,8 @@ def test_count_sia_struc(glycoct, expected, make_structure):
         ("H5N4F2E1", 1),
     ],
 )
-def test_count_sia_comp(comp, expected, make_composition):
-    _test_meta_property(mp.CountSia, comp, expected, make_composition)
+def test_count_sia_comp_mp(comp, expected, make_composition):
+    _test_meta_property(mp.CountSiaMP, comp, expected, make_composition)
 
 
 @pytest.mark.parametrize(
