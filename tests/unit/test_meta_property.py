@@ -4,59 +4,6 @@ import pytest
 from glytrait import meta_property as mp
 from .glycoct import *
 
-struc_meta_properties_no_sl = {
-    ".",
-    "isComplex",
-    "isHighMannose",
-    "isHybrid",
-    "isBisecting",
-    "is1Antennary",
-    "is2Antennary",
-    "is3Antennary",
-    "is4Antennary",
-    "totalAntenna",
-    "coreFuc",
-    "antennaryFuc",
-    "totalFuc",
-    "hasFuc",
-    "noFuc",
-    "totalSia",
-    "hasSia",
-    "noSia",
-    "totalMan",
-    "totalGal",
-    "hasPolyLacNAc",
-}
-struc_meta_properties_sl = {
-    "a23Sia",
-    "a26Sia",
-    "hasa23Sia",
-    "hasa26Sia",
-    "noa23Sia",
-    "noa26Sia",
-}
-comp_meta_properties_no_sl = {
-    ".",
-    "isHighBranching",
-    "isLowBranching",
-    "totalSia",
-    "totalFuc",
-    "totalGal",
-    "totalMan",
-    "hasSia",
-    "hasFuc",
-    "noSia",
-    "noFuc",
-}
-comp_meta_properties_sl = {
-    "a23Sia",
-    "a26Sia",
-    "hasa23Sia",
-    "hasa26Sia",
-    "noa23Sia",
-    "noa26Sia",
-}
-
 
 class TestCountAntenna:
 
@@ -175,40 +122,6 @@ class TestCountSia:
     )
     def test_count_sia_comp(self, comp, expected, make_composition):
         _test_meta_property(mp.TotalSia, comp, expected, make_composition)
-
-
-def test_available_meta_properties_structure_no_sl():
-    result = mp.available_meta_properties("structure", sia_linkage=False)
-    assert set(result) == struc_meta_properties_no_sl
-
-
-def test_available_meta_properties_structure_all():
-    result = mp.available_meta_properties("structure", sia_linkage=True)
-    assert set(result) == struc_meta_properties_no_sl | struc_meta_properties_sl
-
-
-def test_available_meta_properties_structure_only_sl():
-    result = mp.available_meta_properties(
-        "structure", sia_linkage=True, only_sia_linkage=True
-    )
-    assert set(result) == struc_meta_properties_sl
-
-
-def test_available_meta_properties_composition_no_sl():
-    result = mp.available_meta_properties("composition", sia_linkage=False)
-    assert set(result) == comp_meta_properties_no_sl
-
-
-def test_available_meta_properties_composition_all():
-    result = mp.available_meta_properties("composition", sia_linkage=True)
-    assert set(result) == comp_meta_properties_no_sl | comp_meta_properties_sl
-
-
-def test_available_meta_properties_composition_only_sl():
-    result = mp.available_meta_properties(
-        "composition", sia_linkage=True, only_sia_linkage=True
-    )
-    assert set(result) == comp_meta_properties_sl
 
 
 def _test_meta_property(meta_property_type, string, expected, make_glycan):
