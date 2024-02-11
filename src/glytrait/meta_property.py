@@ -66,6 +66,9 @@ class MetaProperty:
     A meta-property is a function that takes a glycan as input and returns a value.
     The glycan can be either a `Composition` or a `Structure`.
     The value can be an integer, a boolean, or a string.
+
+    For explicitness, all subclasses should be named with the suffix
+    "MetaProperty" or "MP".
     """
 
     name: ClassVar[str]
@@ -100,7 +103,7 @@ class StringMetaProperty(MetaProperty):
 
 
 @define
-class CountAntenna(IntegerMetaProperty):
+class CountAntennaMP(IntegerMetaProperty):
     """The number of antennas."""
 
     name: ClassVar = "nAnt"
@@ -124,7 +127,7 @@ def _count_antenna(glycan: Structure) -> int:
 
 
 @define
-class CountFuc(IntegerMetaProperty):
+class CountFucMP(IntegerMetaProperty):
     """The number of fucoses."""
 
     name: ClassVar = "nF"
@@ -153,7 +156,7 @@ def _(glycan: Composition) -> int:
 
 
 @define
-class CountCoreFuc(IntegerMetaProperty):
+class CountCoreFucMP(IntegerMetaProperty):
     """The number of fucoses on the core."""
 
     name: ClassVar = "nFc"
@@ -164,7 +167,7 @@ class CountCoreFuc(IntegerMetaProperty):
 
 
 @define
-class CountAntennaryFuc(IntegerMetaProperty):
+class CountAntennaryFucMP(IntegerMetaProperty):
     """The number of fucoses on the antenna."""
 
     name: ClassVar = "nFa"
@@ -187,7 +190,7 @@ def _count_core_fuc(glycan: Structure) -> int:
 
 
 @define
-class CountSia(IntegerMetaProperty):
+class CountSiaMP(IntegerMetaProperty):
     """The number of sialic acids."""
 
     name: ClassVar = "nS"
