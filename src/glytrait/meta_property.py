@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from enum import Enum, auto
 from functools import singledispatch, cache
-from typing import Literal, Protocol, ClassVar, Type
+from typing import Literal, ClassVar, Type
 
 import pandas as pd
-from attrs import define, field
+from attrs import define
 from glypy import Monosaccharide  # type: ignore
 
 from glytrait.exception import SiaLinkageError
@@ -107,10 +107,20 @@ class CountAntenna(IntegerMetaProperty):
     supported_mode: ClassVar = "structure"
 
     def __call__(self, glycan: Structure) -> int:
-        if _glycan_type(glycan) != GlycanType.COMPLEX:
-            return 0
-        node1, node2 = _get_branch_core_man(glycan)
-        return len(node1.links) + len(node2.links) - 2
+        # Calling `_count_antenna` instead of putting the implementation here is for the purpose
+        # of caching.
+        # Methods decorated with `@cache` will not work properly due to the `self` argument.
+        # This is a workaround and a common practice in this module.
+        return _count_antenna(glycan)
+
+
+@cache
+def _count_antenna(glycan: Structure) -> int:
+    """Count the number of branches in a glycan."""
+    if _glycan_type(glycan) != GlycanType.COMPLEX:
+        return 0
+    node1, node2 = _get_branch_core_man(glycan)
+    return len(node1.links) + len(node2.links) - 2
 
 
 @define
@@ -316,15 +326,6 @@ def _get_branch_core_man(glycan: Structure) -> tuple[Monosaccharide, Monosacchar
         if get_mono_str(node2) == "Man":
             break
     return node1, node2
-
-
-@cache
-def _count_antenna(glycan: Structure) -> int:
-    """Count the number of branches in a glycan."""
-    if _glycan_type(glycan) != GlycanType.COMPLEX:
-        return 0
-    node1, node2 = _get_branch_core_man(glycan)
-    return len(node1.links) + len(node2.links) - 2
 
 
 @register_struc
