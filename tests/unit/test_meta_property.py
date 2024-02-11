@@ -150,6 +150,33 @@ class TestCountAntennaryFuc:
         assert count_antennary_fuc(glycan) == expected
 
 
+class TestCountSia:
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, 2),
+            (test_glycoct_2, 1),
+            (test_glycoct_3, 0),
+            (test_glycoct_4, 1),
+            (test_glycoct_10, 2),
+        ],
+    )
+    def test_count_sia_struc(self, glycoct, expected, make_structure):
+        _test_meta_property(mp.TotalSia, glycoct, expected, make_structure)
+
+    @pytest.mark.parametrize(
+        "comp, expected",
+        [
+            ("H5N4F1S2", 2),
+            ("H5N4", 0),
+            ("H5N4F2E1", 1),
+        ],
+    )
+    def test_count_sia_comp(self, comp, expected, make_composition):
+        _test_meta_property(mp.TotalSia, comp, expected, make_composition)
+
+
 def test_available_meta_properties_structure_no_sl():
     result = mp.available_meta_properties("structure", sia_linkage=False)
     assert set(result) == struc_meta_properties_no_sl
