@@ -113,6 +113,35 @@ class CountAntenna(IntegerMetaProperty):
         return len(node1.links) + len(node2.links) - 2
 
 
+@define
+class CountFuc(IntegerMetaProperty):
+    """The number of fucoses."""
+
+    name: ClassVar = "nF"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_fuc(glycan)
+
+
+@singledispatch
+def _count_fuc(glycan) -> int:
+    """Count the number of fucoses."""
+    raise TypeError
+
+
+@_count_fuc.register
+@cache
+def _(glycan: Structure) -> int:
+    return glycan.composition.get("Fuc", 0)
+
+
+@_count_fuc.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("F", 0)
+
+
 struc_meta_properties: list[Type[MetaProperty]] = []
 comp_meta_properties: list[Type[MetaProperty]] = []
 
@@ -385,24 +414,6 @@ def _get_core_fuc(glycan: Structure) -> int:
         if get_mono_str(node) == "Fuc" and node.parents()[0][1].id in cores:
             n = n + 1
     return n
-
-
-@singledispatch
-def _count_fuc(glycan) -> int:
-    """Count the number of fucoses."""
-    raise TypeError
-
-
-@_count_fuc.register
-@cache
-def _(glycan: Structure) -> int:
-    return glycan.composition.get("Fuc", 0)
-
-
-@_count_fuc.register
-@cache
-def _(glycan: Composition) -> int:
-    return glycan.get("F", 0)
 
 
 @register_struc
