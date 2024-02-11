@@ -186,6 +186,35 @@ def _count_core_fuc(glycan: Structure) -> int:
     return n
 
 
+@define
+class CountSia(IntegerMetaProperty):
+    """The number of sialic acids."""
+
+    name: ClassVar = "nS"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_sia(glycan)
+
+
+@singledispatch
+def _count_sia(glycan) -> int:
+    """Count the number of sialic acids."""
+    raise TypeError
+
+
+@_count_sia.register
+@cache
+def _(glycan: Structure) -> int:
+    return glycan.composition.get("Neu5Ac", 0) + glycan.composition.get("Neu5Gc", 0)
+
+
+@_count_sia.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("S", 0) + glycan.get("E", 0) + glycan.get("L", 0)
+
+
 struc_meta_properties: list[Type[MetaProperty]] = []
 comp_meta_properties: list[Type[MetaProperty]] = []
 
@@ -500,24 +529,6 @@ class NoFuc(MetaProperty):
 
     def __call__(self, glycan: Structure | Composition) -> float:
         return _count_fuc(glycan) == 0
-
-
-@singledispatch
-def _count_sia(glycan) -> int:
-    """Count the number of sialic acids."""
-    raise TypeError
-
-
-@_count_sia.register
-@cache
-def _(glycan: Structure) -> int:
-    return glycan.composition.get("Neu5Ac", 0) + glycan.composition.get("Neu5Gc", 0)
-
-
-@_count_sia.register
-@cache
-def _(glycan: Composition) -> int:
-    return glycan.get("S", 0) + glycan.get("E", 0) + glycan.get("L", 0)
 
 
 @register_struc
