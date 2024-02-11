@@ -152,6 +152,40 @@ def _(glycan: Composition) -> int:
     return glycan.get("F", 0)
 
 
+@define
+class CountCoreFuc(IntegerMetaProperty):
+    """The number of fucoses on the core."""
+
+    name: ClassVar = "nFc"
+    supported_mode: ClassVar = "structure"
+
+    def __call__(self, glycan: Structure) -> int:
+        return _count_core_fuc(glycan)
+
+
+@define
+class CountAntennaryFuc(IntegerMetaProperty):
+    """The number of fucoses on the antenna."""
+
+    name: ClassVar = "nFa"
+    supported_mode: ClassVar = "structure"
+
+    def __call__(self, glycan: Structure) -> int:
+        return _count_fuc(glycan) - _count_core_fuc(glycan)
+
+
+@cache
+def _count_core_fuc(glycan: Structure) -> int:
+    cores = _get_core_ids(glycan)
+    n = 0
+    for node in glycan.breadth_first_traversal():
+        # node.parents()[0] is the nearest parent, and is a tuple of (Link, Monosaccharide)
+        # node.parents()[0][1] is the Monosaccharide
+        if get_mono_str(node) == "Fuc" and node.parents()[0][1].id in cores:
+            n = n + 1
+    return n
+
+
 struc_meta_properties: list[Type[MetaProperty]] = []
 comp_meta_properties: list[Type[MetaProperty]] = []
 
@@ -405,18 +439,6 @@ def _get_core_ids(glycan: Structure) -> list[int]:
     return cores
 
 
-@cache
-def _get_core_fuc(glycan: Structure) -> int:
-    cores = _get_core_ids(glycan)
-    n = 0
-    for node in glycan.breadth_first_traversal():
-        # node.parents()[0] is the nearest parent, and is a tuple of (Link, Monosaccharide)
-        # node.parents()[0][1] is the Monosaccharide
-        if get_mono_str(node) == "Fuc" and node.parents()[0][1].id in cores:
-            n = n + 1
-    return n
-
-
 @register_struc
 @define
 class CoreFuc(MetaProperty):
@@ -426,7 +448,7 @@ class CoreFuc(MetaProperty):
     sia_linkage: ClassVar = False
 
     def __call__(self, glycan: Structure) -> float:
-        return _get_core_fuc(glycan)
+        return _count_core_fuc(glycan)
 
 
 @register_struc
@@ -438,7 +460,7 @@ class AntennaryFuc(MetaProperty):
     sia_linkage: ClassVar = False
 
     def __call__(self, glycan: Structure) -> float:
-        return glycan._composition.get("Fuc", 0) - _get_core_fuc(glycan)
+        return glycan._composition.get("Fuc", 0) - _count_core_fuc(glycan)
 
 
 @register_struc

@@ -112,6 +112,44 @@ class TestCountFuc:
         assert count_fuc(composition) == expected
 
 
+class TestCountCoreFuc:
+
+    @pytest.fixture
+    def count_core_fuc(self):
+        return mp.CountCoreFuc()
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, 0),
+            (test_glycoct_2, 1),
+            (test_glycoct_9, 1),
+        ],
+    )
+    def test_count_core_fuc(self, count_core_fuc, glycoct, expected, make_structure):
+        glycan = make_structure(glycoct)
+        assert count_core_fuc(glycan) == expected
+
+
+class TestCountAntennaryFuc:
+
+    @pytest.fixture
+    def count_antennary_fuc(self):
+        return mp.CountAntennaryFuc()
+
+    @pytest.mark.parametrize(
+        "glycoct, expected",
+        [
+            (test_glycoct_1, 0),
+            (test_glycoct_2, 0),
+            (test_glycoct_9, 2),
+        ],
+    )
+    def test_count_antennary_fuc(self, count_antennary_fuc, glycoct, expected, make_structure):
+        glycan = make_structure(glycoct)
+        assert count_antennary_fuc(glycan) == expected
+
+
 def test_available_meta_properties_structure_no_sl():
     result = mp.available_meta_properties("structure", sia_linkage=False)
     assert set(result) == struc_meta_properties_no_sl
