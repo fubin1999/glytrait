@@ -24,6 +24,7 @@ __all__ = [
 ]
 
 
+# To be deleted
 def build_meta_property_table(
     glycans: GlycanDict,
     mode: Literal["composition", "structure"],
@@ -59,6 +60,7 @@ class GlycanType(Enum):
     HYBRID = auto()
 
 
+# ===== Base classes for meta-properties =====
 @define
 class MetaProperty:
     """The base class for meta-properties.
@@ -100,6 +102,48 @@ class StringMetaProperty(MetaProperty):
 
     def __call__(self, glycan: Structure | Composition) -> str:
         raise NotImplementedError
+
+
+# ===== Concrete meta-properties =====
+@define
+class GlycanTypeMP(StringMetaProperty):
+    """The type of glycan."""
+
+    name: ClassVar = "glycanType"
+    supported_mode: ClassVar = "structure"
+
+    def __call__(self, glycan: Structure) -> str:
+        return _glycan_type(glycan).name.lower()
+
+
+@cache
+def _glycan_type(glycan: Structure) -> GlycanType:
+    """Decide whether a glycan is a 'complex', 'hybrid', or 'high-mannose' type."""
+    # N-glycan core is defined as the complex type.
+    if glycan.composition == {"Glc2NAc": 2, "Man": 3}:
+        # This type of glycan is actually pausimannose type.
+        # However, it is currently regarded as a complex type right now.
+        return GlycanType.COMPLEX
+
+    # Bisecting could only be found in complex type.
+    if _is_bisecting(glycan):
+        return GlycanType.COMPLEX
+
+    # If the glycan is not core, and it only has 2 "GlcNAc", it is high-mannose.
+    if glycan.composition["Glc2NAc"] == 2:
+        return GlycanType.HIGH_MANNOSE
+
+    # If the glycan is mono-antennary and not high-monnose, it is complex.
+    node1, node2 = _get_branch_core_man(glycan)
+    if any((len(node1.links) == 1, len(node2.links) == 1)):
+        return GlycanType.COMPLEX
+
+    # Then, if it has 3 "Glc2NAc", it must be hybrid.
+    if glycan.composition["Glc2NAc"] == 3:
+        return GlycanType.HYBRID
+
+    # All rest cases are complex.
+    return GlycanType.COMPLEX
 
 
 @define
@@ -218,6 +262,9 @@ def _(glycan: Composition) -> int:
     return glycan.get("S", 0) + glycan.get("E", 0) + glycan.get("L", 0)
 
 
+# ===== The old module =====
+
+
 struc_meta_properties: list[Type[MetaProperty]] = []
 comp_meta_properties: list[Type[MetaProperty]] = []
 
@@ -291,36 +338,6 @@ def _is_bisecting(glycan: Structure) -> bool:
         next(bft_iter)
     next_node = next(bft_iter)
     return len(next_node.links) == 4
-
-
-@cache
-def _glycan_type(glycan: Structure) -> GlycanType:
-    """Decide whether a glycan is a 'complex', 'hybrid', or 'high-mannose' type."""
-    # N-glycan core is defined as the complex type.
-    if glycan._composition == {"Glc2NAc": 2, "Man": 3}:
-        # This type of glycan is actually pausimannose type.
-        # However, it is currently regarded as a complex type right now.
-        return GlycanType.COMPLEX
-
-    # Bisecting could only be found in complex type.
-    if _is_bisecting(glycan):
-        return GlycanType.COMPLEX
-
-    # If the glycan is not core, and it only has 2 "GlcNAc", it is high-mannose.
-    if glycan._composition["Glc2NAc"] == 2:
-        return GlycanType.HIGH_MANNOSE
-
-    # If the glycan is mono-antennary and not high-monnose, it is complex.
-    node1, node2 = _get_branch_core_man(glycan)
-    if any((len(node1.links) == 1, len(node2.links) == 1)):
-        return GlycanType.COMPLEX
-
-    # Then, if it has 3 "Glc2NAc", it must be hybrid.
-    if glycan._composition["Glc2NAc"] == 3:
-        return GlycanType.HYBRID
-
-    # All rest cases are complex.
-    return GlycanType.COMPLEX
 
 
 @register_struc
