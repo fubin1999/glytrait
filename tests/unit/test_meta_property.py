@@ -1,31 +1,91 @@
-import pandas as pd
 import pytest
 
 from glytrait import meta_property as mp
 from .glycoct import *
 
 
-def test_register():
+@pytest.fixture
+def register_some_mp():
     @mp._register_mp
-    class SomeMP(mp.MetaProperty):
+    class SomeMP:
         name = "some_mp"
-        supported_mode = "structure"
+        supported_mode = "both"
 
         def __call__(self, glycan) -> int:
             return 0
 
-    assert mp._mp_objects["some_mp"] == SomeMP()
+    yield
+    mp._mp_objects.pop("some_mp")
 
 
-def test_register_duplicate():
-    @mp._register_mp
-    class MP1:
-        name = "mp1"
+def test_register(register_some_mp):
+    assert "some_mp" in mp._mp_objects
 
+
+def test_register_duplicate(register_some_mp):
     with pytest.raises(ValueError):
         @mp._register_mp
-        class MP2:
-            name = "mp1"
+        class OtherMP:
+            name = "some_mp"
+
+
+@pytest.mark.parametrize(
+    "mode, sia, expected",
+    [
+        (
+            "structure",
+            True,
+            [
+                "type",
+                "B",
+                "nAnt",
+                "nF",
+                "nFc",
+                "nFa",
+                "nS",
+                "nM",
+                "nG",
+                "nN",
+                "PL",
+                "nL",
+                "nE",
+            ],
+        ),
+        (
+            "structure",
+            False,
+            [
+                "type",
+                "B",
+                "nAnt",
+                "nF",
+                "nFc",
+                "nFa",
+                "nS",
+                "nM",
+                "nG",
+                "nN",
+                "PL",
+            ],
+        ),
+        (
+            "composition",
+            True,
+            ["nF", "nS", "nM", "nG", "nN", "nL", "nE"],
+        ),
+        (
+            "composition",
+            False,
+            ["nF", "nS", "nM", "nG", "nN"],
+        ),
+    ],
+)
+def test_available_meta_properties(mode, sia, expected):
+    assert mp.available_meta_properties(mode, sia) == expected
+
+
+def test_get_mp_object(register_some_mp):
+    assert mp.get_meta_property("some_mp").name == "some_mp"
 
 
 # !!! All tests on meta-properties should use this function for conciseness. !!!
@@ -47,6 +107,7 @@ def _test_meta_property(meta_property_type, string, expected, make_glycan):
 
 def test_mp_return_type():
     """Test the `return_type` property of a meta-property class."""
+
     class SomeMP(mp.MetaProperty):
         name = "some_mp"
         supported_mode = "structure"
@@ -67,7 +128,7 @@ def test_mp_return_type():
         (test_glycoct_6, 1),
         (test_glycoct_8, 3),
         (test_glycoct_14, 4),
-    ]
+    ],
 )
 def test_count_antenna_mp(glycoct, expected, make_structure):
     _test_meta_property(mp.CountAntennaMP, glycoct, expected, make_structure)
@@ -157,7 +218,7 @@ def test_count_sia_comp_mp(comp, expected, make_composition):
         (test_glycoct_5, "complex"),
         (test_glycoct_6, "complex"),
         (test_glycoct_11, "complex"),
-    ]
+    ],
 )
 def test_glycan_type_mp(glycoct, expected, make_structure):
     _test_meta_property(mp.GlycanTypeMP, glycoct, expected, make_structure)
@@ -171,7 +232,7 @@ def test_glycan_type_mp(glycoct, expected, make_structure):
         (test_glycoct_3, False),
         (test_glycoct_4, False),
         (test_glycoct_8, True),
-    ]
+    ],
 )
 def test_bisection_mp(glycoct, expected, make_structure):
     _test_meta_property(mp.BisectionMP, glycoct, expected, make_structure)
@@ -231,7 +292,7 @@ def test_count_gal_mp_comp(comp, expected, make_composition):
         (test_glycoct_1, 4),
         (test_glycoct_2, 5),
         (test_glycoct_3, 2),
-    ]
+    ],
 )
 def test_count_glcnac_mp_struc(glycoct, expected, make_structure):
     _test_meta_property(mp.CountGlcNAcMP, glycoct, expected, make_structure)
@@ -243,7 +304,7 @@ def test_count_glcnac_mp_struc(glycoct, expected, make_structure):
         ("H5N4F1S2", 4),
         ("H6N5", 5),
         ("H5N2", 2),
-    ]
+    ],
 )
 def test_count_glcnac_mp_comp(comp, expected, make_composition):
     _test_meta_property(mp.CountGlcNAcMP, comp, expected, make_composition)
