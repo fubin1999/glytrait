@@ -229,6 +229,17 @@ def test_count_glcnac_mp_comp(comp, expected, make_composition):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
+        (test_glycoct_1, False),
+        (test_glycoct_14, True),
+    ],
+)
+def test_has_poly_lacnac_mp(glycoct, expected, make_structure):
+    _test_meta_property(mp.HasPolyLacNAcMP, glycoct, expected, make_structure)
+
+
+@pytest.mark.parametrize(
+    "glycoct, expected",
+    [
         (test_glycoct_1, 1),
         (test_glycoct_2, 1),
         (test_glycoct_3, 1),

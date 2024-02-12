@@ -218,6 +218,17 @@ class CountGlcNAcMP(MetaProperty):
         return _count_glcnac(glycan)
 
 
+@define
+class HasPolyLacNAcMP(MetaProperty):
+    """Whether the glycan has any poly-LacNAc."""
+
+    name: ClassVar = "PL"
+    supported_mode: ClassVar = "structure"
+
+    def __call__(self, glycan: Structure) -> bool:
+        return _has_poly_lacnac(glycan)
+
+
 # ===== Cacheable functions for calculating meta-properties =====
 @cache
 def _glycan_type(glycan: Structure) -> GlycanType:
@@ -372,6 +383,23 @@ def _(glycan: Structure) -> int:
 @cache
 def _(glycan: Composition) -> int:
     return glycan.get("N", 0)
+
+
+@cache
+def _has_poly_lacnac(glycan: Structure) -> bool:
+    """Decide whether a glycan has any poly-LacNAc."""
+    # Iterate all Gal residues.
+    # If a Gal residue has a GlcNAc child, and the GlcNAc residue has a Gal child,
+    # then the glycan has poly-LacNAc.
+    gals = glycan.breadth_first_traversal(only=["Gal"])
+    for gal in gals:
+        for _, child in gal.children():
+            if get_mono_str(child) == "Glc2NAc":
+                children_of_glcnac = child.children()
+                for _, child_of_glcnac in children_of_glcnac:
+                    if get_mono_str(child_of_glcnac) == "Gal":
+                        return True
+    return False
 
 
 # ===== The old module =====
