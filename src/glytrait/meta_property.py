@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 from functools import singledispatch, cache
-from typing import Literal, ClassVar
+from typing import Literal, ClassVar, Type
 
 from attrs import define
 from glypy import Monosaccharide  # type: ignore
@@ -22,7 +22,6 @@ __all__ = [
 ]
 
 
-# To be deleted
 def build_meta_property_table(
     glycans: GlycanDict,
     mode: Literal["composition", "structure"],
@@ -56,6 +55,18 @@ class GlycanType(Enum):
     COMPLEX = auto()
     HIGH_MANNOSE = auto()
     HYBRID = auto()
+
+
+# ===== Registering meta-properties =====
+_mp_objects: dict[str, MetaProperty] = {}
+
+
+def _register_mp(mp: Type[MetaProperty]) -> Type[MetaProperty]:
+    """Register a meta-property class."""
+    if mp.name in _mp_objects:
+        raise ValueError(f"Meta-property '{mp.name}' already exists.")
+    _mp_objects[mp.name] = mp()
+    return mp
 
 
 # ===== Base classes for meta-properties =====
@@ -102,28 +113,31 @@ class MetaProperty:
 
 
 # ===== Concrete meta-properties =====
+@_register_mp
 @define
 class GlycanTypeMP(MetaProperty):
     """The type of glycan."""
 
-    name: ClassVar = "glycanType"
+    name: ClassVar = "type"
     supported_mode: ClassVar = "structure"
 
     def __call__(self, glycan: Structure) -> str:
         return _glycan_type(glycan).name.lower()
 
 
+@_register_mp
 @define
 class BisectionMP(MetaProperty):
     """Whether the glycan has bisection."""
 
-    name: ClassVar = "bisection"
+    name: ClassVar = "B"
     supported_mode: ClassVar = "structure"
 
     def __call__(self, glycan: Structure) -> bool:
         return _is_bisecting(glycan)
 
 
+@_register_mp
 @define
 class CountAntennaMP(MetaProperty):
     """The number of antennas."""
@@ -139,6 +153,7 @@ class CountAntennaMP(MetaProperty):
         return _count_antenna(glycan)
 
 
+@_register_mp
 @define
 class CountFucMP(MetaProperty):
     """The number of fucoses."""
@@ -150,6 +165,7 @@ class CountFucMP(MetaProperty):
         return _count_fuc(glycan)
 
 
+@_register_mp
 @define
 class CountCoreFucMP(MetaProperty):
     """The number of fucoses on the core."""
@@ -161,6 +177,7 @@ class CountCoreFucMP(MetaProperty):
         return _count_core_fuc(glycan)
 
 
+@_register_mp
 @define
 class CountAntennaryFucMP(MetaProperty):
     """The number of fucoses on the antenna."""
@@ -172,6 +189,7 @@ class CountAntennaryFucMP(MetaProperty):
         return _count_fuc(glycan) - _count_core_fuc(glycan)
 
 
+@_register_mp
 @define
 class CountSiaMP(MetaProperty):
     """The number of sialic acids."""
@@ -183,6 +201,7 @@ class CountSiaMP(MetaProperty):
         return _count_sia(glycan)
 
 
+@_register_mp
 @define
 class CountManMP(MetaProperty):
     """The number of mannoses."""
@@ -194,6 +213,7 @@ class CountManMP(MetaProperty):
         return _count_man(glycan)
 
 
+@_register_mp
 @define
 class CountGalMP(MetaProperty):
     """The number of galactoses."""
@@ -205,6 +225,7 @@ class CountGalMP(MetaProperty):
         return _count_gal(glycan)
 
 
+@_register_mp
 @define
 class CountGlcNAcMP(MetaProperty):
     """The number of GlcNAcs."""
@@ -216,6 +237,7 @@ class CountGlcNAcMP(MetaProperty):
         return _count_glcnac(glycan)
 
 
+@_register_mp
 @define
 class HasPolyLacNAcMP(MetaProperty):
     """Whether the glycan has any poly-LacNAc."""
@@ -227,6 +249,7 @@ class HasPolyLacNAcMP(MetaProperty):
         return _has_poly_lacnac(glycan)
 
 
+@_register_mp
 @define
 class CountA23SiaMP(MetaProperty):
     """The number of sialic acids with an alpha-2,3 linkage."""
@@ -238,6 +261,7 @@ class CountA23SiaMP(MetaProperty):
         return _count_a23_sia(glycan)
 
 
+@_register_mp
 @define
 class CountA26SiaMP(MetaProperty):
     """The number of sialic acids with an alpha-2,6 linkage."""
