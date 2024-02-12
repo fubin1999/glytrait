@@ -14,9 +14,9 @@ import pandas as pd
 from attrs import define
 from glypy import Monosaccharide  # type: ignore
 
+from glytrait.data_type import MetaPropertyTable
 from glytrait.exception import SiaLinkageError
 from glytrait.glycan import Structure, Composition, get_mono_str, GlycanDict
-from glytrait.data_type import MetaPropertyTable
 
 __all__ = [
     "build_meta_property_table",
@@ -115,6 +115,110 @@ class GlycanTypeMP(MetaProperty):
         return _glycan_type(glycan).name.lower()
 
 
+@define
+class BisectionMP(MetaProperty):
+    """Whether the glycan has bisection."""
+
+    name: ClassVar = "bisection"
+    supported_mode: ClassVar = "structure"
+
+    def __call__(self, glycan: Structure) -> bool:
+        return _is_bisecting(glycan)
+
+
+@define
+class CountAntennaMP(MetaProperty):
+    """The number of antennas."""
+
+    name: ClassVar = "nAnt"
+    supported_mode: ClassVar = "structure"
+
+    def __call__(self, glycan: Structure) -> int:
+        # Calling `_count_antenna` instead of putting the implementation here is for the purpose
+        # of caching.
+        # Methods decorated with `@cache` will not work properly due to the `self` argument.
+        # This is a workaround and a common practice in this module.
+        return _count_antenna(glycan)
+
+
+@define
+class CountFucMP(MetaProperty):
+    """The number of fucoses."""
+
+    name: ClassVar = "nF"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_fuc(glycan)
+
+
+@define
+class CountCoreFucMP(MetaProperty):
+    """The number of fucoses on the core."""
+
+    name: ClassVar = "nFc"
+    supported_mode: ClassVar = "structure"
+
+    def __call__(self, glycan: Structure) -> int:
+        return _count_core_fuc(glycan)
+
+
+@define
+class CountAntennaryFucMP(MetaProperty):
+    """The number of fucoses on the antenna."""
+
+    name: ClassVar = "nFa"
+    supported_mode: ClassVar = "structure"
+
+    def __call__(self, glycan: Structure) -> int:
+        return _count_fuc(glycan) - _count_core_fuc(glycan)
+
+
+@define
+class CountSiaMP(MetaProperty):
+    """The number of sialic acids."""
+
+    name: ClassVar = "nS"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_sia(glycan)
+
+
+@define
+class CountManMP(MetaProperty):
+    """The number of mannoses."""
+
+    name: ClassVar = "nM"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_man(glycan)
+
+
+@define
+class CountGalMP(MetaProperty):
+    """The number of galactoses."""
+
+    name: ClassVar = "nG"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_gal(glycan)
+
+
+@define
+class CountGlcNAcMP(MetaProperty):
+    """The number of GlcNAcs."""
+
+    name: ClassVar = "nN"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_glcnac(glycan)
+
+
+# ===== Cacheable functions for calculating meta-properties =====
 @cache
 def _glycan_type(glycan: Structure) -> GlycanType:
     """Decide whether a glycan is a 'complex', 'hybrid', or 'high-mannose' type."""
@@ -145,17 +249,6 @@ def _glycan_type(glycan: Structure) -> GlycanType:
     return GlycanType.COMPLEX
 
 
-@define
-class BisectionMP(MetaProperty):
-    """Whether the glycan has bisection."""
-
-    name: ClassVar = "bisection"
-    supported_mode: ClassVar = "structure"
-
-    def __call__(self, glycan: Structure) -> bool:
-        return _is_bisecting(glycan)
-
-
 @cache
 def _is_bisecting(glycan: Structure) -> bool:
     """Decide whether a glycan has bisection."""
@@ -166,21 +259,6 @@ def _is_bisecting(glycan: Structure) -> bool:
     return len(next_node.links) == 4
 
 
-@define
-class CountAntennaMP(MetaProperty):
-    """The number of antennas."""
-
-    name: ClassVar = "nAnt"
-    supported_mode: ClassVar = "structure"
-
-    def __call__(self, glycan: Structure) -> int:
-        # Calling `_count_antenna` instead of putting the implementation here is for the purpose
-        # of caching.
-        # Methods decorated with `@cache` will not work properly due to the `self` argument.
-        # This is a workaround and a common practice in this module.
-        return _count_antenna(glycan)
-
-
 @cache
 def _count_antenna(glycan: Structure) -> int:
     """Count the number of branches in a glycan."""
@@ -188,17 +266,6 @@ def _count_antenna(glycan: Structure) -> int:
         return 0
     node1, node2 = _get_branch_core_man(glycan)
     return len(node1.links) + len(node2.links) - 2
-
-
-@define
-class CountFucMP(MetaProperty):
-    """The number of fucoses."""
-
-    name: ClassVar = "nF"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_fuc(glycan)
 
 
 @singledispatch
@@ -219,28 +286,6 @@ def _(glycan: Composition) -> int:
     return glycan.get("F", 0)
 
 
-@define
-class CountCoreFucMP(MetaProperty):
-    """The number of fucoses on the core."""
-
-    name: ClassVar = "nFc"
-    supported_mode: ClassVar = "structure"
-
-    def __call__(self, glycan: Structure) -> int:
-        return _count_core_fuc(glycan)
-
-
-@define
-class CountAntennaryFucMP(MetaProperty):
-    """The number of fucoses on the antenna."""
-
-    name: ClassVar = "nFa"
-    supported_mode: ClassVar = "structure"
-
-    def __call__(self, glycan: Structure) -> int:
-        return _count_fuc(glycan) - _count_core_fuc(glycan)
-
-
 @cache
 def _count_core_fuc(glycan: Structure) -> int:
     cores = _get_core_ids(glycan)
@@ -251,17 +296,6 @@ def _count_core_fuc(glycan: Structure) -> int:
         if get_mono_str(node) == "Fuc" and node.parents()[0][1].id in cores:
             n = n + 1
     return n
-
-
-@define
-class CountSiaMP(MetaProperty):
-    """The number of sialic acids."""
-
-    name: ClassVar = "nS"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_sia(glycan)
 
 
 @singledispatch
@@ -280,28 +314,6 @@ def _(glycan: Structure) -> int:
 @cache
 def _(glycan: Composition) -> int:
     return glycan.get("S", 0) + glycan.get("E", 0) + glycan.get("L", 0)
-
-
-@define
-class CountManMP(MetaProperty):
-    """The number of mannoses."""
-
-    name: ClassVar = "nM"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_man(glycan)
-
-
-@define
-class CountGalMP(MetaProperty):
-    """The number of galactoses."""
-
-    name: ClassVar = "nG"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_gal(glycan)
 
 
 @singledispatch
@@ -342,17 +354,6 @@ def _(glycan: Structure) -> int:
 @cache
 def _(glycan: Composition) -> int:
     return glycan.get("H", 0) - _count_gal(glycan)
-
-
-@define
-class CountGlcNAcMP(MetaProperty):
-    """The number of GlcNAcs."""
-
-    name: ClassVar = "nN"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_glcnac(glycan)
 
 
 @singledispatch
