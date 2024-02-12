@@ -22,6 +22,18 @@ def _test_meta_property(meta_property_type, string, expected, make_glycan):
     assert mp_(glycan) == expected
 
 
+def test_mp_return_type():
+    """Test the `return_type` property of a meta-property class."""
+    class SomeMP(mp.MetaProperty):
+        name = "some_mp"
+        supported_mode = "structure"
+
+        def __call__(self, glycan) -> int:
+            return 0
+
+    assert SomeMP().return_type is int
+
+
 @pytest.mark.parametrize(
     "glycoct, expected",
     [

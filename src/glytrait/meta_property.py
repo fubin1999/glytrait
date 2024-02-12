@@ -71,6 +71,24 @@ class MetaProperty:
 
     For explicitness, all subclasses should be named with the suffix
     "MetaProperty" or "MP".
+
+    All subclasses should implement `name` and `supported_mode` class variables,
+    and the `__call__` method.
+    The `__call__` method should have a type hint for the return value,
+    either `int`, `bool`, or `str`.
+    Union types like `int | bool` are not allowed.
+
+    Examples:
+        >>> class MyMetaProperty(MetaProperty):
+        ...     name = "myMetaProperty"
+        ...     supported_mode = "composition"
+        ...     def __call__(self, glycan: Composition) -> int:
+        ...         return 1
+        >>> mp = MyMetaProperty()
+        >>> mp.return_type
+        <class 'int'>
+        >>> mp(Composition("GlcNAc"))
+        1
     """
 
     name: ClassVar[str]
@@ -79,34 +97,15 @@ class MetaProperty:
     def __call__(self, glycan: Structure | Composition) -> int | bool | str:
         raise NotImplementedError
 
-
-@define
-class IntegerMetaProperty(MetaProperty):
-    """Meta-property that returns an integer value."""
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        raise NotImplementedError
-
-
-@define
-class BooleanMetaProperty(MetaProperty):
-    """Meta-property that returns a boolean value."""
-
-    def __call__(self, glycan: Structure | Composition) -> bool:
-        raise NotImplementedError
-
-
-@define
-class StringMetaProperty(MetaProperty):
-    """Meta-property that returns a string value."""
-
-    def __call__(self, glycan: Structure | Composition) -> str:
-        raise NotImplementedError
+    @property
+    def return_type(self) -> int | bool | str:
+        """The return type of the meta-property."""
+        return self.__call__.__annotations__.get("return", None)
 
 
 # ===== Concrete meta-properties =====
 @define
-class GlycanTypeMP(StringMetaProperty):
+class GlycanTypeMP(MetaProperty):
     """The type of glycan."""
 
     name: ClassVar = "glycanType"
@@ -147,7 +146,7 @@ def _glycan_type(glycan: Structure) -> GlycanType:
 
 
 @define
-class BisectionMP(BooleanMetaProperty):
+class BisectionMP(MetaProperty):
     """Whether the glycan has bisection."""
 
     name: ClassVar = "bisection"
@@ -168,7 +167,7 @@ def _is_bisecting(glycan: Structure) -> bool:
 
 
 @define
-class CountAntennaMP(IntegerMetaProperty):
+class CountAntennaMP(MetaProperty):
     """The number of antennas."""
 
     name: ClassVar = "nAnt"
@@ -192,7 +191,7 @@ def _count_antenna(glycan: Structure) -> int:
 
 
 @define
-class CountFucMP(IntegerMetaProperty):
+class CountFucMP(MetaProperty):
     """The number of fucoses."""
 
     name: ClassVar = "nF"
@@ -221,7 +220,7 @@ def _(glycan: Composition) -> int:
 
 
 @define
-class CountCoreFucMP(IntegerMetaProperty):
+class CountCoreFucMP(MetaProperty):
     """The number of fucoses on the core."""
 
     name: ClassVar = "nFc"
@@ -232,7 +231,7 @@ class CountCoreFucMP(IntegerMetaProperty):
 
 
 @define
-class CountAntennaryFucMP(IntegerMetaProperty):
+class CountAntennaryFucMP(MetaProperty):
     """The number of fucoses on the antenna."""
 
     name: ClassVar = "nFa"
@@ -255,7 +254,7 @@ def _count_core_fuc(glycan: Structure) -> int:
 
 
 @define
-class CountSiaMP(IntegerMetaProperty):
+class CountSiaMP(MetaProperty):
     """The number of sialic acids."""
 
     name: ClassVar = "nS"
@@ -284,7 +283,7 @@ def _(glycan: Composition) -> int:
 
 
 @define
-class CountManMP(IntegerMetaProperty):
+class CountManMP(MetaProperty):
     """The number of mannoses."""
 
     name: ClassVar = "nM"
@@ -295,7 +294,7 @@ class CountManMP(IntegerMetaProperty):
 
 
 @define
-class CountGalMP(IntegerMetaProperty):
+class CountGalMP(MetaProperty):
     """The number of galactoses."""
 
     name: ClassVar = "nG"
