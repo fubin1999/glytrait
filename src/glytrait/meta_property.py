@@ -344,6 +344,35 @@ def _(glycan: Composition) -> int:
     return glycan.get("H", 0) - _count_gal(glycan)
 
 
+@define
+class CountGlcNAcMP(MetaProperty):
+    """The number of GlcNAcs."""
+
+    name: ClassVar = "nN"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_glcnac(glycan)
+
+
+@singledispatch
+def _count_glcnac(glycan) -> int:
+    """Count the number of GlcNAcs."""
+    raise TypeError
+
+
+@_count_glcnac.register
+@cache
+def _(glycan: Structure) -> int:
+    return glycan.composition.get("Glc2NAc", 0)
+
+
+@_count_glcnac.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("N", 0)
+
+
 # ===== The old module =====
 
 

@@ -205,6 +205,30 @@ def test_count_gal_mp_comp(comp, expected, make_composition):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
+        (test_glycoct_1, 4),
+        (test_glycoct_2, 5),
+        (test_glycoct_3, 2),
+    ]
+)
+def test_count_glcnac_mp_struc(glycoct, expected, make_structure):
+    _test_meta_property(mp.CountGlcNAcMP, glycoct, expected, make_structure)
+
+
+@pytest.mark.parametrize(
+    "comp, expected",
+    [
+        ("H5N4F1S2", 4),
+        ("H6N5", 5),
+        ("H5N2", 2),
+    ]
+)
+def test_count_glcnac_mp_comp(comp, expected, make_composition):
+    _test_meta_property(mp.CountGlcNAcMP, comp, expected, make_composition)
+
+
+@pytest.mark.parametrize(
+    "glycoct, expected",
+    [
         (test_glycoct_1, 1),
         (test_glycoct_2, 1),
         (test_glycoct_3, 1),
