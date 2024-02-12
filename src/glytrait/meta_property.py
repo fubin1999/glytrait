@@ -283,6 +283,68 @@ def _(glycan: Composition) -> int:
     return glycan.get("S", 0) + glycan.get("E", 0) + glycan.get("L", 0)
 
 
+@define
+class CountManMP(IntegerMetaProperty):
+    """The number of mannoses."""
+
+    name: ClassVar = "nM"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_man(glycan)
+
+
+@define
+class CountGalMP(IntegerMetaProperty):
+    """The number of galactoses."""
+
+    name: ClassVar = "nG"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_gal(glycan)
+
+
+@singledispatch
+def _count_gal(glycan) -> int:
+    """Count the number of Gals."""
+    raise TypeError
+
+
+@_count_gal.register
+@cache
+def _(glycan: Structure) -> int:
+    return glycan.composition.get("Gal", 0)
+
+
+@_count_gal.register
+@cache
+def _(glycan: Composition) -> int:
+    n_H = glycan.get("H", 0)
+    n_N = glycan.get("N", 0)
+    if n_H >= 4 and n_N >= n_H - 1:
+        return n_H - 3
+    return 0
+
+
+@singledispatch
+def _count_man(glycan) -> int:
+    """Count the number of mannoses."""
+    raise TypeError
+
+
+@_count_man.register
+@cache
+def _(glycan: Structure) -> int:
+    return glycan.composition.get("Man", 0)
+
+
+@_count_man.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("H", 0) - _count_gal(glycan)
+
+
 # ===== The old module =====
 
 
@@ -599,46 +661,6 @@ class NoSia(MetaProperty):
 
     def __call__(self, glycan: Structure | Composition) -> float:
         return _count_sia(glycan) == 0
-
-
-@singledispatch
-def _count_gal(glycan) -> int:
-    """Count the number of Gals."""
-    raise TypeError
-
-
-@_count_gal.register
-@cache
-def _(glycan: Structure) -> int:
-    return glycan.composition.get("Gal", 0)
-
-
-@_count_gal.register
-@cache
-def _(glycan: Composition) -> int:
-    n_H = glycan.get("H", 0)
-    n_N = glycan.get("N", 0)
-    if n_H >= 4 and n_N >= n_H - 1:
-        return n_H - 3
-    return 0
-
-
-@singledispatch
-def _count_man(glycan) -> int:
-    """Count the number of mannoses."""
-    raise TypeError
-
-
-@_count_man.register
-@cache
-def _(glycan: Structure) -> int:
-    return glycan.composition.get("Man", 0)
-
-
-@_count_man.register
-@cache
-def _(glycan: Composition) -> int:
-    return glycan.get("H", 0) - _count_gal(glycan)
 
 
 @register_struc
