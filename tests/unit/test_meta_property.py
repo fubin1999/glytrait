@@ -5,6 +5,29 @@ from glytrait import meta_property as mp
 from .glycoct import *
 
 
+def test_register():
+    @mp._register_mp
+    class SomeMP(mp.MetaProperty):
+        name = "some_mp"
+        supported_mode = "structure"
+
+        def __call__(self, glycan) -> int:
+            return 0
+
+    assert mp._mp_objects["some_mp"] == SomeMP()
+
+
+def test_register_duplicate():
+    @mp._register_mp
+    class MP1:
+        name = "mp1"
+
+    with pytest.raises(ValueError):
+        @mp._register_mp
+        class MP2:
+            name = "mp1"
+
+
 # !!! All tests on meta-properties should use this function for conciseness. !!!
 def _test_meta_property(meta_property_type, string, expected, make_glycan):
     """Test a meta-property on a glycan string.
