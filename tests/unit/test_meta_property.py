@@ -131,6 +131,20 @@ def test_glycan_type_mp(glycoct, expected, make_structure):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
+        (test_glycoct_1, False),
+        (test_glycoct_2, True),
+        (test_glycoct_3, False),
+        (test_glycoct_4, False),
+        (test_glycoct_8, True),
+    ]
+)
+def test_bisection_mp(glycoct, expected, make_structure):
+    _test_meta_property(mp.BisectionMP, glycoct, expected, make_structure)
+
+
+@pytest.mark.parametrize(
+    "glycoct, expected",
+    [
         (test_glycoct_1, 1),
         (test_glycoct_2, 1),
         (test_glycoct_3, 1),

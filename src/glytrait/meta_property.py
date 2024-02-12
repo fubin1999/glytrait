@@ -147,6 +147,27 @@ def _glycan_type(glycan: Structure) -> GlycanType:
 
 
 @define
+class BisectionMP(BooleanMetaProperty):
+    """Whether the glycan has bisection."""
+
+    name: ClassVar = "bisection"
+    supported_mode: ClassVar = "structure"
+
+    def __call__(self, glycan: Structure) -> bool:
+        return _is_bisecting(glycan)
+
+
+@cache
+def _is_bisecting(glycan: Structure) -> bool:
+    """Decide whether a glycan has bisection."""
+    bft_iter = glycan.breadth_first_traversal(skip=["Fuc"])
+    for i in range(2):
+        next(bft_iter)
+    next_node = next(bft_iter)
+    return len(next_node.links) == 4
+
+
+@define
 class CountAntennaMP(IntegerMetaProperty):
     """The number of antennas."""
 
@@ -328,16 +349,6 @@ class Wildcard(MetaProperty):
 
     def __call__(self, glycan: Composition | Structure) -> float:
         return 1.0
-
-
-@cache
-def _is_bisecting(glycan: Structure) -> bool:
-    """Decide whether a glycan has bisection."""
-    bft_iter = glycan.breadth_first_traversal(skip=["Fuc"])
-    for i in range(2):
-        next(bft_iter)
-    next_node = next(bft_iter)
-    return len(next_node.links) == 4
 
 
 @register_struc
