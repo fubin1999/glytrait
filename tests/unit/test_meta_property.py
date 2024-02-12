@@ -115,6 +115,22 @@ def test_count_sia_comp_mp(comp, expected, make_composition):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
+        (test_glycoct_1, "complex"),
+        (test_glycoct_2, "complex"),
+        (test_glycoct_3, "high_mannose"),
+        (test_glycoct_4, "hybrid"),
+        (test_glycoct_5, "complex"),
+        (test_glycoct_6, "complex"),
+        (test_glycoct_11, "complex"),
+    ]
+)
+def test_glycan_type_mp(glycoct, expected, make_structure):
+    _test_meta_property(mp.GlycanTypeMP, glycoct, expected, make_structure)
+
+
+@pytest.mark.parametrize(
+    "glycoct, expected",
+    [
         (test_glycoct_1, 1),
         (test_glycoct_2, 1),
         (test_glycoct_3, 1),
