@@ -145,6 +145,54 @@ def test_bisection_mp(glycoct, expected, make_structure):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
+        (test_glycoct_1, 3),
+        (test_glycoct_3, 5),
+        (test_glycoct_5, 3),
+    ],
+)
+def test_count_man_mp_struc(glycoct, expected, make_structure):
+    _test_meta_property(mp.CountManMP, glycoct, expected, make_structure)
+
+
+@pytest.mark.parametrize(
+    "comp, expected",
+    [
+        ("H5N4F1S2", 3),
+        ("H6N5", 3),
+        ("H5N2", 5),
+    ],
+)
+def test_count_man_mp_comp(comp, expected, make_composition):
+    _test_meta_property(mp.CountManMP, comp, expected, make_composition)
+
+
+@pytest.mark.parametrize(
+    "glycoct, expected",
+    [
+        (test_glycoct_1, 2),
+        (test_glycoct_3, 0),
+        (test_glycoct_4, 1),
+    ],
+)
+def test_count_gal_mp_struc(glycoct, expected, make_structure):
+    _test_meta_property(mp.CountGalMP, glycoct, expected, make_structure)
+
+
+@pytest.mark.parametrize(
+    "comp, expected",
+    [
+        ("H5N4F1S2", 2),
+        ("H6N5", 3),
+        ("H5N2", 0),
+    ],
+)
+def test_count_gal_mp_comp(comp, expected, make_composition):
+    _test_meta_property(mp.CountGalMP, comp, expected, make_composition)
+
+
+@pytest.mark.parametrize(
+    "glycoct, expected",
+    [
         (test_glycoct_1, 1),
         (test_glycoct_2, 1),
         (test_glycoct_3, 1),
