@@ -69,7 +69,49 @@ def _register_mp(mp: Type[MetaProperty]) -> Type[MetaProperty]:
     return mp
 
 
-# ===== Base classes for meta-properties =====
+# ===== Get available meta-properties =====
+def available_meta_properties(
+    mode: Literal["composition", "structure"], sia_linkage: bool
+) -> list[str]:
+    """Get the available meta-property names.
+
+    Args:
+        mode: The calculation mode.
+        sia_linkage: Whether to include the sialic acid linkage meta-properties.
+            If True, all meta-properties will be included.
+            Otherwise, "nE" and "nL" will be excluded.
+
+    Returns:
+        list[str]: The available meta-property names.
+    """
+    to_return: list[str] = []
+    for name, mp in _mp_objects.items():
+        mode_correct = mp.supported_mode in ("both", mode)
+        if sia_linkage:
+            sia_linkage_correct = True
+        else:
+            sia_linkage_correct = mp.name not in ("nL", "nE")
+        if mode_correct and sia_linkage_correct:
+            to_return.append(name)
+    return to_return
+
+
+def get_meta_property(name: str) -> MetaProperty:
+    """Get a meta-property by its name.
+
+    Args:
+        name: The name of the meta-property.
+
+    Returns:
+        MetaProperty: The meta-property object.
+
+    Raises:
+        KeyError: If the meta-property does not exist.
+    """
+    return _mp_objects[name]
+
+
+# ===== Base class for meta-properties =====
 @define
 class MetaProperty:
     """The base class for meta-properties.
