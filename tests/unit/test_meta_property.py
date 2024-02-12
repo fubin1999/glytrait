@@ -240,6 +240,56 @@ def test_has_poly_lacnac_mp(glycoct, expected, make_structure):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
+        (test_glycoct_10, 0),
+        (test_glycoct_11, 2),
+        (test_glycoct_12, 1),
+    ],
+)
+def test_count_a23_sia_mp_struc(glycoct, expected, make_structure):
+    _test_meta_property(mp.CountA23SiaMP, glycoct, expected, make_structure)
+
+
+@pytest.mark.parametrize(
+    "comp, expected",
+    [
+        ("H5N4F1", 0),
+        ("H5N4F1L2", 2),
+        ("H5N4F1L1E1", 1),
+        ("H5N4F1E2", 0),
+    ],
+)
+def test_count_a23_sia_mp_comp(comp, expected, make_composition):
+    _test_meta_property(mp.CountA23SiaMP, comp, expected, make_composition)
+
+
+@pytest.mark.parametrize(
+    "glycoct, expected",
+    [
+        (test_glycoct_10, 2),
+        (test_glycoct_11, 0),
+        (test_glycoct_12, 1),
+    ],
+)
+def test_count_a26_sia_mp_struc(glycoct, expected, make_structure):
+    _test_meta_property(mp.CountA26SiaMP, glycoct, expected, make_structure)
+
+
+@pytest.mark.parametrize(
+    "comp, expected",
+    [
+        ("H5N4F1", 0),
+        ("H5N4F1L2", 0),
+        ("H5N4F1L1E1", 1),
+        ("H5N4F1E2", 2),
+    ],
+)
+def test_count_a26_sia_mp_comp(comp, expected, make_composition):
+    _test_meta_property(mp.CountA26SiaMP, comp, expected, make_composition)
+
+
+@pytest.mark.parametrize(
+    "glycoct, expected",
+    [
         (test_glycoct_1, 1),
         (test_glycoct_2, 1),
         (test_glycoct_3, 1),

@@ -229,6 +229,28 @@ class HasPolyLacNAcMP(MetaProperty):
         return _has_poly_lacnac(glycan)
 
 
+@define
+class CountA23SiaMP(MetaProperty):
+    """The number of sialic acids with an alpha-2,3 linkage."""
+
+    name: ClassVar = "nL"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_a23_sia(glycan)
+
+
+@define
+class CountA26SiaMP(MetaProperty):
+    """The number of sialic acids with an alpha-2,6 linkage."""
+
+    name: ClassVar = "nE"
+    supported_mode: ClassVar = "both"
+
+    def __call__(self, glycan: Structure | Composition) -> int:
+        return _count_a26_sia(glycan)
+
+
 # ===== Cacheable functions for calculating meta-properties =====
 @cache
 def _glycan_type(glycan: Structure) -> GlycanType:
@@ -400,6 +422,58 @@ def _has_poly_lacnac(glycan: Structure) -> bool:
                     if get_mono_str(child_of_glcnac) == "Gal":
                         return True
     return False
+
+
+
+@singledispatch
+def _count_a23_sia(glycan) -> int:
+    """Count the number of sialic acids with an alpha-2,3 linkage."""
+    raise TypeError
+
+
+@_count_a23_sia.register
+@cache
+def _(glycan: Structure) -> int:
+    n = 0
+    for node in glycan.breadth_first_traversal():
+        if get_mono_str(node) in ("Neu5Ac", "Neu5Gc"):
+            if node.links[2][0].parent_position == -1:
+                raise SiaLinkageError("Sialic acid linkage not specified")
+            elif node.links[2][0].parent_position == 3:
+                n = n + 1
+    return n
+
+
+@_count_a23_sia.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("L", 0)
+
+
+@singledispatch
+def _count_a26_sia(glycan) -> int:
+    """Count the number of sialic acids with an alpha-2,6 linkage."""
+    raise TypeError
+
+
+@_count_a26_sia.register
+@cache
+def _(glycan: Structure) -> int:
+    n = 0
+    for node in glycan.breadth_first_traversal():
+        if get_mono_str(node) in ("Neu5Ac", "Neu5Gc"):
+            if node.links[2][0].parent_position == -1:
+                raise SiaLinkageError("Sialic acid linkage not specified")
+            elif node.links[2][0].parent_position == 6:
+                n = n + 1
+    return n
+
+
+@_count_a26_sia.register
+@cache
+def _(glycan: Composition) -> int:
+    return glycan.get("E", 0)
+
 
 
 # ===== The old module =====
