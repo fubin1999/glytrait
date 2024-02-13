@@ -9,7 +9,7 @@ def test_build_meta_property_table(mocker):
     mocker.patch(
         "glytrait.meta_property.available_meta_properties",
         autospec=True,
-        return_value=["mp1", "mp2"]
+        return_value=["mp1", "mp2"],
     )
 
     mps = {
@@ -24,13 +24,7 @@ def test_build_meta_property_table(mocker):
 
     glycans = {"G1": "glycan1", "G2": "glycan2", "G3": "glycan3"}
     result = mp.build_meta_property_table(glycans, "structure", True)
-    expected = pd.DataFrame(
-        {
-            "mp1": [1, 1, 1],
-            "mp2": [1, 2, 3]
-        },
-        index=glycans
-    )
+    expected = pd.DataFrame({"mp1": [1, 1, 1], "mp2": [1, 2, 3]}, index=glycans)
     pd.testing.assert_frame_equal(result, expected)
 
 
@@ -50,6 +44,7 @@ def test_register(register_some_mp):
 
 def test_register_duplicate(register_some_mp):
     with pytest.raises(ValueError):
+
         @mp.mp("some_mp", "both")
         def some_mp(glycan):
             return 0

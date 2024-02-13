@@ -26,6 +26,7 @@ from attrs import field, frozen, validators
 
 from glytrait.exception import FormulaError
 from glytrait.data_type import AbundanceTable, MetaPropertyTable
+from glytrait.meta_property import available_meta_properties
 
 __all__ = [
     "TraitFormula",
