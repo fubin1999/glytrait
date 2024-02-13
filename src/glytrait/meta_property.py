@@ -10,6 +10,7 @@ from enum import Enum, auto
 from functools import singledispatch, cache
 from typing import Literal, ClassVar, Type
 
+import pandas as pd
 from attrs import define
 from glypy import Monosaccharide  # type: ignore
 
@@ -19,6 +20,8 @@ from glytrait.glycan import Structure, Composition, get_mono_str, GlycanDict
 
 __all__ = [
     "build_meta_property_table",
+    "available_meta_properties",
+    "get_meta_property",
 ]
 
 
@@ -39,14 +42,14 @@ def build_meta_property_table(
     Returns:
         MetaPropertyTable: The table of meta-properties.
     """
-    # mp_series_list: list[pd.Series] = []
-    # for mp_name, MpClass in available_meta_properties(mode, sia_linkage).items():
-    #     mp = MpClass()
-    #     values = [mp(glycan) for glycan in glycans.values()]
-    #     s = pd.Series(values, index=pd.Index(glycans.keys()), name=mp_name)
-    #     mp_series_list.append(s)
-    # mp_table_df = pd.concat(mp_series_list, axis=1)
-    # return MetaPropertyTable(mp_table_df)
+    mp_series_list: list[pd.Series] = []
+    for mp_name in available_meta_properties(mode, sia_linkage):
+        mp = get_meta_property(mp_name)
+        values = [mp(glycan) for glycan in glycans.values()]
+        s = pd.Series(values, index=pd.Index(glycans.keys()), name=mp_name)
+        mp_series_list.append(s)
+    mp_table_df = pd.concat(mp_series_list, axis=1)
+    return MetaPropertyTable(mp_table_df)
 
 
 class GlycanType(Enum):
