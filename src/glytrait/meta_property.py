@@ -6,12 +6,12 @@ Functions:
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from enum import Enum, auto
 from functools import singledispatch, cache
-from typing import Literal, ClassVar, Type
+from typing import Literal, Any
 
 import pandas as pd
-from attrs import define
 from glypy import Monosaccharide  # type: ignore
 
 from glytrait.data_type import MetaPropertyTable
@@ -61,15 +61,46 @@ class GlycanType(Enum):
 
 
 # ===== Registering meta-properties =====
+Glycan = Composition | Structure
+MetaProperty = Callable[[Glycan], Any]
+
 _mp_objects: dict[str, MetaProperty] = {}
 
 
-def _register_mp(mp: Type[MetaProperty]) -> Type[MetaProperty]:
-    """Register a meta-property class."""
-    if mp.name in _mp_objects:
-        raise ValueError(f"Meta-property '{mp.name}' already exists.")
-    _mp_objects[mp.name] = mp()
-    return mp
+def mp(name: str, supported_mode: Literal["composition", "structure", "both"]):
+    """Decorator for meta-properties.
+
+    Each meta-property function should be decorated with this decorator.
+
+    This decorator does two things:
+    1. Set the name and supported_mode of the meta-property.
+    2. Register the meta-property in the _mp_objects dictionary.
+
+    Args:
+        name (str): The name of the meta-property.
+        supported_mode (Literal["composition", "structure", "both"]): The supported mode of the
+            meta-property.
+    """
+    def decorator(mp: MetaProperty):
+        _add_attrs(mp, name, supported_mode)
+        _register_mp(mp, name)
+        return mp
+    return decorator
+
+
+def _add_attrs(
+    mp: MetaProperty,
+    name: str,
+    supported_mode: Literal["composition", "structure", "both"]
+) -> None:
+    mp.name = name
+    mp.supported_mode = supported_mode
+
+
+def _register_mp(mp: MetaProperty, name: str) -> None:
+    if name in _mp_objects:
+        raise ValueError(f"Meta-property '{name}' already exists")
+    _mp_objects[name] = mp
 
 
 # ===== Get available meta-properties =====
@@ -93,7 +124,7 @@ def available_meta_properties(
         if sia_linkage:
             sia_linkage_correct = True
         else:
-            sia_linkage_correct = mp.name not in ("nL", "nE")
+            sia_linkage_correct = name not in ("nL", "nE")
         if mode_correct and sia_linkage_correct:
             to_return.append(name)
     return to_return
@@ -114,208 +145,83 @@ def get_meta_property(name: str) -> MetaProperty:
     return _mp_objects[name]
 
 
-# ===== Base class for meta-properties =====
-@define
-class MetaProperty:
-    """The base class for meta-properties.
-
-    A meta-property is a function that takes a glycan as input and returns a value.
-    The glycan can be either a `Composition` or a `Structure`.
-    The value can be an integer, a boolean, or a string.
-
-    For explicitness, all subclasses should be named with the suffix
-    "MetaProperty" or "MP".
-
-    All subclasses should implement `name` and `supported_mode` class variables,
-    and the `__call__` method.
-    The `__call__` method should have a type hint for the return value,
-    either `int`, `bool`, or `str`.
-    Union types like `int | bool` are not allowed.
-
-    Examples:
-        >>> class MyMetaProperty(MetaProperty):
-        ...     name = "myMetaProperty"
-        ...     supported_mode = "composition"
-        ...     def __call__(self, glycan: Composition) -> int:
-        ...         return 1
-        >>> mp = MyMetaProperty()
-        >>> mp.return_type
-        <class 'int'>
-        >>> mp(Composition("GlcNAc"))
-        1
-    """
-
-    name: ClassVar[str]
-    supported_mode: ClassVar[Literal["composition", "structure", "both"]]
-
-    def __call__(self, glycan: Structure | Composition) -> int | bool | str:
-        raise NotImplementedError
-
-    @property
-    def return_type(self) -> int | bool | str:
-        """The return type of the meta-property."""
-        return self.__call__.__annotations__.get("return", None)
-
-
 # ===== Concrete meta-properties =====
-@_register_mp
-@define
-class GlycanTypeMP(MetaProperty):
+@mp("type", "structure")
+def glycan_type_mp(glycan: Glycan) -> str:
     """The type of glycan."""
-
-    name: ClassVar = "type"
-    supported_mode: ClassVar = "structure"
-
-    def __call__(self, glycan: Structure) -> str:
-        return _glycan_type(glycan).name.lower()
+    return _glycan_type(glycan).name.lower()
 
 
-@_register_mp
-@define
-class BisectionMP(MetaProperty):
+@mp("B", "structure")
+def bisection_mp(glycan: Glycan) -> bool:
     """Whether the glycan has bisection."""
-
-    name: ClassVar = "B"
-    supported_mode: ClassVar = "structure"
-
-    def __call__(self, glycan: Structure) -> bool:
-        return _is_bisecting(glycan)
+    return _is_bisecting(glycan)
 
 
-@_register_mp
-@define
-class CountAntennaMP(MetaProperty):
+@mp("nAnt", "structure")
+def count_antenna_mp(glycan: Glycan) -> int:
     """The number of antennas."""
-
-    name: ClassVar = "nAnt"
-    supported_mode: ClassVar = "structure"
-
-    def __call__(self, glycan: Structure) -> int:
-        # Calling `_count_antenna` instead of putting the implementation here is for the purpose
-        # of caching.
-        # Methods decorated with `@cache` will not work properly due to the `self` argument.
-        # This is a workaround and a common practice in this module.
-        return _count_antenna(glycan)
+    return _count_antenna(glycan)
 
 
-@_register_mp
-@define
-class CountFucMP(MetaProperty):
+@mp("nF", "both")
+def count_fuc_mp(glycan: Glycan) -> int:
     """The number of fucoses."""
-
-    name: ClassVar = "nF"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_fuc(glycan)
+    return _count_fuc(glycan)
 
 
-@_register_mp
-@define
-class CountCoreFucMP(MetaProperty):
+@mp("nFc", "structure")
+def count_core_fuc_mp(glycan: Glycan) -> int:
     """The number of fucoses on the core."""
-
-    name: ClassVar = "nFc"
-    supported_mode: ClassVar = "structure"
-
-    def __call__(self, glycan: Structure) -> int:
-        return _count_core_fuc(glycan)
+    return _count_core_fuc(glycan)
 
 
-@_register_mp
-@define
-class CountAntennaryFucMP(MetaProperty):
+@mp("nFa", "structure")
+def count_antennary_fuc_mp(glycan: Glycan) -> int:
     """The number of fucoses on the antenna."""
-
-    name: ClassVar = "nFa"
-    supported_mode: ClassVar = "structure"
-
-    def __call__(self, glycan: Structure) -> int:
-        return _count_fuc(glycan) - _count_core_fuc(glycan)
+    return _count_fuc(glycan) - _count_core_fuc(glycan)
 
 
-@_register_mp
-@define
-class CountSiaMP(MetaProperty):
+@mp("nS", "both")
+def count_sia_mp(glycan: Glycan) -> int:
     """The number of sialic acids."""
-
-    name: ClassVar = "nS"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_sia(glycan)
+    return _count_sia(glycan)
 
 
-@_register_mp
-@define
-class CountManMP(MetaProperty):
+@mp("nM", "both")
+def count_man_mp(glycan: Glycan) -> int:
     """The number of mannoses."""
-
-    name: ClassVar = "nM"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_man(glycan)
+    return _count_man(glycan)
 
 
-@_register_mp
-@define
-class CountGalMP(MetaProperty):
+@mp("nG", "both")
+def count_gal_mp(glycan: Glycan) -> int:
     """The number of galactoses."""
-
-    name: ClassVar = "nG"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_gal(glycan)
+    return _count_gal(glycan)
 
 
-@_register_mp
-@define
-class CountGlcNAcMP(MetaProperty):
+@mp("nN", "both")
+def count_glcnac_mp(glycan: Glycan) -> int:
     """The number of GlcNAcs."""
-
-    name: ClassVar = "nN"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_glcnac(glycan)
+    return _count_glcnac(glycan)
 
 
-@_register_mp
-@define
-class HasPolyLacNAcMP(MetaProperty):
+@mp("PL", "structure")
+def has_poly_lacnac_mp(glycan: Glycan) -> bool:
     """Whether the glycan has any poly-LacNAc."""
-
-    name: ClassVar = "PL"
-    supported_mode: ClassVar = "structure"
-
-    def __call__(self, glycan: Structure) -> bool:
-        return _has_poly_lacnac(glycan)
+    return _has_poly_lacnac(glycan)
 
 
-@_register_mp
-@define
-class CountA23SiaMP(MetaProperty):
+@mp("nL", "both")
+def count_a23_sia_mp(glycan: Glycan) -> int:
     """The number of sialic acids with an alpha-2,3 linkage."""
-
-    name: ClassVar = "nL"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_a23_sia(glycan)
+    return _count_a23_sia(glycan)
 
 
-@_register_mp
-@define
-class CountA26SiaMP(MetaProperty):
+@mp("nE", "both")
+def count_a26_sia_mp(glycan: Glycan) -> int:
     """The number of sialic acids with an alpha-2,6 linkage."""
-
-    name: ClassVar = "nE"
-    supported_mode: ClassVar = "both"
-
-    def __call__(self, glycan: Structure | Composition) -> int:
-        return _count_a26_sia(glycan)
+    return _count_a26_sia(glycan)
 
 
 # ===== Cacheable functions for calculating meta-properties =====
