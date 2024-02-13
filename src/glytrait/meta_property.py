@@ -81,20 +81,22 @@ def mp(name: str, supported_mode: Literal["composition", "structure", "both"]):
         supported_mode (Literal["composition", "structure", "both"]): The supported mode of the
             meta-property.
     """
+
     def decorator(mp: MetaProperty):
         _add_attrs(mp, name, supported_mode)
         _register_mp(mp, name)
         return mp
+
     return decorator
 
 
 def _add_attrs(
     mp: MetaProperty,
     name: str,
-    supported_mode: Literal["composition", "structure", "both"]
+    supported_mode: Literal["composition", "structure", "both"],
 ) -> None:
-    mp.name = name
-    mp.supported_mode = supported_mode
+    mp.name = name  # type: ignore
+    mp.supported_mode = supported_mode  # type: ignore
 
 
 def _register_mp(mp: MetaProperty, name: str) -> None:
@@ -120,7 +122,7 @@ def available_meta_properties(
     """
     to_return: list[str] = []
     for name, mp in _mp_objects.items():
-        mode_correct = mp.supported_mode in ("both", mode)
+        mode_correct = mp.supported_mode in ("both", mode)  # type: ignore
         if sia_linkage:
             sia_linkage_correct = True
         else:

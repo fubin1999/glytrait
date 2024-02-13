@@ -28,6 +28,7 @@ import attrs
 from attrs import field, define
 
 from glytrait.data_type import AbundanceTable, MetaPropertyTable
+from glytrait.meta_property import available_meta_properties
 
 __all__ = [
     "TraitFormula",
