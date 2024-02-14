@@ -17,6 +17,73 @@ def write_content(clean_dir):
     return _write_content
 
 
+class TestCompareTerm:
+
+    @pytest.fixture
+    def mp_table(self):
+        data = {
+            "mp_int": [1, 2, 3],
+            "mp_bool": [True, False, True],
+            "mp_str": ["a", "b", "c"],
+        }
+        df = pd.DataFrame(data, index=["G1", "G2", "G3"])
+        df = df.astype({"mp_int": "UInt8", "mp_bool": "boolean", "mp_str": "category"})
+        return df
+
+    @pytest.mark.parametrize(
+        "mp, operator, value, expected",
+        [
+            ("mp_int", ">", 2, "mp_int > 2"),
+            ("mp_bool", "==", True, "mp_bool == True"),
+            ("mp_str", "!=", "b", "mp_str != 'b'"),
+        ],
+    )
+    def test_expr(self, mp, operator, value, expected):
+        term = fml.CompareTerm(mp, operator, value)
+        assert term.expr == expected
+
+    @pytest.mark.parametrize(
+        "mp, operator, value, expected",
+        [
+            ("mp_int", ">", 2, [0, 0, 1]),
+            ("mp_int", ">=", 2, [0, 1, 1]),
+            ("mp_int", "<", 2, [1, 0, 0]),
+            ("mp_int", "<=", 2, [1, 1, 0]),
+            ("mp_int", "==", 2, [0, 1, 0]),
+            ("mp_int", "!=", 2, [1, 0, 1]),
+            ("mp_bool", "==", True, [1, 0, 1]),
+            ("mp_bool", "!=", True, [0, 1, 0]),
+            ("mp_str", "==", "b", [0, 1, 0]),
+            ("mp_str", "!=", "b", [1, 0, 1]),
+        ],
+    )
+    def test_call(self, mp_table, mp, operator, value, expected):
+        term = fml.CompareTerm(mp, operator, value)
+        result = term(mp_table)
+        expected = pd.Series(
+            expected, index=mp_table.index, name=term.expr, dtype="UInt8"
+        )
+        pd.testing.assert_series_equal(result, expected)
+
+    @pytest.mark.parametrize(
+        "mp, operator, value",
+        [
+            ("mp_bool", ">", 2),
+            ("mp_bool", ">=", 2),
+            ("mp_bool", "<", 2),
+            ("mp_bool", "<=", 2),
+            ("mp_str", ">", 2),
+            ("mp_str", ">=", 2),
+            ("mp_str", "<", 2),
+            ("mp_str", "<=", 2),
+        ],
+    )
+    def test_type_error(self, mp_table, mp, operator, value):
+        term = fml.CompareTerm(mp, operator, value)
+        with pytest.raises(fml.FormulaError):
+            term(mp_table)
+
+
 @pytest.mark.skip("`TraitFormula` to be updated.")
 class TestTraitFormula:
     @pytest.fixture
