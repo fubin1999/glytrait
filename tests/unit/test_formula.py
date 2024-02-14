@@ -124,274 +124,166 @@ class TestCompareTerm:
             term(mp_table)
 
 
-@pytest.mark.skip("`TraitFormula` to be updated.")
-class TestTraitFormula:
-    @pytest.fixture
-    def formula1(self):
-        return fml.TraitFormula(
-            description="The ratio of high-mannose to hybrid glycans",
-            name="MHy",
-            type="structure",
-            numerator_properties=["isHighMannose"],
-            denominator_properties=["isHybrid"],
-        )
-
-    @pytest.fixture
-    def formula2(self):
-        return fml.TraitFormula(
-            description="Relative abundance of high mannose type glycans within total spectrum",
-            name="TM",
-            type="structure",
-            numerator_properties=["isHighMannose"],
-            denominator_properties=["."],
-        )
-
-    @pytest.fixture
-    def meta_property_table(self):
-        data = {
-            ".": [1, 1, 1, 1],
-            "isComlex": [False, False, True, False],
-            "isHighMannose": [True, True, False, False],
-            "isHybrid": [False, False, False, True],
-        }
-        return pd.DataFrame(data, index=["G1", "G2", "G3", "G4"])
-
-    @pytest.fixture
-    def abundance_table(self):
-        data = dict(
-            G1=[1, 2, 3],
-            G2=[4, 5, 6],
-            G3=[7, 8, 9],
-            G4=[10, 11, 12],
-        )
-        return pd.DataFrame(data, index=["S1", "S2", "S3"], dtype=float)
-
-    def test_init_invalid_properties(self):
-        with pytest.raises(FormulaError) as excinfo:
-            fml.TraitFormula(
-                description="The ratio of high-mannose to hybrid glycans",
-                name="MHy",
-                type="structure",
-                numerator_properties=["invalid", "isComplex"],
-                denominator_properties=["isComplex"],
-            )
-        msg = "`numerator_properties` contains invalid meta properties: invalid."
-        assert msg in str(excinfo.value)
-
-    def test_init_0_length_properties(self):
-        with pytest.raises(FormulaError) as excinfo:
-            fml.TraitFormula(
-                description="The ratio of high-mannose to hybrid glycans",
-                name="MHy",
-                type="structure",
-                numerator_properties=[],
-                denominator_properties=["isHybrid"],
-            )
-        assert "`numerator_properties` cannot be empty." in str(excinfo.value)
-
-    def test_init_dot_in_numerator(self):
-        with pytest.raises(FormulaError) as excinfo:
-            fml.TraitFormula(
-                description="The ratio of high-mannose to hybrid glycans",
-                name="MHy",
-                type="structure",
-                numerator_properties=["."],
-                denominator_properties=["isHybrid"],
-            )
-        assert "'.' should not be used in the numerator." in str(excinfo.value)
-
-    def test_init_dot_with_others_in_denominator(self):
-        with pytest.raises(FormulaError) as excinfo:
-            fml.TraitFormula(
-                description="The ratio of high-mannose to hybrid glycans",
-                name="MHy",
-                type="structure",
-                numerator_properties=["isHighMannose"],
-                denominator_properties=["isHybrid", "."],
-            )
-        assert (
-            "'.' should not be used with other meta properties in the denominator."
-            in str(excinfo.value)
-        )
-
-    @pytest.mark.parametrize("coef", [-1, 0])
-    def test_init_invalid_coef(self, coef):
-        with pytest.raises(ValueError):
-            fml.TraitFormula(
-                description="The ratio of high-mannose to hybrid glycans",
-                name="MHy",
-                type="structure",
-                numerator_properties=["isHighMannose"],
-                denominator_properties=["isHybrid"],
-                coefficient=coef,
-            )
-
-    def test_init_invalid_type(self):
-        with pytest.raises(ValueError):
-            fml.TraitFormula(
-                description="The ratio of high-mannose to hybrid glycans",
-                name="MHy",
-                type="invalid",
-                numerator_properties=["isHighMannose"],
-                denominator_properties=["isHybrid"],
-            )
-
-    def test_init_wrong_type(self):
-        with pytest.raises(FormulaError) as excinfo:
-            fml.TraitFormula(
-                description="Should be a composition trait",
-                name="SomeTrait",
-                type="composition",
-                numerator_properties=["isHighMannose"],
-                denominator_properties=["."],
-            )
-        msg = "`numerator_properties` contains invalid meta properties: isHighMannose."
-        assert msg in str(excinfo.value)
+class TestParseFormulaExpression:
+    """Test `_parse_formula_expression` function."""
 
     @pytest.mark.parametrize(
-        "type, numerator, denominator, expected",
+        "expr, numerators, denominators",
         [
-            ("structure", ["isHighMannose"], ["isHybrid"], False),
-            ("structure", ["hasa23Sia"], ["."], True),
-            ("composition", ["isHighBranching"], ["."], False),
-            ("composition", ["hasa23Sia"], ["."], True),
+            (
+                "A = (mp1 == 1) // (mp2 > 2)",
+                ["mp1 == 1", "mp2 > 2"],
+                ["mp2 > 2"],
+            ),
+            (
+                "A = (mp1 == 1) / (mp2 > 2)",
+                ["mp1 == 1"],
+                ["mp2 > 2"],
+            ),
+            (
+                "A = (mp1 == 1) / 1",
+                ["mp1 == 1"],
+                ["1"],
+            ),
+            (
+                "A = (mp1 == 1) / (mp2 == 'b')",
+                ["mp1 == 1"],
+                ["mp2 == 'b'"],
+            ),
+            (
+                'A = (mp1 == 1) / (mp2 == "b")',
+                ["mp1 == 1"],
+                ["mp2 == 'b'"],
+            ),
+            (
+                "A = (mp1 == 1) / (mp2 == True)",
+                ["mp1 == 1"],
+                ["mp2 == True"],
+            ),
+            (
+                "A = (mp1 == 1) * (mp2 > 2)/ 1",
+                ["mp1 == 1", "mp2 > 2"],
+                ["1"],
+            ),
+            (
+                "A = (mp1 == 1) * (mp2 > 2) * (mp3 <= 4) / 1",
+                ["mp1 == 1", "mp2 > 2", "mp3 <= 4"],
+                ["1"],
+            ),
+            (
+                "A = (mp1 == 1) * 2 / 1",
+                ["mp1 == 1", "2"],
+                ["1"],
+            ),
+            (
+                "A = mp1 / mp2",
+                ["mp1"],
+                ["mp2"],
+            ),
+            (
+                "A = (mp1 == 1) / (1)",  # extra parentheses
+                ["mp1 == 1"],
+                ["1"],
+            ),
         ],
     )
-    def test_sia_linkage(self, type, numerator, denominator, expected):
-        formula = fml.TraitFormula(
-            description="Should be a composition trait",
-            name="SomeTrait",
-            type=type,
-            numerator_properties=numerator,
-            denominator_properties=denominator,
-        )
-        assert formula.sia_linkage == expected
+    def test_parse(self, expr, numerators, denominators):
+        name, num_list, den_list = fml._parse_formula_expression(expr)
+        assert name == "A"
+        assert [term.expr for term in num_list] == numerators
+        assert [term.expr for term in den_list] == denominators
 
-    def test_calcu_trait_without_initialization(self, formula1):
-        with pytest.raises(RuntimeError):
-            formula1.calcu_trait(None)
-
-    def test_calcu_trait(self, formula1, meta_property_table, abundance_table):
-        formula1.initialize(meta_property_table)
-        result = formula1.calcu_trait(abundance_table)
-        expected = [5 / 10, 7 / 11, 9 / 12]
-        np.testing.assert_array_equal(result, expected)
-
-    def test_calcu_trait_glycan_order_not_same(
-        self, formula1, meta_property_table, abundance_table
-    ):
-        meta_property_table = meta_property_table.reindex(["G2", "G1", "G3", "G4"])
-        formula1.initialize(meta_property_table)
-        with pytest.raises(AssertionError) as excinfo:
-            formula1.calcu_trait(abundance_table)
-
-    def test_calcu_trait_with_dot(self, formula2, meta_property_table, abundance_table):
-        formula2.initialize(meta_property_table)
-        result = formula2.calcu_trait(abundance_table)
-        expected = [5 / 22, 7 / 26, 9 / 30]
-        np.testing.assert_array_equal(result, expected)
-
-    def test_calcu_trait_with_coef(
-        self, formula1, meta_property_table, abundance_table
-    ):
-        formula = evolve(formula1, coefficient=2)
-        formula.initialize(meta_property_table)
-        result = formula.calcu_trait(abundance_table)
-        expected = [10 / 10, 14 / 11, 18 / 12]
-        np.testing.assert_array_equal(result, expected)
-
-    def test_calcu_trait_inf(self, formula1, meta_property_table, abundance_table):
-        meta_property_table = meta_property_table.drop("G4", axis=0)
-        abundance_table = abundance_table.drop("G4", axis=1)
-        formula1.initialize(meta_property_table)
-        result = formula1.calcu_trait(abundance_table)
-        expected = np.array([np.nan, np.nan, np.nan])
-        np.testing.assert_array_equal(result, expected)
-
-    def test_try_to_change_numerator(self, formula1):
-        numerator = formula1.numerator_properties
-        before_change = numerator.copy()
-        numerator.append("new_property")
-        assert formula1.numerator_properties == before_change
+    @pytest.mark.parametrize(
+        "expr",
+        [
+            "",  # Empty string
+            "random string",  # Random string
+            "A = (mp1 == 1) / (mp2 > 2) / 1",  # No more than one '/'
+            "A = (mp1 == 1)",  # No denominator
+            "(mp1 == 1) * 2 / 1",  # No name
+            "A = mp1 == 1 * 2 / 1",  # No parentheses
+            "A = (mp1 == 1) & (mp2 > 2) / 1",  # Invalid operator '&'
+            "A = (mp1 = 1) / 1",  # Invalid operator '='
+        ],
+    )
+    def test_invalid_expression(self, expr):
+        with pytest.raises(fml.FormulaError):
+            fml._parse_formula_expression(expr)
 
 
-@pytest.mark.parametrize(
-    "expression, name, num_props, den_props, coef",
-    [
-        ("TM = (isHighMannose) / (.)", "TM", ["isHighMannose"], ["."], 1.0),
-        (
-            "MHy = (isHighMannose) / (isHybrid)",
-            "MHy",
-            ["isHighMannose"],
-            ["isHybrid"],
-            1.0,
-        ),
-        (
-            "CA1 = (isComplex * is1Antennay) / (isComplex)",
-            "CA1",
-            ["isComplex", "is1Antennay"],
-            ["isComplex"],
-            1.0,
-        ),
-        (
-            "CA1 = (is1Antennay) // (isComplex)",
-            "CA1",
-            ["isComplex", "is1Antennay"],
-            ["isComplex"],
-            1.0,
-        ),
-        (
-            "CA1 = (isComplex * is1Antennay) / (isComplex) * 1/2",
-            "CA1",
-            ["isComplex", "is1Antennay"],
-            ["isComplex"],
-            0.5,
-        ),
-        (
-            "CA1 = (isComplex * is1Antennay) / (isComplex) * 0.5",
-            "CA1",
-            ["isComplex", "is1Antennay"],
-            ["isComplex"],
-            0.5,
-        ),
-        (
-            "CA1 = (isComplex * is1Antennay) / (isComplex) * 2",
-            "CA1",
-            ["isComplex", "is1Antennay"],
-            ["isComplex"],
-            2,
-        ),
-    ],
-)
-def test_parse_expression(expression, name, num_props, den_props, coef):
-    (
-        r_name,
-        r_num_props,
-        r_den_props,
-        r_coef,
-    ) = fml.parse_formula_expression(expression)
-    assert r_name == name
-    assert sorted(r_num_props) == sorted(num_props)
-    assert sorted(r_den_props) == sorted(den_props)
-    assert pytest.approx(coef) == r_coef
+class TestTraitFormula:
+    """Test `TraitFormula` class."""
 
+    def test_init(self):
+        description = "Some description"
+        expression = "A = (mp1 == 1) / 1"
+        formula = fml.TraitFormula(expression, description)
+        assert formula.name == "A"
+        assert formula.description == description
+        assert formula.expression == expression
+        assert [term.expr for term in formula._numerators] == ["mp1 == 1"]
+        assert [term.expr for term in formula._denominators] == ["1"]
 
-@pytest.mark.parametrize(
-    "expression",
-    [
-        "(isHighMannose) / (.)",
-        "TM = (isHighMannose) / (isHybrid",
-        "MHy = (isHighMannose)  (isHybrid)",
-        "CA1 = (isComplex  is1Antennay) / (isComplex)",
-        "CA1 * TM = (isComplex * is1Antennay) / (isComplex)",
-        "MHy = (isHighMannose) / (isHybrid) * a",
-        "MHy = (isHighMannose) / (isHybrid) * ",
-    ],
-)
-def test_parse_expression_invalid(expression):
-    with pytest.raises(FormulaError) as excinfo:
-        fml.parse_formula_expression(expression)
-    assert f"Invalid expression: '{expression}'" in str(excinfo.value)
+    def test_sia_linkage(self):
+        description = "The ratio of sialylated to non-sialylated glycans"
+        expression = "CS = nS // (type == 'complex')"
+        formula = fml.TraitFormula(expression, description)
+        assert formula.sia_linkage is True
+
+        description = "The ratio of high-mannose to hybrid glycans"
+        expression = "MHy = (type == 'high-mannose') / (type == 'hybrid')"
+        formula = fml.TraitFormula(expression, description)
+        assert formula.sia_linkage is False
+
+    def test_numerators_and_denominators(self):
+        description = "Some description"
+        expression = "A = (mp1 == 1) / 1"
+        formula = fml.TraitFormula(expression, description)
+        assert formula.numerators == ["mp1 == 1"]
+        assert formula.denominators == ["1"]
+
+    @pytest.fixture
+    def abund_table(self):
+        #      G1  G2  G3
+        # S1   1   2   2
+        # S2   2   1   2
+        # S3   1   2   1
+
+        data = {
+            "G1": [1, 2, 1],
+            "G2": [2, 1, 2],
+            "G3": [2, 2, 1],
+        }
+        return pd.DataFrame(data, index=["S1", "S2", "S3"])
+
+    @pytest.mark.parametrize(
+        "expression, expected",
+        [
+            (
+                "A = (mp_int == 1) / 1",
+                [0.2, 0.4, 0.25],
+            ),
+            (
+                "A = (mp_int == 3) // (mp_int >= 2)",
+                [0.5, 2 / 3, 1 / 3],
+            ),
+            (
+                "A = mp_int // (mp_bool == True)",
+                [7 / 3, 2, 2],
+            ),
+        ],
+    )
+    def test_calcu_trait(self, mp_table, abund_table, expression, expected):
+        # mp_table:
+        #     mp_int  mp_bool mp_str
+        # G1       1     True      a
+        # G2       2    False      b
+        # G3       3     True      c
+        formula = fml.TraitFormula(expression, "Some description")
+        formula.initialize(mp_table)
+        result = formula.calcu_trait(abund_table)
+        expected = pd.Series(expected, index=abund_table.index, name="A")
+        pd.testing.assert_series_equal(result, expected)
 
 
 @pytest.mark.skip("`TraitFormula` to be updated.")
@@ -405,32 +297,33 @@ def test_load_default_formulas():
     assert len(structure_formulas) != len(composition_formulas)
 
 
-@pytest.mark.skip("`TraitFormula` to be updated.")
 class TestLoadFormulasFromFile:
     """Test `load_formulas_from_file` function."""
 
     def test_basic(self, write_content):
         description = "The ratio of high-mannose to hybrid glycans"
-        expression = "MHy = (isHighMannose) / (isHybrid)"
+        expression = "MHy = (type == 'high-mannose') / (type == 'hybrid')"
         file = write_content(f"@ {description}\n$ {expression}")
-        result = list(fml.load_formulas_from_file(file, "structure"))
+        result = list(fml.load_formulas_from_file(file))
         assert len(result) == 1
         assert result[0].description == description
         assert result[0].name == "MHy"
 
     def test_duplicated_formulas(self, write_content):
         description1 = "The ratio of high-mannose to hybrid glycans"
-        expression1 = "MHy = (isHighMannose) / (isHybrid)"
+        expression1 = "MHy = (type == 'high-mannose') / (type == 'hybrid')"
         description2 = (
             "Relative abundance of high mannose type glycans within total spectrum"
         )
-        expression2 = "MHy = (isHighMannose) / (isHybrid)"  # same expression
+        expression2 = (
+            "MHy = (type == 'high-mannose') / (type == 'hybrid')"  # same expression
+        )
         content = (
             f"@ {description1}\n$ {expression1}\n@ {description2}\n$ {expression2}"
         )
         file = write_content(content)
         with pytest.raises(FormulaError) as excinfo:
-            list(fml.load_formulas_from_file(file, "structure"))
+            list(fml.load_formulas_from_file(file))
         assert "Duplicate formula name: MHy." in str(excinfo.value)
 
 

@@ -18,15 +18,14 @@ import itertools
 import re
 from importlib.resources import files, as_file
 from pathlib import Path
-from typing import Literal, Optional, Generator, Protocol, ClassVar
+from typing import Literal, Optional, Generator, Protocol
 
 import numpy as np
 import pandas as pd
-from attrs import field, frozen, validators, define
+from attrs import field, define
 
-from glytrait.exception import FormulaError
 from glytrait.data_type import AbundanceTable, MetaPropertyTable
-from glytrait.meta_property import available_meta_properties
+from glytrait.exception import FormulaError
 
 __all__ = [
     "TraitFormula",
@@ -36,6 +35,10 @@ __all__ = [
 
 default_struc_formula_file = files("glytrait.resources").joinpath("struc_formula.txt")
 default_comp_formula_file = files("glytrait.resources").joinpath("comp_formula.txt")
+
+
+class FormulaParseError(FormulaError):
+    """An error occurred when parsing a formula expression."""
 
 
 class FormulaTerm(Protocol):
@@ -190,150 +193,73 @@ class CompareTerm:
             return f"{self.meta_property} {self.operator} {self.value}"
 
 
-def _check_length(instance, attribute, value):
-    """Validator for `TraitFormula`."""
-    if len(value) == 0:
-        # The attribute name starts with "_", so we need to remove it.
-        raise FormulaError(f"`{attribute.name[1:]}` cannot be empty.")
+def _is_sia_linkage_term(term: FormulaTerm) -> bool:
+    """Check if a formula term is related to sia-linkage."""
+    return "nE" in term.expr or "nS" in term.expr
 
 
-def _check_meta_properties(instance: TraitFormula, attribute, value):
-    """Validator for `TraitFormula`."""
-    valid_meta_properties = available_meta_properties(
-        instance.type, sia_linkage=True  # type: ignore
-    )
-    invalid_properties = set(value) - set(valid_meta_properties)
-    if len(invalid_properties) > 0:
-        raise FormulaError(
-            # The attribute name starts with "_", so we need to remove it.
-            f"`{attribute.name[1:]}` contains invalid meta properties: "
-            f"{', '.join(invalid_properties)}."
-        )
-
-
-def _check_numerator(instance, attribute, value):
-    """Validator for `TraitFormula`."""
-    if "." in value:
-        raise FormulaError("'.' should not be used in the numerator.")
-
-
-def _check_denominator(instance, attribute, value):
-    """Validator for `TraitFormula`."""
-    if "." in value and len(value) > 1:
-        raise FormulaError(
-            "'.' should not be used with other meta properties in the denominator."
-        )
-
-
-@frozen
+@define
 class TraitFormula:
-    """The trait formula.
+    """The trait formula."""
 
-    The `TraitFormula` is used to represent a trait formula,
-    and to calculate the trait values for each sample.
-    To use it, you need to
-    1. Make sure the index of the meta-property table (glycans) and the columns of the
-    abundance table (also glycans) are in the same order.
-    2. Initialize the formula by calling `initialize` method with a meta-property table.
-    3. Calculate the trait values by calling `calcu_trait` method with an abundance table.
-
-    Notes:
-        Please make sure that the index of the meta-property table
-        and the columns of the abundance table are in the same order.
-        Otherwise, an assertion error will be raised.
-        This can be easily achieved by using the `reindex` method of pandas DataFrame
-        (see the example below).
-        The reason why `TraitFormula` does not do this automatically is for efficiency.
-        Reindexing the meta-property table on each call of `calcu_trait` is time-consuming
-        and unnecessary.
-
-    Attributes:
-        description (str): The description of the trait.
-        name (str): The name of the trait.
-        type (str): The type of the trait. Either "structure" or "composition".
-        numerator_properties (list[str]): The meta properties in the numerator.
-        denominator_properties (list[str]): The meta properties in the denominator.
-        coefficient (float): The coefficient of the trait.
-        sia_linkage (bool): Whether the formula contains sia linkage meta properties.
-
-    Examples:
-        >>> from glytrait.formula import TraitFormula
-        >>> meta_property_table = ...
-        >>> abundance_table = ...
-        >>> formula = TraitFormula(
-        ...     description="The ratio of high-mannose to complex glycans",
-        ...     name="MHy",
-        ...     type="structure",
-        ...     numerator_properties=["isHighMannose"],
-        ...     denominator_properties=["isComplex"],
-        ... )
-        >>> meta_property_table = meta_property_table.reindex(abundance_table.columns)
-        >>> pd.testing.assert_index_equal(meta_property_table.index, abundance_table.columns)
-        >>> formula.initialize(meta_property_table)
-        >>> trait_values = formula.calcu_trait(abundance_table)  # a Series
-    """
-
+    expression: str = field()
     description: str = field()
-    name: str = field()
-    type: str = field(validator=validators.in_(["structure", "composition"]))
-    _numerator_properties: list[str] = field(
-        converter=list,
-        validator=[_check_length, _check_meta_properties, _check_numerator],
-    )
-    _denominator_properties: list[str] = field(
-        converter=list,
-        validator=[_check_length, _check_meta_properties, _check_denominator],
-    )
-    coefficient: float = field(default=1.0, validator=validators.gt(0))
+    name: str = field(init=False)
 
-    sia_linkage: bool = field(init=False, default=False)
+    _numerators: list[FormulaTerm] = field(init=False)
+    _denominators: list[FormulaTerm] = field(init=False)
+
+    _sia_linkage: bool = field(init=False, default=False)
+
     _initialized: bool = field(init=False, default=False)
-    _numerator: pd.Series = field(init=False, default=None)
-    _denominator: pd.Series = field(init=False, default=None)
+    _numerator_array: pd.Series = field(init=False, default=None)
+    _denominator_array: pd.Series = field(init=False, default=None)
 
     def __attrs_post_init__(self):
-        object.__setattr__(self, "sia_linkage", self._init_sia_linkage())
+        name, numerators, denominators = _parse_formula_expression(self.expression)
+        self.name = name
+        self._numerators = numerators
+        self._denominators = denominators
+        self._sia_linkage = self._init_sia_linkage()
 
     def _init_sia_linkage(self) -> bool:
-        """Whether the formula contains sia linkage meta properties."""
-        sia_meta_properties = available_meta_properties(
-            self.type, sia_linkage=True, only_sia_linkage=True  # type: ignore
-        )
-        for prop in itertools.chain(
-            self.numerator_properties, self.denominator_properties
-        ):
-            if prop in sia_meta_properties:
-                return True
-        return False
+        """Check if the formula is related to sia-linkage."""
+        term_iter = itertools.chain(self._numerators, self._denominators)
+        return any(_is_sia_linkage_term(term) for term in term_iter)
 
     @property
-    def numerator_properties(self) -> list[str]:
-        """The meta properties in the numerator."""
-        return self._numerator_properties.copy()
+    def sia_linkage(self) -> bool:
+        """Whether the formula is related to sia-linkage."""
+        return self._sia_linkage
 
     @property
-    def denominator_properties(self) -> list[str]:
-        """The meta properties in the denominator."""
-        return self._denominator_properties.copy()
+    def numerators(self) -> list[str]:
+        """The names of the numerators."""
+        return [term.expr for term in self._numerators]
+
+    @property
+    def denominators(self) -> list[str]:
+        """The names of the denominators."""
+        return [term.expr for term in self._denominators]
 
     def initialize(self, meta_property_table: MetaPropertyTable) -> None:
         """Initialize the trait formula.
 
         Args:
-            meta_property_table (MetaPropertyTable):
-                The table of meta properties generated by `build_meta_property_table`.
+            meta_property_table: The table of meta properties.
         """
-        numerator = self._initialize(meta_property_table, self.numerator_properties)
-        object.__setattr__(self, "_numerator", numerator)
-        denominator = self._initialize(meta_property_table, self.denominator_properties)
-        object.__setattr__(self, "_denominator", denominator)
-        object.__setattr__(self, "_initialized", True)
+        self._numerator_array = self._initialize(meta_property_table, self._numerators)
+        self._denominator_array = self._initialize(
+            meta_property_table, self._denominators
+        )
+        self._initialized = True
 
     @staticmethod
     def _initialize(
-        meta_property_table: MetaPropertyTable, properties: list[str]
+        meta_property_table: MetaPropertyTable, terms: list[FormulaTerm]
     ) -> pd.Series:
-        return meta_property_table[properties].prod(axis=1)
+        series_list = [term(meta_property_table) for term in terms]
+        return pd.concat(series_list, axis=1).prod(axis=1)
 
     def calcu_trait(self, abundance_table: AbundanceTable) -> pd.Series:
         """Calculate the trait.
@@ -347,16 +273,118 @@ class TraitFormula:
         """
         if not self._initialized:
             raise RuntimeError("TraitFormula is not initialized.")
-        pd.testing.assert_index_equal(abundance_table.columns, self._numerator.index)
-        pd.testing.assert_index_equal(abundance_table.columns, self._denominator.index)
+        pd.testing.assert_index_equal(
+            abundance_table.columns, self._numerator_array.index
+        )
+        pd.testing.assert_index_equal(
+            abundance_table.columns, self._denominator_array.index
+        )
 
-        numerator = abundance_table.values @ self._numerator.values
-        denominator = abundance_table.values @ self._denominator.values
+        numerator = abundance_table.values @ self._numerator_array.values
+        denominator = abundance_table.values @ self._denominator_array.values
         denominator[denominator == 0] = np.nan
-        values = numerator / denominator * self.coefficient
+        values = numerator / denominator
         return pd.Series(
             values, index=abundance_table.index, name=self.name, dtype=float
         )
+
+
+def _parse_formula_expression(
+    expr: str,
+) -> tuple[str, list[FormulaTerm], list[FormulaTerm]]:
+    """Parse the formula expression.
+
+    Args:
+        expr: The formula expression.
+
+    Returns:
+        The name, the numerators (a list of FormulaTerm),
+        and the denominators (a list of FormulaTerm) of the formula.
+    """
+    name, numerator_expr, spliter, denominator_expr = _split_formula_expression(expr)
+    numerators = _parse_terms(numerator_expr)
+    denominators = _parse_terms(denominator_expr)
+    if spliter == "//":
+        numerators.extend(denominators)
+    return name, numerators, denominators
+
+
+def _split_formula_expression(expr: str) -> tuple[str, str, str, str]:
+    """Split the formula expression into three parts:
+
+    - The name of the formula.
+    - The numerator expression of the formula.
+    - The slash or double-slash.
+    - The denominator expression of the formula.
+    """
+    expr = expr.strip()
+    if " = " not in expr:
+        raise FormulaParseError("no ' = '.")
+
+    try:
+        name, expr_after_name = expr.split(" = ")
+    except ValueError:
+        raise FormulaParseError("Misuse of '=' for '=='.")
+    name = name.strip()
+
+    if "//" not in expr_after_name and "/" not in expr_after_name:
+        raise FormulaParseError("no '/' or '//'.")
+
+    if expr_after_name.count("//") == 1:
+        spliter = "//"
+    elif expr_after_name.count("/") == 1:
+        spliter = "/"
+    else:
+        raise FormulaParseError("too many '/' or '//'.")
+    numerator, denominator = expr_after_name.split(spliter)
+    numerator = numerator.strip()
+    denominator = denominator.strip()
+
+    return name, numerator, spliter, denominator
+
+
+def _parse_terms(expr: str) -> list[FormulaTerm]:
+    """Parse the terms in the formula expression."""
+    term_exprs = [t.strip() for t in expr.split("*")]
+    return [_parse_term(t) for t in term_exprs]
+
+
+def _parse_term(expr: str) -> FormulaTerm:
+    """Parse a term in the formula expression."""
+    # Constant term
+    if expr.isdigit():
+        return ConstantTerm(value=int(expr.strip("()")))  # type: ignore
+
+    # Numerical term
+    operators = {"==", "!=", ">", ">=", "<", "<="}
+    if not any(op in expr for op in operators):
+        return NumericalTerm(meta_property=expr.strip("()"))  # type: ignore
+
+    # Compare term
+    if not expr.startswith("(") or not expr.endswith(")"):
+        msg = "comparison terms must be in parentheses."
+        raise FormulaParseError()
+    expr = expr.strip("()")
+    meta_property_p = r"(\w+)"
+    operator_p = r"(==|!=|>|>=|<|<=)"
+    value_p = r"""(\d+|True|False|'[a-zA-Z-_]*'|"[a-zA-Z-_]*")"""
+    total_p = rf"{meta_property_p}\s*{operator_p}\s*{value_p}"
+    match = re.fullmatch(total_p, expr)
+    if match is None:
+        raise FormulaParseError(f"invalid comparison term {expr}.")
+    meta_property, operator, value = match.groups()
+    if value.isdigit():
+        value = int(value)
+    elif value == "True":
+        value = True
+    elif value == "False":
+        value = False
+    else:
+        value = value.strip("'")
+        value = value.strip('"')
+    return CompareTerm(  # type: ignore
+        meta_property=meta_property, operator=operator, value=value  # type: ignore
+    )
 
 
 def load_formulas(
@@ -384,7 +412,7 @@ def load_formulas(
 
     if user_file is not None:
         default_formula_names = {f.name for f in formulas}
-        user_formulas = load_formulas_from_file(user_file, type_=type_)
+        user_formulas = load_formulas_from_file(user_file)
         for f in user_formulas:
             if f.name in default_formula_names:
                 continue
@@ -413,17 +441,14 @@ def load_default_formulas(
     else:
         raise ValueError("Invalid formula type.")
     with as_file(file_traversable) as file:
-        yield from load_formulas_from_file(str(file), type_=type_)
+        yield from load_formulas_from_file(str(file))
 
 
-def load_formulas_from_file(
-    filepath: str, type_: Literal["structure", "composition"]
-) -> Generator[TraitFormula, None, None]:
+def load_formulas_from_file(filepath: str) -> Generator[TraitFormula, None, None]:
     """Load formulas from a file.
 
     Args:
         filepath (str): The path of the formula file.
-        type_ (Literal["structure", "composition"]): The type of the formulas.
 
     Yields:
         The formulas parsed.
@@ -435,7 +460,7 @@ def load_formulas_from_file(
     """
     formulas_parsed: set[str] = set()
     for description, expression in deconvolute_formula_file(filepath):
-        formula = create_formula(description, expression, type_=type_)
+        formula = TraitFormula(expression, description)
         if formula.name in formulas_parsed:
             raise FormulaError(f"Duplicate formula name: {formula.name}.")
         yield formula
@@ -478,83 +503,6 @@ def deconvolute_formula_file(
                 expression = None
     if description is not None:
         raise FormulaError(f"No expression follows description '{description}'.")
-
-
-def create_formula(
-    description: str, expression: str, type_: Literal["structure", "composition"]
-) -> TraitFormula:
-    """Create a formula from the description and the expression.
-
-    Args:
-        description (str): The description of the formula.
-        expression (str): The expression of the formula.
-        type_ (Literal["structure", "composition"]): The type of the formula.
-
-    Returns:
-        TraitFormula: The formula.
-
-    Raises:
-        FormulaError: If the expression is invalid, or the meta properties are invalid.
-    """
-    name, num_prop, den_prop, coef = parse_formula_expression(expression)
-    return TraitFormula(
-        description=description,
-        name=name,
-        type=type_,
-        numerator_properties=num_prop,  # type: ignore
-        denominator_properties=den_prop,  # type: ignore
-        coefficient=coef,
-    )
-
-
-def parse_formula_expression(expr: str) -> tuple[str, list[str], list[str], float]:
-    """Parse the expression of a formula.
-
-    Args:
-        expr (str): The expression of a formula.
-
-    Returns:
-        tuple[str, list[str], list[str], float]: The name, numerator properties, denominator
-            properties, and the coefficient of the formula.
-
-    Raises:
-        FormulaError: If the expression is invalid.
-    """
-    if "//" in expr:
-        pattern = r"(\w+) = \((.+)\) // \((.+)\)"  # Expression with the "//" shortcut
-    else:
-        pattern = r"(\w+) = \((.+)\) / \((.+)\)"  # Normal expression
-
-    match = re.match(pattern, expr)
-    if match is None:
-        raise FormulaError(f"Invalid expression: '{expr}'")
-    name, num_prop, den_prop = match.groups()
-
-    num_prop = num_prop.split("*")
-    num_prop = [p.strip() for p in num_prop]
-    den_prop = den_prop.split("*")
-    den_prop = [p.strip() for p in den_prop]
-
-    # Check if there are invalid characters in the properties
-    for prop in num_prop + den_prop:
-        if re.search(r"\W", prop) and prop != ".":
-            raise FormulaError(f"Invalid expression: '{expr}'")
-
-    # If "//" is used, we need to add the denominator properties to the numerator properties.
-    if "//" in expr:
-        num_prop.extend(den_prop)
-
-    # Parse the coefficient
-    if ") *" in expr:
-        coef_pattern = r"\) \* (\d+/\d+|\d+(\.\d+)?)"
-        match = re.search(coef_pattern, expr)
-        if match is None:
-            raise FormulaError(f"Invalid expression: '{expr}'")
-        coef = eval(match.group(1))
-    else:
-        coef = 1.0
-
-    return name, num_prop, den_prop, coef
 
 
 def save_builtin_formula(dirpath: str | Path) -> None:
