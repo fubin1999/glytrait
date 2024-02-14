@@ -84,6 +84,9 @@ class NumericalTerm:
 
     This term simply returns a column of the meta-property table,
     as a Series with the same index as the meta-property table.
+
+    Args:
+        meta_property: The numerical meta property.
     """
 
     meta_property: str = field()
@@ -92,6 +95,16 @@ class NumericalTerm:
         """Calculate the term.
 
         The return value is a Series with the same index as the meta-property table.
+
+        Args:
+            meta_property_table: The table of meta properties.
+
+        Returns:
+            pd.Series: The values of the meta-property,
+            with the same index as the meta-property table.
+
+        Raises:
+            FormulaError: If the meta-property is not in the meta-property table.
         """
         try:
             mp_s = meta_property_table[self.meta_property]
@@ -140,6 +153,10 @@ class CompareTerm:
 
         Returns:
             pd.Series: A boolean Series with the same index as the meta-property table.
+
+        Raises:
+            FormulaError: If the meta-property is not in the meta-property table,
+                or the operator and the meta-property are not compatible.
         """
         try:
             mp_s = meta_property_table[self.meta_property]
