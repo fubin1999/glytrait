@@ -29,11 +29,17 @@ def mp_table() -> pd.DataFrame:
     return df
 
 
-def test_select_all_term(mp_table):
-    term = fml.SelectAllTerm()
-    result = term(mp_table)
-    expected = pd.Series([1, 1, 1], index=mp_table.index, name=".", dtype="UInt8")
-    pd.testing.assert_series_equal(result, expected)
+class TestConstantTerm:
+
+    def test_expr(self):
+        term = fml.ConstantTerm(1)
+        assert term.expr == "1"
+
+    def test_call(self, mp_table):
+        term = fml.ConstantTerm(1)
+        result = term(mp_table)
+        expected = pd.Series([1, 1, 1], index=mp_table.index, name="1", dtype="UInt8")
+        pd.testing.assert_series_equal(result, expected)
 
 
 class TestNumericalTerm:

@@ -59,14 +59,10 @@ class FormulaTerm(Protocol):
 
 
 @define
-class SelectAllTerm:
-    """Select all the glycans.
+class ConstantTerm:
+    """Return a series with all values being constant."""
 
-    This term is used to select all the glycans in the meta-property table.
-    Calling it will return a Series with all values being 1.
-    """
-
-    expr: ClassVar[str] = "."
+    value: int = field()
 
     def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
         """Calculate the term.
@@ -74,8 +70,13 @@ class SelectAllTerm:
         The return value is a Series with all values being 1.
         """
         return pd.Series(
-            1, index=meta_property_table.index, name=self.expr, dtype="UInt8"
+            self.value, index=meta_property_table.index, name=self.expr, dtype="UInt8"
         )
+
+    @property
+    def expr(self) -> str:
+        """The expression of the term."""
+        return str(self.value)
 
 
 @define
