@@ -17,18 +17,26 @@ def write_content(clean_dir):
     return _write_content
 
 
-class TestCompareTerm:
+@pytest.fixture
+def mp_table() -> pd.DataFrame:
+    data = {
+        "mp_int": [1, 2, 3],
+        "mp_bool": [True, False, True],
+        "mp_str": ["a", "b", "c"],
+    }
+    df = pd.DataFrame(data, index=["G1", "G2", "G3"])
+    df = df.astype({"mp_int": "UInt8", "mp_bool": "boolean", "mp_str": "category"})
+    return df
 
-    @pytest.fixture
-    def mp_table(self):
-        data = {
-            "mp_int": [1, 2, 3],
-            "mp_bool": [True, False, True],
-            "mp_str": ["a", "b", "c"],
-        }
-        df = pd.DataFrame(data, index=["G1", "G2", "G3"])
-        df = df.astype({"mp_int": "UInt8", "mp_bool": "boolean", "mp_str": "category"})
-        return df
+
+def test_select_all_term(mp_table):
+    term = fml.SelectAllTerm()
+    result = term(mp_table)
+    expected = pd.Series([1, 1, 1], index=mp_table.index, name=".", dtype="UInt8")
+    pd.testing.assert_series_equal(result, expected)
+
+
+class TestCompareTerm:
 
     @pytest.mark.parametrize(
         "mp, operator, value, expected",
