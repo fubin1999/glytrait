@@ -18,11 +18,11 @@ import itertools
 import re
 from importlib.resources import files, as_file
 from pathlib import Path
-from typing import Literal, Optional, Generator
+from typing import Literal, Optional, Generator, Protocol
 
 import numpy as np
 import pandas as pd
-from attrs import field, frozen, validators
+from attrs import field, frozen, validators, define
 
 from glytrait.exception import FormulaError
 from glytrait.data_type import AbundanceTable, MetaPropertyTable
@@ -36,6 +36,87 @@ __all__ = [
 
 default_struc_formula_file = files("glytrait.resources").joinpath("struc_formula.txt")
 default_comp_formula_file = files("glytrait.resources").joinpath("comp_formula.txt")
+
+
+class FormulaTerm(Protocol):
+    """The protocol for a formula term.
+
+    A formula term is a callable object that takes a meta-property table as input
+    and returns a Series with the same index as the meta-property table.
+    It makes some calculations based on the meta-properties.
+    Normally, it will only work with one meta property.
+    """
+
+    expr: str
+
+    def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
+        """Calculate the term.
+
+        The return value is a Series with the same index as the meta-property table.
+        (The index is the glycans.)
+        """
+        ...
+
+
+@define
+class CompareTerm:
+    """Compare the value of a meta-property with a given value.
+
+    The validity of `meta_property` will not be checked here.
+
+    Args:
+        meta_property: The meta property to compare.
+        operator: The comparison operator.
+        value: The value to compare with.
+    """
+
+    meta_property: str = field()
+    operator: Literal["==", "!=", ">", ">=", "<", "<="] = field()
+    value: float | bool | str = field()
+
+    @operator.validator
+    def _check_operator(self, attribute: str, value: str) -> None:
+        if value not in {"==", "!=", ">", ">=", "<", "<="}:
+            raise ValueError(f"Invalid operator: {value}.")
+
+    def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
+        """Calculate the term.
+
+        Args:
+            meta_property_table: The table of meta properties.
+
+        Returns:
+            pd.Series: A boolean Series with the same index as the meta-property table.
+        """
+        try:
+            mp_s = meta_property_table[self.meta_property]
+        except KeyError:
+            msg = f"'{self.meta_property}' is not in the meta-property table."
+            raise FormulaError(msg)
+
+        condition_1 = mp_s.dtype == "boolean" or mp_s.dtype == "category"
+        condition_2 = self.operator in {">", ">=", "<", "<="}
+        if condition_1 and condition_2:
+            msg = f"Cannot use '{self.operator}' with {mp_s} meta properties."
+            raise FormulaError(msg)
+
+        if isinstance(self.value, str):
+            expr = f"mp_s {self.operator} '{self.value}'"
+        else:
+            expr = f"mp_s {self.operator} {self.value}"
+        result_s = eval(expr)
+
+        result_s.name = self.expr
+        result_s = result_s.astype("UInt8")
+        return result_s
+
+    @property
+    def expr(self) -> str:
+        """The expression of the term."""
+        if isinstance(self.value, str):
+            return f"{self.meta_property} {self.operator} '{self.value}'"
+        else:
+            return f"{self.meta_property} {self.operator} {self.value}"
 
 
 def _check_length(instance, attribute, value):
