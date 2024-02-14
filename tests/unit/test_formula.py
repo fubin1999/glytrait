@@ -36,6 +36,32 @@ def test_select_all_term(mp_table):
     pd.testing.assert_series_equal(result, expected)
 
 
+class TestNumericalTerm:
+
+    def test_expr(self):
+        term = fml.NumericalTerm("mp_int")
+        assert term.expr == "mp_int"
+
+    def test_call(self, mp_table):
+        term = fml.NumericalTerm("mp_int")
+        result = term(mp_table)
+        expected = pd.Series(
+            [1, 2, 3], index=mp_table.index, name="mp_int", dtype="UInt8"
+        )
+        pd.testing.assert_series_equal(result, expected)
+
+    @pytest.mark.parametrize("mp", ["mp_bool", "mp_str"])
+    def test_call_wrong_type(self, mp_table, mp):
+        term = fml.NumericalTerm(mp)
+        with pytest.raises(fml.FormulaError):
+            term(mp_table)
+
+    def test_call_mp_not_exist(self, mp_table):
+        term = fml.NumericalTerm("mp_not_exist")
+        with pytest.raises(fml.FormulaError):
+            term(mp_table)
+
+
 class TestCompareTerm:
 
     @pytest.mark.parametrize(
