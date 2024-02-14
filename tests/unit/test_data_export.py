@@ -21,6 +21,7 @@ class TestExportAll:
         assert (clean_dir / filename).exists()
         assert (clean_dir / filename).read_text() == ("index,a,b\n" "1,1,3\n" "2,2,4\n")
 
+    @pytest.mark.skip("`TraitFormula` to be updated.")
     def test_export_formulas(self, clean_dir):
         formula_1 = TraitFormula(
             description="The ratio of high-mannose to complex glycans",

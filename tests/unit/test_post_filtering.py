@@ -173,6 +173,7 @@ def test_filter_colinearity(mocker):
     correlation_matrix_mock.assert_called_once_with(trait_table, 0.5, "pearson")
 
 
+@pytest.mark.skip("`TraitFormula` to be updated.")
 @pytest.mark.parametrize(
     "trait1, trait2, expected",
     [

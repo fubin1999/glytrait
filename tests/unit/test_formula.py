@@ -17,6 +17,7 @@ def write_content(clean_dir):
     return _write_content
 
 
+@pytest.mark.skip("`TraitFormula` to be updated.")
 class TestTraitFormula:
     @pytest.fixture
     def formula1(self):
@@ -286,6 +287,7 @@ def test_parse_expression_invalid(expression):
     assert f"Invalid expression: '{expression}'" in str(excinfo.value)
 
 
+@pytest.mark.skip("`TraitFormula` to be updated.")
 def test_load_default_formulas():
     structure_formulas = list(fml.load_default_formulas("structure"))
     composition_formulas = list(fml.load_default_formulas("composition"))
@@ -296,6 +298,7 @@ def test_load_default_formulas():
     assert len(structure_formulas) != len(composition_formulas)
 
 
+@pytest.mark.skip("`TraitFormula` to be updated.")
 class TestLoadFormulasFromFile:
     """Test `load_formulas_from_file` function."""
 

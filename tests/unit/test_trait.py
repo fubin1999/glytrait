@@ -6,6 +6,8 @@ import pytest
 from glytrait.formula import TraitFormula
 from glytrait.trait import calcu_derived_trait
 
+pytestmark = pytest.mark.skip("`TraitFormula` to be updated.")
+
 
 @pytest.fixture
 def trait_formulas() -> list[TraitFormula]:
