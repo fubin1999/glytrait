@@ -18,7 +18,7 @@ import itertools
 import re
 from importlib.resources import files, as_file
 from pathlib import Path
-from typing import Literal, Optional, Generator, Protocol
+from typing import Literal, Optional, Generator, Protocol, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -56,6 +56,24 @@ class FormulaTerm(Protocol):
         (The index is the glycans.)
         """
         ...
+
+
+@define
+class SelectAllTerm:
+    """Select all the glycans.
+
+    This term is used to select all the glycans in the meta-property table.
+    Calling it will return a Series with all values being 1.
+    """
+
+    expr: ClassVar[str] = "."
+
+    def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
+        """Calculate the term.
+
+        The return value is a Series with all values being 1.
+        """
+        return pd.Series(1, index=meta_property_table.index, name=self.expr, dtype="UInt8")
 
 
 @define
