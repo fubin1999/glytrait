@@ -73,7 +73,42 @@ class SelectAllTerm:
 
         The return value is a Series with all values being 1.
         """
-        return pd.Series(1, index=meta_property_table.index, name=self.expr, dtype="UInt8")
+        return pd.Series(
+            1, index=meta_property_table.index, name=self.expr, dtype="UInt8"
+        )
+
+
+@define
+class NumericalTerm:
+    """Return the values of a numerical meta-property.
+
+    This term simply returns a column of the meta-property table,
+    as a Series with the same index as the meta-property table.
+    """
+
+    meta_property: str = field()
+
+    def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
+        """Calculate the term.
+
+        The return value is a Series with the same index as the meta-property table.
+        """
+        try:
+            mp_s = meta_property_table[self.meta_property]
+        except KeyError:
+            msg = f"'{self.meta_property}' is not in the meta-property table."
+            raise FormulaError(msg)
+
+        if mp_s.dtype == "boolean" or mp_s.dtype == "category":
+            msg = f"{mp_s.dtype} must be compared with a value."
+            raise FormulaError(msg)
+
+        return mp_s
+
+    @property
+    def expr(self) -> str:
+        """The expression of the term."""
+        return self.meta_property
 
 
 @define
