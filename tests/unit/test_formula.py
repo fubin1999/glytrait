@@ -2,7 +2,6 @@ import pandas as pd
 import pytest
 
 import glytrait.formula as fml
-from glytrait.exception import FormulaError
 
 
 @pytest.fixture
@@ -96,12 +95,12 @@ class TestNumericalTerm:
     @pytest.mark.parametrize("mp", ["mp_bool", "mp_str"])
     def test_call_wrong_type(self, mp_table, mp):
         term = fml.NumericalTerm(mp)
-        with pytest.raises(fml.FormulaError):
+        with pytest.raises(fml.MetaPropertyTypeError):
             term(mp_table)
 
     def test_call_mp_not_exist(self, mp_table):
         term = fml.NumericalTerm("mp_not_exist")
-        with pytest.raises(fml.FormulaError):
+        with pytest.raises(fml.MissingMetaPropertyError):
             term(mp_table)
 
     @pytest.mark.parametrize(
@@ -122,11 +121,15 @@ class TestNumericalTerm:
         [
             ("mp", "mp"),
             ("(mp)", "mp"),
-        ]
+        ],
     )
     def test_from_expr(self, expr, mp):
         term = fml.NumericalTerm.from_expr(expr)
         assert term.meta_property == mp
+
+    def test_from_expr_invalid(self):
+        with pytest.raises(fml.FormulaParseError):
+            fml.NumericalTerm.from_expr("1")
 
 
 class TestCompareTerm:
@@ -181,7 +184,7 @@ class TestCompareTerm:
     )
     def test_type_error(self, mp_table, mp, operator, value):
         term = fml.CompareTerm(mp, operator, value)
-        with pytest.raises(fml.FormulaError):
+        with pytest.raises(fml.MetaPropertyTypeError):
             term(mp_table)
 
     @pytest.mark.parametrize(
@@ -196,7 +199,7 @@ class TestCompareTerm:
             ("mp_int > 2", True),
             ("mp_int", False),
             ("1", False),
-        ]
+        ],
     )
     def test_meets_condition(self, expr, expected):
         assert fml.CompareTerm.meets_condition(expr) == expected
@@ -214,7 +217,7 @@ class TestCompareTerm:
             ("(mp_bool == True)", "mp_bool", "==", True),
             ("(mp_str != 'b')", "mp_str", "!=", "b"),
             ('(mp_str != "b")', "mp_str", "!=", "b"),
-        ]
+        ],
     )
     def test_from_expr(self, expr, mp, operator, value):
         term = fml.CompareTerm.from_expr(expr)
@@ -229,11 +232,17 @@ class TestCompareTerm:
             "(mp_int > 2) > 1",  # more than one '>'
             "(mp_int > )",  # missing value
             "(mp_bool == True) & (mp_str != 'b')",  # invalid operator '&'
-        ]
+            "(mp_str)",  # no operator
+        ],
     )
     def test_from_expr_invalid(self, expr):
-        with pytest.raises(fml.FormulaParseError):
+        with pytest.raises(fml.FormulaTermParseError):
             fml.CompareTerm.from_expr(expr)
+
+    def test_missing_mp(self, mp_table):
+        term = fml.CompareTerm("mp_not_exist", ">", 2)
+        with pytest.raises(fml.MissingMetaPropertyError):
+            term(mp_table)
 
 
 class TestParseFormulaExpression:
@@ -319,7 +328,7 @@ class TestParseFormulaExpression:
         ],
     )
     def test_invalid_expression(self, expr):
-        with pytest.raises(fml.FormulaError):
+        with pytest.raises(fml.FormulaParseError):
             fml._parse_formula_expression(expr)
 
 
@@ -367,6 +376,18 @@ class TestTraitFormula:
             "G3": [2, 2, 1],
         }
         return pd.DataFrame(data, index=["S1", "S2", "S3"])
+
+    def test_initialize_failed(self, mp_table):
+        expression = "A = (mp_not_exist == 1) / 1"
+        formula = fml.TraitFormula(expression, "Some description")
+        with pytest.raises(fml.FormulaCalculationError):
+            formula.initialize(mp_table)
+
+    def test_calcu_trait_without_initialization(self, mp_table, abund_table):
+        expression = "A = (mp_int == 1) / 1"
+        formula = fml.TraitFormula(expression, "Some description")
+        with pytest.raises(fml.FormulaNotInitializedError):
+            formula.calcu_trait(abund_table)
 
     @pytest.mark.parametrize(
         "expression, expected",
@@ -434,7 +455,7 @@ class TestLoadFormulasFromFile:
             f"@ {description1}\n$ {expression1}\n@ {description2}\n$ {expression2}"
         )
         file = write_content(content)
-        with pytest.raises(FormulaError) as excinfo:
+        with pytest.raises(fml.FormulaFileError) as excinfo:
             list(fml.load_formulas_from_file(file))
         assert "Duplicate formula name: MHy." in str(excinfo.value)
 
@@ -458,24 +479,24 @@ class TestDeconvoluteFormulaFile:
 
     def test_first_line_not_description(self, write_content):
         file = write_content("$ Expression\n@ Description\n")
-        with pytest.raises(FormulaError) as excinfo:
+        with pytest.raises(fml.FormulaFileError) as excinfo:
             list(fml.deconvolute_formula_file(file))
         assert "No description before expression 'Expression'" in str(excinfo.value)
 
     def test_two_descriptions(self, write_content):
         file = write_content("@ Description1\n@ Description2\n")
-        with pytest.raises(FormulaError) as excinfo:
+        with pytest.raises(fml.FormulaFileError) as excinfo:
             list(fml.deconvolute_formula_file(file))
         assert "No expression follows description 'Description1'." in str(excinfo.value)
 
     def test_two_expressions(self, write_content):
         file = write_content("@ Description\n$ Expression1\n$ Expression2")
-        with pytest.raises(FormulaError) as excinfo:
+        with pytest.raises(fml.FormulaFileError) as excinfo:
             list(fml.deconvolute_formula_file(file))
         assert "No description before expression 'Expression2'." in str(excinfo.value)
 
     def test_no_last_expression(self, write_content):
         file = write_content("@ Description1\n$ Expression1\n@Description2")
-        with pytest.raises(FormulaError) as excinfo:
+        with pytest.raises(fml.FormulaFileError) as excinfo:
             list(fml.deconvolute_formula_file(file))
         assert "No expression follows description 'Description2'." in str(excinfo.value)
