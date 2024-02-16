@@ -18,7 +18,7 @@ import itertools
 import re
 from importlib.resources import files, as_file
 from pathlib import Path
-from typing import Literal, Optional, Generator, Protocol
+from typing import Literal, Optional, Generator, Protocol, TypeVar, Type
 
 import numpy as np
 import pandas as pd
@@ -41,6 +41,9 @@ class FormulaParseError(FormulaError):
     """An error occurred when parsing a formula expression."""
 
 
+TTerm = TypeVar("TTerm", bound="FormulaTerm")
+
+
 class FormulaTerm(Protocol):
     """The protocol for a formula term.
 
@@ -48,6 +51,10 @@ class FormulaTerm(Protocol):
     and returns a Series with the same index as the meta-property table.
     It makes some calculations based on the meta-properties.
     Normally, it will only work with one meta property.
+
+    A common using paradigm is to:
+    1. Use `meets_condition` to check if the expression could be parsed into the term.
+    2. Use `from_expr` to create a formula term from an expression.
     """
 
     expr: str
@@ -60,7 +67,44 @@ class FormulaTerm(Protocol):
         """
         ...
 
+    @classmethod
+    def from_expr(cls: Type[TTerm], expr: str) -> TTerm:
+        """Create a formula term from an expression.
 
+        Args:
+            expr: The expression of the term.
+
+        Returns:
+            The formula term.
+
+        Raises:
+            FormulaParseError: If the expression is invalid.
+        """
+        ...
+
+    @staticmethod
+    def meets_condition(expr: str) -> bool:
+        """Check if the expression could be parsed into the term.
+
+        Args:
+            expr: The condition expression.
+
+        Returns:
+            Whether the term meets the condition.
+        """
+        ...
+
+
+_terms: list[type[FormulaTerm]] = []
+
+
+def _register_term(cls: type[FormulaTerm]) -> type[FormulaTerm]:
+    """A decorator to register a formula term class."""
+    _terms.append(cls)
+    return cls
+
+
+@_register_term
 @define
 class ConstantTerm:
     """Return a series with all values being constant."""
@@ -68,10 +112,8 @@ class ConstantTerm:
     value: int = field()
 
     def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
-        """Calculate the term.
-
-        The return value is a Series with all values being 1.
-        """
+        """Calculate the term."""
+        # Add validation for the dtype of column
         return pd.Series(
             self.value, index=meta_property_table.index, name=self.expr, dtype="UInt8"
         )
@@ -81,7 +123,20 @@ class ConstantTerm:
         """The expression of the term."""
         return str(self.value)
 
+    @staticmethod
+    def meets_condition(expr: str) -> bool:
+        """Check if the expression could be parsed into the term."""
+        return expr.strip("()").isdigit()
 
+    @classmethod
+    def from_expr(cls, expr: str) -> ConstantTerm:
+        """Create a formula term from an expression."""
+        if not cls.meets_condition(expr):
+            raise FormulaParseError(f"Invalid constant term {expr}.")
+        return cls(value=int(expr.strip("()")))
+
+
+@_register_term
 @define
 class NumericalTerm:
     """Return the values of a numerical meta-property.
@@ -127,7 +182,25 @@ class NumericalTerm:
         """The expression of the term."""
         return self.meta_property
 
+    @staticmethod
+    def meets_condition(expr: str) -> bool:
+        """Check if the expression could be parsed into the term."""
+        # Consist of digits, letters and "_", but not all digits
+        pattern = r"\w+"
+        return bool(re.fullmatch(pattern, expr.strip("()"))) and not expr.isdigit()
 
+    @classmethod
+    def from_expr(cls, expr: str) -> NumericalTerm:
+        """Create a formula term from an expression."""
+        if not cls.meets_condition(expr):
+            raise FormulaParseError(f"Invalid numerical term {expr}.")
+        return cls(meta_property=expr.strip("()"))
+
+
+OPERATORS = {"==", "!=", ">", ">=", "<", "<="}
+
+
+@_register_term
 @define
 class CompareTerm:
     """Compare the value of a meta-property with a given value.
@@ -146,7 +219,7 @@ class CompareTerm:
 
     @operator.validator
     def _check_operator(self, attribute: str, value: str) -> None:
-        if value not in {"==", "!=", ">", ">=", "<", "<="}:
+        if value not in OPERATORS:
             raise ValueError(f"Invalid operator: {value}.")
 
     def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
@@ -191,6 +264,47 @@ class CompareTerm:
             return f"{self.meta_property} {self.operator} '{self.value}'"
         else:
             return f"{self.meta_property} {self.operator} {self.value}"
+
+    @staticmethod
+    def meets_condition(expr: str) -> bool:
+        """Check if the expression could be parsed into the term."""
+        for op in OPERATORS:
+            if op in expr:
+                return True
+        return False
+
+    @classmethod
+    def from_expr(cls, expr: str) -> CompareTerm:
+        """Create a formula term from an expression."""
+        if not cls.meets_condition(expr):
+            raise FormulaParseError(f"Invalid comparison term {expr}.")
+        if not expr.startswith("(") or not expr.endswith(")"):
+            msg = "comparison terms must be in parentheses."
+            raise FormulaParseError(msg)
+        expr = expr.strip("()")
+
+        meta_property_p = r"(\w+)"
+        operator_p = r"(==|!=|>|>=|<|<=)"
+        value_p = r"""(\d+|True|False|'[a-zA-Z-_]*'|"[a-zA-Z-_]*")"""
+        total_p = rf"{meta_property_p}\s*{operator_p}\s*{value_p}"
+        match = re.fullmatch(total_p, expr)
+        if match is None:
+            raise FormulaParseError(f"invalid comparison term {expr}.")
+        meta_property, operator, value = match.groups()
+
+        if value.isdigit():
+            value = int(value)
+        elif value == "True":
+            value = True
+        elif value == "False":
+            value = False
+        else:
+            value = value.strip("'")
+            value = value.strip('"')
+
+        return cls(  # type: ignore
+            meta_property=meta_property, operator=operator, value=value  # type: ignore
+        )
 
 
 def _is_sia_linkage_term(term: FormulaTerm) -> bool:
@@ -350,41 +464,21 @@ def _parse_terms(expr: str) -> list[FormulaTerm]:
 
 
 def _parse_term(expr: str) -> FormulaTerm:
-    """Parse a term in the formula expression."""
-    # Constant term
-    if expr.isdigit():
-        return ConstantTerm(value=int(expr.strip("()")))  # type: ignore
+    """Parse a term in the formula expression.
 
-    # Numerical term
-    operators = {"==", "!=", ">", ">=", "<", "<="}
-    if not any(op in expr for op in operators):
-        return NumericalTerm(meta_property=expr.strip("()"))  # type: ignore
+    Args:
+        expr: The expression of the term.
 
-    # Compare term
-    if not expr.startswith("(") or not expr.endswith(")"):
-        msg = "comparison terms must be in parentheses."
-        raise FormulaParseError()
-    expr = expr.strip("()")
-    meta_property_p = r"(\w+)"
-    operator_p = r"(==|!=|>|>=|<|<=)"
-    value_p = r"""(\d+|True|False|'[a-zA-Z-_]*'|"[a-zA-Z-_]*")"""
-    total_p = rf"{meta_property_p}\s*{operator_p}\s*{value_p}"
-    match = re.fullmatch(total_p, expr)
-    if match is None:
-        raise FormulaParseError(f"invalid comparison term {expr}.")
-    meta_property, operator, value = match.groups()
-    if value.isdigit():
-        value = int(value)
-    elif value == "True":
-        value = True
-    elif value == "False":
-        value = False
-    else:
-        value = value.strip("'")
-        value = value.strip('"')
-    return CompareTerm(  # type: ignore
-        meta_property=meta_property, operator=operator, value=value  # type: ignore
-    )
+    Returns:
+        The formula term.
+
+    Raises:
+        FormulaParseError: If the expression is invalid.
+    """
+    for term_cls in _terms:
+        if term_cls.meets_condition(expr):
+            return term_cls.from_expr(expr)
+    raise FormulaParseError(f"Invalid term: {expr}.")
 
 
 def load_formulas(

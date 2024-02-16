@@ -1,7 +1,5 @@
-import numpy as np
 import pandas as pd
 import pytest
-from attrs import evolve
 
 import glytrait.formula as fml
 from glytrait.exception import FormulaError
@@ -29,6 +27,15 @@ def mp_table() -> pd.DataFrame:
     return df
 
 
+def test_terms():
+    terms = [term for term in fml._terms]
+    assert terms == [
+        fml.ConstantTerm,
+        fml.NumericalTerm,
+        fml.CompareTerm,
+    ]
+
+
 class TestConstantTerm:
 
     def test_expr(self):
@@ -40,6 +47,36 @@ class TestConstantTerm:
         result = term(mp_table)
         expected = pd.Series([1, 1, 1], index=mp_table.index, name="1", dtype="UInt8")
         pd.testing.assert_series_equal(result, expected)
+
+    @pytest.mark.parametrize(
+        "expr, expected",
+        [
+            ("1", True),
+            ("0", True),
+            ("(1)", True),
+            ("a", False),  # not a number
+            ("-1", False),  # negative number
+            ("1.0", False),  # float number
+        ],
+    )
+    def test_meets_condition(self, expr, expected):
+        assert fml.ConstantTerm.meets_condition(expr) == expected
+
+    @pytest.mark.parametrize(
+        "expr, value",
+        [
+            ("1", 1),
+            ("0", 0),
+            ("(1)", 1),
+        ],
+    )
+    def test_from_expr(self, expr, value):
+        term = fml.ConstantTerm.from_expr(expr)
+        assert term.value == value
+
+    def test_from_expr_invalid(self):
+        with pytest.raises(fml.FormulaParseError):
+            fml.ConstantTerm.from_expr("a")
 
 
 class TestNumericalTerm:
@@ -66,6 +103,30 @@ class TestNumericalTerm:
         term = fml.NumericalTerm("mp_not_exist")
         with pytest.raises(fml.FormulaError):
             term(mp_table)
+
+    @pytest.mark.parametrize(
+        "expr, expected",
+        [
+            ("mp", True),
+            ("mp_int", True),
+            ("mp1", True),
+            ("(mp)", True),
+            ("1", False),
+        ],
+    )
+    def test_meets_condition(self, expr, expected):
+        assert fml.NumericalTerm.meets_condition(expr) == expected
+
+    @pytest.mark.parametrize(
+        "expr, mp",
+        [
+            ("mp", "mp"),
+            ("(mp)", "mp"),
+        ]
+    )
+    def test_from_expr(self, expr, mp):
+        term = fml.NumericalTerm.from_expr(expr)
+        assert term.meta_property == mp
 
 
 class TestCompareTerm:
@@ -122,6 +183,57 @@ class TestCompareTerm:
         term = fml.CompareTerm(mp, operator, value)
         with pytest.raises(fml.FormulaError):
             term(mp_table)
+
+    @pytest.mark.parametrize(
+        "expr, expected",
+        [
+            ("(mp_int > 2)", True),
+            ("(mp_int >= 2)", True),
+            ("(mp_int < 2)", True),
+            ("(mp_int <= 2)", True),
+            ("(mp_int == 2)", True),
+            ("(mp_int != 2)", True),
+            ("mp_int > 2", True),
+            ("mp_int", False),
+            ("1", False),
+        ]
+    )
+    def test_meets_condition(self, expr, expected):
+        assert fml.CompareTerm.meets_condition(expr) == expected
+
+    @pytest.mark.parametrize(
+        "expr, mp, operator, value",
+        [
+            ("(mp_int > 2)", "mp_int", ">", 2),
+            ("(mp_int >= 2)", "mp_int", ">=", 2),
+            ("(mp_int < 2)", "mp_int", "<", 2),
+            ("(mp_int <= 2)", "mp_int", "<=", 2),
+            ("(mp_int == 2)", "mp_int", "==", 2),
+            ("(mp_int != 2)", "mp_int", "!=", 2),
+            ("(mp_int > 2)", "mp_int", ">", 2),
+            ("(mp_bool == True)", "mp_bool", "==", True),
+            ("(mp_str != 'b')", "mp_str", "!=", "b"),
+            ('(mp_str != "b")', "mp_str", "!=", "b"),
+        ]
+    )
+    def test_from_expr(self, expr, mp, operator, value):
+        term = fml.CompareTerm.from_expr(expr)
+        assert term.meta_property == mp
+        assert term.operator == operator
+        assert term.value == value
+
+    @pytest.mark.parametrize(
+        "expr",
+        [
+            "mp_int > 2",  # no parentheses
+            "(mp_int > 2) > 1",  # more than one '>'
+            "(mp_int > )",  # missing value
+            "(mp_bool == True) & (mp_str != 'b')",  # invalid operator '&'
+        ]
+    )
+    def test_from_expr_invalid(self, expr):
+        with pytest.raises(fml.FormulaParseError):
+            fml.CompareTerm.from_expr(expr)
 
 
 class TestParseFormulaExpression:
