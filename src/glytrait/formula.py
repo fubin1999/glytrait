@@ -18,7 +18,7 @@ import itertools
 import re
 from importlib.resources import files, as_file
 from pathlib import Path
-from typing import Literal, Optional, Generator, Protocol, TypeVar, Type
+from typing import Literal, Optional, Generator, TypeVar, Type
 
 import numpy as np
 import pandas as pd
@@ -108,7 +108,7 @@ class FormulaNotInitializedError(FormulaError):
 TTerm = TypeVar("TTerm", bound="FormulaTerm")
 
 
-class FormulaTerm(Protocol):
+class FormulaTerm:
     """The protocol for a formula term.
 
     A formula term is a callable object that takes a meta-property table as input
@@ -120,8 +120,6 @@ class FormulaTerm(Protocol):
     1. Use `meets_condition` to check if the expression could be parsed into the term.
     2. Use `from_expr` to create a formula term from an expression.
     """
-
-    expr: str
 
     def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
         """Calculate the term.
@@ -139,7 +137,7 @@ class FormulaTerm(Protocol):
         Raises:
             FormulaCalculationError: If calling the term fails.
         """
-        ...
+        raise NotImplementedError
 
     @classmethod
     def from_expr(cls: Type[TTerm], expr: str) -> TTerm:
@@ -154,7 +152,7 @@ class FormulaTerm(Protocol):
         Raises:
             FormulaTermParseError: If the expression is invalid.
         """
-        ...
+        raise NotImplementedError
 
     @staticmethod
     def meets_condition(expr: str) -> bool:
@@ -166,7 +164,12 @@ class FormulaTerm(Protocol):
         Returns:
             Whether the term meets the condition.
         """
-        ...
+        raise NotImplementedError
+
+    @property
+    def expr(self) -> str:
+        """The expression of the term."""
+        raise NotImplementedError
 
 
 _terms: list[type[FormulaTerm]] = []
@@ -180,7 +183,7 @@ def _register_term(cls: type[FormulaTerm]) -> type[FormulaTerm]:
 
 @_register_term
 @define
-class ConstantTerm:
+class ConstantTerm(FormulaTerm):
     """Return a series with all values being constant."""
 
     value: int = field()
@@ -212,7 +215,7 @@ class ConstantTerm:
 
 @_register_term
 @define
-class NumericalTerm:
+class NumericalTerm(FormulaTerm):
     """Return the values of a numerical meta-property.
 
     This term simply returns a column of the meta-property table,
@@ -278,7 +281,7 @@ OPERATORS = {"==", "!=", ">", ">=", "<", "<="}
 
 @_register_term
 @define
-class CompareTerm:
+class CompareTerm(FormulaTerm):
     """Compare the value of a meta-property with a given value.
 
     The validity of `meta_property` will not be checked here.
