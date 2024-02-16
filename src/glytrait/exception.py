@@ -29,9 +29,5 @@ class NotEnoughGroupsError(GlyTraitError):
     """Raised when there are not enough groups."""
 
 
-class FormulaError(GlyTraitError):
-    """Raised if a formula is invalid."""
-
-
 class SiaLinkageError(GlyTraitError):
     """Raised if a sialic acid linkage is not specified but used."""

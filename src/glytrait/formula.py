@@ -25,7 +25,6 @@ import pandas as pd
 from attrs import field, define
 
 from glytrait.data_type import AbundanceTable, MetaPropertyTable
-from glytrait.exception import FormulaError
 
 __all__ = [
     "TraitFormula",
@@ -33,12 +32,77 @@ __all__ = [
     "save_builtin_formula",
 ]
 
+from glytrait.exception import GlyTraitError
+
 default_struc_formula_file = files("glytrait.resources").joinpath("struc_formula.txt")
 default_comp_formula_file = files("glytrait.resources").joinpath("comp_formula.txt")
 
 
+class FormulaError(GlyTraitError):
+    """Raised if a formula is invalid."""
+
+
+class FormulaFileError(GlyTraitError):
+    """Raised if a formula file is in wrong format."""
+
+
 class FormulaParseError(FormulaError):
-    """An error occurred when parsing a formula expression."""
+    """Raised when failing parsing a formula expression."""
+
+    def __init__(self, expr: str, reason: str = ""):
+        super().__init__()
+        self.expr = expr
+        self.reason = reason
+
+    def __str__(self):
+        return f"Invalid expression: {self.expr}. {self.reason}"
+
+
+class FormulaTermParseError(FormulaParseError):
+    """Raised when failing parsing a formula term expression."""
+
+
+class FormulaCalculationError(FormulaError):
+    """Raised when failing to calculate a derived trait."""
+
+
+class FormulaTermCalculationError(FormulaCalculationError):
+    """Raised when calling a formula term fails."""
+
+    def __init__(self, term: str):
+        super().__init__()
+        self.term = term
+
+
+class MissingMetaPropertyError(FormulaTermCalculationError):
+    """Raised when a meta-property is missing in the meta-property table."""
+
+    def __init__(self, term: str, mp: str):
+        super().__init__(term)
+        self.mp = mp
+
+    def __str__(self):
+        return f"Meta-property '{self.mp}' is missing in the meta-property table."
+
+
+class MetaPropertyTypeError(FormulaTermCalculationError):
+    """Raised when the dtype of a meta-property is not supported."""
+
+    def __init__(self, term: str, mp: str, dtype: str, reason: str = ""):
+        super().__init__(term)
+        self.mp = mp
+        self.dtype = dtype
+        self.reason = reason
+
+    def __str__(self):
+        return (
+            f"Meta-property '{self.mp}' has an unsupported dtype: "
+            f"'{self.dtype}'. {self.reason}"
+        )
+
+
+class FormulaNotInitializedError(FormulaError):
+    """Raised when a formula is not initialized."""
 
 
 TTerm = TypeVar("TTerm", bound="FormulaTerm")
@@ -64,6 +128,16 @@ class FormulaTerm(Protocol):
 
         The return value is a Series with the same index as the meta-property table.
         (The index is the glycans.)
+
+        Args:
+            meta_property_table: The table of meta properties.
+
+        Returns:
+            pd.Series: The values of the term,
+                with the same index as the meta-property table.
+
+        Raises:
+            FormulaCalculationError: If calling the term fails.
         """
         ...
 
@@ -78,7 +152,7 @@ class FormulaTerm(Protocol):
             The formula term.
 
         Raises:
-            FormulaParseError: If the expression is invalid.
+            FormulaTermParseError: If the expression is invalid.
         """
         ...
 
@@ -132,7 +206,7 @@ class ConstantTerm:
     def from_expr(cls, expr: str) -> ConstantTerm:
         """Create a formula term from an expression."""
         if not cls.meets_condition(expr):
-            raise FormulaParseError(f"Invalid constant term {expr}.")
+            raise FormulaTermParseError(expr, "Conditions not met.")
         return cls(value=int(expr.strip("()")))
 
 
@@ -143,6 +217,8 @@ class NumericalTerm:
 
     This term simply returns a column of the meta-property table,
     as a Series with the same index as the meta-property table.
+
+    Note that the dtype of the meta-property should be UInt8.
 
     Args:
         meta_property: The numerical meta property.
@@ -163,17 +239,17 @@ class NumericalTerm:
             with the same index as the meta-property table.
 
         Raises:
-            FormulaError: If the meta-property is not in the meta-property table.
+            MissingMetaPropertyError: If the meta-property is not in the meta-property table.
+            MetaPropertyTypeError: If the dtype of the meta-property is not UInt8.
         """
         try:
             mp_s = meta_property_table[self.meta_property]
-        except KeyError:
-            msg = f"'{self.meta_property}' is not in the meta-property table."
-            raise FormulaError(msg)
+        except KeyError as e:
+            raise MissingMetaPropertyError(self.expr, self.meta_property) from e
 
         if mp_s.dtype == "boolean" or mp_s.dtype == "category":
-            msg = f"{mp_s.dtype} must be compared with a value."
-            raise FormulaError(msg)
+            reason = "NumericalTerm only works with numerical meta properties."
+            raise MetaPropertyTypeError(self.meta_property, str(mp_s.dtype), reason)
 
         return mp_s
 
@@ -193,7 +269,7 @@ class NumericalTerm:
     def from_expr(cls, expr: str) -> NumericalTerm:
         """Create a formula term from an expression."""
         if not cls.meets_condition(expr):
-            raise FormulaParseError(f"Invalid numerical term {expr}.")
+            raise FormulaTermParseError(expr, "Conditions not met.")
         return cls(meta_property=expr.strip("()"))
 
 
@@ -217,11 +293,6 @@ class CompareTerm:
     operator: Literal["==", "!=", ">", ">=", "<", "<="] = field()
     value: float | bool | str = field()
 
-    @operator.validator
-    def _check_operator(self, attribute: str, value: str) -> None:
-        if value not in OPERATORS:
-            raise ValueError(f"Invalid operator: {value}.")
-
     def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
         """Calculate the term.
 
@@ -232,20 +303,23 @@ class CompareTerm:
             pd.Series: A boolean Series with the same index as the meta-property table.
 
         Raises:
-            FormulaError: If the meta-property is not in the meta-property table,
-                or the operator and the meta-property are not compatible.
+            MissingMetaPropertyError: If the meta-property is not in the meta-property table.
+            MetaPropertyTypeError: If the dtype of the meta-property is not supported.
         """
         try:
             mp_s = meta_property_table[self.meta_property]
-        except KeyError:
-            msg = f"'{self.meta_property}' is not in the meta-property table."
-            raise FormulaError(msg)
+        except KeyError as e:
+            raise MissingMetaPropertyError(self.expr, self.meta_property) from e
 
         condition_1 = mp_s.dtype == "boolean" or mp_s.dtype == "category"
         condition_2 = self.operator in {">", ">=", "<", "<="}
         if condition_1 and condition_2:
-            msg = f"Cannot use '{self.operator}' with {mp_s} meta properties."
-            raise FormulaError(msg)
+            reason = (
+                f"Cannot use '{self.operator}' with '{mp_s.dtype}' meta properties."
+            )
+            raise MetaPropertyTypeError(
+                self.expr, self.meta_property, str(mp_s.dtype), reason
+            )
 
         if isinstance(self.value, str):
             expr = f"mp_s {self.operator} '{self.value}'"
@@ -277,10 +351,9 @@ class CompareTerm:
     def from_expr(cls, expr: str) -> CompareTerm:
         """Create a formula term from an expression."""
         if not cls.meets_condition(expr):
-            raise FormulaParseError(f"Invalid comparison term {expr}.")
+            raise FormulaTermParseError(expr, "Conditions not met.")
         if not expr.startswith("(") or not expr.endswith(")"):
-            msg = "comparison terms must be in parentheses."
-            raise FormulaParseError(msg)
+            raise FormulaTermParseError(expr, "Missing parentheses.")
         expr = expr.strip("()")
 
         meta_property_p = r"(\w+)"
@@ -289,7 +362,7 @@ class CompareTerm:
         total_p = rf"{meta_property_p}\s*{operator_p}\s*{value_p}"
         match = re.fullmatch(total_p, expr)
         if match is None:
-            raise FormulaParseError(f"invalid comparison term {expr}.")
+            raise FormulaTermParseError(expr, "Unknown error.")
         meta_property, operator, value = match.groups()
 
         if value.isdigit():
@@ -361,6 +434,9 @@ class TraitFormula:
 
         Args:
             meta_property_table: The table of meta properties.
+
+        Raises:
+            FormulaCalculationError: If the initialization fails.
         """
         self._numerator_array = self._initialize(meta_property_table, self._numerators)
         self._denominator_array = self._initialize(
@@ -372,7 +448,12 @@ class TraitFormula:
     def _initialize(
         meta_property_table: MetaPropertyTable, terms: list[FormulaTerm]
     ) -> pd.Series:
-        series_list = [term(meta_property_table) for term in terms]
+        """Initialize the numerator or denominator of the formula."""
+        try:
+            series_list = [term(meta_property_table) for term in terms]
+        except FormulaTermCalculationError as e:
+            msg = f"Failed to calculate term: {e.term}. {str(e)}"
+            raise FormulaCalculationError(msg) from e
         return pd.concat(series_list, axis=1).prod(axis=1)
 
     def calcu_trait(self, abundance_table: AbundanceTable) -> pd.Series:
@@ -384,9 +465,12 @@ class TraitFormula:
 
         Returns:
             pd.Series: An array of trait values for each sample.
+
+        Raises:
+            FormulaNotInitializedError: If the formula is not initialized.
         """
         if not self._initialized:
-            raise RuntimeError("TraitFormula is not initialized.")
+            raise FormulaNotInitializedError()
         pd.testing.assert_index_equal(
             abundance_table.columns, self._numerator_array.index
         )
@@ -414,6 +498,9 @@ def _parse_formula_expression(
     Returns:
         The name, the numerators (a list of FormulaTerm),
         and the denominators (a list of FormulaTerm) of the formula.
+
+    Raises:
+        FormulaParseError: If the expression is invalid.
     """
     name, numerator_expr, spliter, denominator_expr = _split_formula_expression(expr)
     numerators = _parse_terms(numerator_expr)
@@ -424,32 +511,41 @@ def _parse_formula_expression(
 
 
 def _split_formula_expression(expr: str) -> tuple[str, str, str, str]:
-    """Split the formula expression into three parts:
+    """Split the formula expression into four parts:
 
     - The name of the formula.
     - The numerator expression of the formula.
     - The slash or double-slash.
     - The denominator expression of the formula.
+
+    Args:
+        expr: The formula expression.
+
+    Returns:
+        The name, the numerator expression, the spliter, and the denominator expression.
+
+    Raises:
+        FormulaParseError: If the expression is invalid.
     """
     expr = expr.strip()
     if " = " not in expr:
-        raise FormulaParseError("no ' = '.")
+        raise FormulaParseError(expr, "Missing ' = ' (spaces are important).")
 
     try:
         name, expr_after_name = expr.split(" = ")
     except ValueError:
-        raise FormulaParseError("Misuse of '=' for '=='.")
+        raise FormulaParseError(expr, "Misuse of '=' for '=='.")
     name = name.strip()
 
     if "//" not in expr_after_name and "/" not in expr_after_name:
-        raise FormulaParseError("no '/' or '//'.")
+        raise FormulaParseError(expr, "no '/' or '//'.")
 
     if expr_after_name.count("//") == 1:
         spliter = "//"
     elif expr_after_name.count("/") == 1:
         spliter = "/"
     else:
-        raise FormulaParseError("too many '/' or '//'.")
+        raise FormulaParseError(expr, "too many '/' or '//'.")
     numerator, denominator = expr_after_name.split(spliter)
     numerator = numerator.strip()
     denominator = denominator.strip()
@@ -458,9 +554,23 @@ def _split_formula_expression(expr: str) -> tuple[str, str, str, str]:
 
 
 def _parse_terms(expr: str) -> list[FormulaTerm]:
-    """Parse the terms in the formula expression."""
+    """Parse the terms in the formula expression.
+
+    Args:
+        expr: The expression of the terms.
+
+    Returns:
+        The terms.
+
+    Raises:
+        FormulaParseError: If the expression is invalid.
+    """
     term_exprs = [t.strip() for t in expr.split("*")]
-    return [_parse_term(t) for t in term_exprs]
+    try:
+        return [_parse_term(t) for t in term_exprs]
+    except FormulaTermParseError as e:
+        reason = f"Could not parse term: {e.expr}. {e.reason}"
+        raise FormulaParseError(expr, reason) from e
 
 
 def _parse_term(expr: str) -> FormulaTerm:
@@ -473,12 +583,12 @@ def _parse_term(expr: str) -> FormulaTerm:
         The formula term.
 
     Raises:
-        FormulaParseError: If the expression is invalid.
+        FormulaTermParseError: If the expression is invalid.
     """
     for term_cls in _terms:
         if term_cls.meets_condition(expr):
-            return term_cls.from_expr(expr)
-    raise FormulaParseError(f"Invalid term: {expr}.")
+            return term_cls.from_expr(expr)  # Let the exception pass through
+    raise FormulaTermParseError(expr, "Does not belong to any term class.")
 
 
 def load_formulas(
@@ -499,8 +609,8 @@ def load_formulas(
         list[TraitFormula]: The formulas.
 
     Raises:
-        FormulaError: If a formula string cannot be parsed,
-            or the user-provided formula file is in a wrong format.
+        FormulaFileError: If the formula file is in a wrong format.
+        FormulaParseError: If a formula string cannot be parsed.
     """
     formulas = list(load_default_formulas(type_=type_))
 
@@ -548,15 +658,14 @@ def load_formulas_from_file(filepath: str) -> Generator[TraitFormula, None, None
         The formulas parsed.
 
     Raises:
-        FormulaError: If a formula string cannot be parsed,
-            or the user-provided formula file is in a wrong format,
-            or there are duplicate formula names.
+        FormulaFileError: If the formula file is in a wrong format.
+        FormulaParseError: If a formula string cannot be parsed.
     """
     formulas_parsed: set[str] = set()
     for description, expression in deconvolute_formula_file(filepath):
         formula = TraitFormula(expression, description)
         if formula.name in formulas_parsed:
-            raise FormulaError(f"Duplicate formula name: {formula.name}.")
+            raise FormulaFileError(f"Duplicate formula name: {formula.name}.")
         yield formula
         formulas_parsed.add(formula.name)
 
@@ -573,7 +682,7 @@ def deconvolute_formula_file(
         tuple[str, str]: The formula description and the formula expression.
 
     Raises:
-        FormulaError: If the user-provided formula file is in a wrong format.
+        FormulaFileError: If the formula file is in a wrong format.
     """
     description = None
     expression = None
@@ -582,21 +691,21 @@ def deconvolute_formula_file(
             line = line.strip()
             if line.startswith("@"):
                 if description is not None:
-                    raise FormulaError(
+                    raise FormulaFileError(
                         f"No expression follows description '{description}'."
                     )
                 description = line[1:].strip()
             elif line.startswith("$"):
                 expression = line[1:].strip()
                 if description is None:
-                    raise FormulaError(
+                    raise FormulaFileError(
                         f"No description before expression '{expression}'."
                     )
                 yield description, expression
                 description = None
                 expression = None
     if description is not None:
-        raise FormulaError(f"No expression follows description '{description}'.")
+        raise FormulaFileError(f"No expression follows description '{description}'.")
 
 
 def save_builtin_formula(dirpath: str | Path) -> None:
