@@ -26,6 +26,11 @@ def mp_table() -> pd.DataFrame:
     return df
 
 
+def mock_formula_parser(expr: str) -> tuple[str, list[fml.FormulaTerm], list[fml.FormulaTerm]]:
+    """Mock formula parser."""
+    return "F", [fml.NumericalTerm("mp_int")], [fml.ConstantTerm(1)]
+
+
 def test_terms():
     terms = [term for term in fml._terms]
     assert terms == [
@@ -335,33 +340,30 @@ class TestParseFormulaExpression:
 class TestTraitFormula:
     """Test `TraitFormula` class."""
 
-    def test_init(self):
-        description = "Some description"
-        expression = "A = (mp1 == 1) / 1"
-        formula = fml.TraitFormula(expression, description)
-        assert formula.name == "A"
-        assert formula.description == description
-        assert formula.expression == expression
-        assert [term.expr for term in formula._numerators] == ["mp1 == 1"]
-        assert [term.expr for term in formula._denominators] == ["1"]
-
-    def test_sia_linkage(self):
-        description = "The ratio of sialylated to non-sialylated glycans"
-        expression = "CS = nS // (type == 'complex')"
-        formula = fml.TraitFormula(expression, description)
-        assert formula.sia_linkage is True
-
-        description = "The ratio of high-mannose to hybrid glycans"
-        expression = "MHy = (type == 'high-mannose') / (type == 'hybrid')"
-        formula = fml.TraitFormula(expression, description)
-        assert formula.sia_linkage is False
-
-    def test_numerators_and_denominators(self):
-        description = "Some description"
-        expression = "A = (mp1 == 1) / 1"
-        formula = fml.TraitFormula(expression, description)
-        assert formula.numerators == ["mp1 == 1"]
-        assert formula.denominators == ["1"]
+    @pytest.mark.parametrize(
+        "numerators, denominators, expected",
+        [
+            (
+                [fml.NumericalTerm("nS")],
+                [fml.NumericalTerm("1")],
+                False,
+            ),
+            (
+                [fml.NumericalTerm("nL")],
+                [fml.NumericalTerm("1")],
+                True,
+            ),
+            (
+                [fml.NumericalTerm("nE")],
+                [fml.NumericalTerm("1")],
+                True,
+            )
+        ],
+        ids=["nS", "nL", "nE"]
+    )
+    def test_sia_linkage(self, numerators, denominators, expected):
+        formula = fml.TraitFormula("F", "", numerators, denominators)
+        assert formula.sia_linkage == expected
 
     @pytest.fixture
     def abund_table(self):
@@ -378,45 +380,60 @@ class TestTraitFormula:
         return pd.DataFrame(data, index=["S1", "S2", "S3"])
 
     def test_initialize_failed(self, mp_table):
-        expression = "A = (mp_not_exist == 1) / 1"
-        formula = fml.TraitFormula(expression, "Some description")
+        numerators = [fml.NumericalTerm("mp_not_exist")]
+        denominators = [fml.NumericalTerm("1")]
+        formula = fml.TraitFormula("F", "", numerators, denominators)
         with pytest.raises(fml.FormulaCalculationError):
             formula.initialize(mp_table)
 
     def test_calcu_trait_without_initialization(self, mp_table, abund_table):
-        expression = "A = (mp_int == 1) / 1"
-        formula = fml.TraitFormula(expression, "Some description")
+        formula = fml.TraitFormula(
+            name="F",
+            description="",
+            numerators=[fml.NumericalTerm("mp_int")],
+            denominators=[fml.NumericalTerm("1")],
+        )
         with pytest.raises(fml.FormulaNotInitializedError):
             formula.calcu_trait(abund_table)
 
     @pytest.mark.parametrize(
-        "expression, expected",
+        "numerators, denominators, expected",
         [
             (
-                "A = (mp_int == 1) / 1",
+                [fml.CompareTerm("mp_int", "==", 1)],
+                [fml.ConstantTerm(1)],
                 [0.2, 0.4, 0.25],
             ),
             (
-                "A = (mp_int == 3) // (mp_int >= 2)",
+                [fml.CompareTerm("mp_int", "==", 3), fml.CompareTerm("mp_int", ">=", 2)],
+                [fml.CompareTerm("mp_int", ">=", 2)],
                 [0.5, 2 / 3, 1 / 3],
             ),
             (
-                "A = mp_int // (mp_bool == True)",
+                [fml.NumericalTerm("mp_int"), fml.CompareTerm("mp_bool", "==", True)],
+                [fml.CompareTerm("mp_bool", "==", True)],
                 [7 / 3, 2, 2],
             ),
         ],
     )
-    def test_calcu_trait(self, mp_table, abund_table, expression, expected):
+    def test_calcu_trait(self, mp_table, abund_table, numerators, denominators, expected):
         # mp_table:
         #     mp_int  mp_bool mp_str
         # G1       1     True      a
         # G2       2    False      b
         # G3       3     True      c
-        formula = fml.TraitFormula(expression, "Some description")
+        formula = fml.TraitFormula("F", "", numerators, denominators)
         formula.initialize(mp_table)
         result = formula.calcu_trait(abund_table)
-        expected = pd.Series(expected, index=abund_table.index, name="A")
+        expected = pd.Series(expected, index=abund_table.index, name="F")
         pd.testing.assert_series_equal(result, expected)
+
+    def test_from_expr(self):
+        result = fml.TraitFormula.from_expr("expr", "", parser=mock_formula_parser)
+        assert result.name == "F"
+        assert result.description == ""
+        assert result.numerators == [fml.NumericalTerm("mp_int")]
+        assert result.denominators == [fml.ConstantTerm(1)]
 
 
 @pytest.mark.skip("`TraitFormula` to be updated.")
@@ -433,14 +450,14 @@ def test_load_default_formulas():
 class TestLoadFormulasFromFile:
     """Test `load_formulas_from_file` function."""
 
-    def test_basic(self, write_content):
-        description = "The ratio of high-mannose to hybrid glycans"
-        expression = "MHy = (type == 'high-mannose') / (type == 'hybrid')"
+    def test_basic(self, write_content, mocker):
+        description = "Some description"
+        expression = "Some expression"
         file = write_content(f"@ {description}\n$ {expression}")
-        result = list(fml.load_formulas_from_file(file))
+        result = list(fml.load_formulas_from_file(file, parser=mock_formula_parser))
         assert len(result) == 1
         assert result[0].description == description
-        assert result[0].name == "MHy"
+        assert result[0].name == "F"
 
     def test_duplicated_formulas(self, write_content):
         description1 = "The ratio of high-mannose to hybrid glycans"

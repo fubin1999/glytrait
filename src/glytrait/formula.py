@@ -16,12 +16,14 @@ from __future__ import annotations
 
 import itertools
 import re
+from collections.abc import Callable
 from importlib.resources import files, as_file
 from pathlib import Path
 from typing import Literal, Optional, Generator, TypeVar, Type
 
 import numpy as np
 import pandas as pd
+import attrs
 from attrs import field, define
 
 from glytrait.data_type import AbundanceTable, MetaPropertyTable
@@ -385,52 +387,71 @@ class CompareTerm(FormulaTerm):
 
 def _is_sia_linkage_term(term: FormulaTerm) -> bool:
     """Check if a formula term is related to sia-linkage."""
-    return "nE" in term.expr or "nS" in term.expr
+    return "nE" in term.expr or "nL" in term.expr
+
+
+FormulaParserType = Callable[[str], tuple[str, list[FormulaTerm], list[FormulaTerm]]]
 
 
 @define
 class TraitFormula:
     """The trait formula."""
 
-    expression: str = field()
+    name: str = field()
     description: str = field()
-    name: str = field(init=False)
+    numerators: list[FormulaTerm] = field(converter=list, validator=attrs.validators.min_len(1))
+    denominators: list[FormulaTerm] = field(converter=list, validator=attrs.validators.min_len(1))
 
-    _numerators: list[FormulaTerm] = field(init=False)
-    _denominators: list[FormulaTerm] = field(init=False)
-
-    _sia_linkage: bool = field(init=False, default=False)
-
+    _sia_linkage: bool = field(init=False)
     _initialized: bool = field(init=False, default=False)
     _numerator_array: pd.Series = field(init=False, default=None)
     _denominator_array: pd.Series = field(init=False, default=None)
 
     def __attrs_post_init__(self):
-        name, numerators, denominators = _parse_formula_expression(self.expression)
-        self.name = name
-        self._numerators = numerators
-        self._denominators = denominators
         self._sia_linkage = self._init_sia_linkage()
 
     def _init_sia_linkage(self) -> bool:
         """Check if the formula is related to sia-linkage."""
-        term_iter = itertools.chain(self._numerators, self._denominators)
+        term_iter = itertools.chain(self.numerators, self.denominators)
         return any(_is_sia_linkage_term(term) for term in term_iter)
+
+    @classmethod
+    def from_expr(
+        cls,
+        expr: str,
+        description: str,
+        *,
+        parser: Optional[FormulaParserType] = None  # Dependency injection
+    ) -> TraitFormula:
+        """Create a formula from an expression.
+
+        Args:
+            expr: The expression of the formula.
+            description: The description of the formula.
+            parser: The parser to parse the formula expression.
+                If None, the default parser will be used.
+                Defaults to None.
+
+        Returns:
+            The formula.
+
+        Raises:
+            FormulaParseError: If the expression is invalid.
+        """
+        if parser is None:
+            parser = _parse_formula_expression
+        name, numerators, denominators = parser(expr)
+        return cls(
+            name=name,
+            description=description,
+            numerators=numerators,
+            denominators=denominators
+        )
 
     @property
     def sia_linkage(self) -> bool:
         """Whether the formula is related to sia-linkage."""
         return self._sia_linkage
-
-    @property
-    def numerators(self) -> list[str]:
-        """The names of the numerators."""
-        return [term.expr for term in self._numerators]
-
-    @property
-    def denominators(self) -> list[str]:
-        """The names of the denominators."""
-        return [term.expr for term in self._denominators]
 
     def initialize(self, meta_property_table: MetaPropertyTable) -> None:
         """Initialize the trait formula.
@@ -441,9 +462,9 @@ class TraitFormula:
         Raises:
             FormulaCalculationError: If the initialization fails.
         """
-        self._numerator_array = self._initialize(meta_property_table, self._numerators)
+        self._numerator_array = self._initialize(meta_property_table, self.numerators)
         self._denominator_array = self._initialize(
-            meta_property_table, self._denominators
+            meta_property_table, self.denominators
         )
         self._initialized = True
 
@@ -651,11 +672,18 @@ def load_default_formulas(
         yield from load_formulas_from_file(str(file))
 
 
-def load_formulas_from_file(filepath: str) -> Generator[TraitFormula, None, None]:
+def load_formulas_from_file(
+    filepath: str,
+    *,
+    parser: Optional[FormulaParserType] = None,  # Dependency injection
+) -> Generator[TraitFormula, None, None]:
     """Load formulas from a file.
 
     Args:
-        filepath (str): The path of the formula file.
+        filepath: The path of the formula file.
+        parser: The parser to parse the formula expression.
+            If None, the default parser will be used.
+            Defaults to None.
 
     Yields:
         The formulas parsed.
@@ -666,7 +694,7 @@ def load_formulas_from_file(filepath: str) -> Generator[TraitFormula, None, None
     """
     formulas_parsed: set[str] = set()
     for description, expression in deconvolute_formula_file(filepath):
-        formula = TraitFormula(expression, description)
+        formula = TraitFormula.from_expr(expression, description, parser=parser)
         if formula.name in formulas_parsed:
             raise FormulaFileError(f"Duplicate formula name: {formula.name}.")
         yield formula
