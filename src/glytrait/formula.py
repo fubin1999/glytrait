@@ -15,6 +15,7 @@ Functions:
 from __future__ import annotations
 
 import itertools
+import functools
 import re
 from collections.abc import Callable
 from importlib.resources import files, as_file
@@ -170,6 +171,48 @@ def _register_term(cls: type[FormulaTerm]) -> type[FormulaTerm]:
     return cls
 
 
+def validate_parentheses(*, must_have: bool = False):
+    """Validate the parentheses in the `expr` argument.
+
+    This decorator is intended to be used on `FormulaTerm.from_expr`.
+
+    Args:
+        must_have: Whether the expression must have the parentheses.
+            Default to False.
+    """
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(cls, expr: str):
+            if must_have:
+                if not (expr.startswith("(") and expr.endswith(")")):
+                    raise FormulaTermParseError(expr, "This term must have parentheses.")
+            if expr.startswith("(") and not expr.endswith(")"):
+                raise FormulaTermParseError(expr, "Missing ')'.")
+            if expr.endswith(")") and not expr.startswith("("):
+                raise FormulaTermParseError(expr, "Missing '('.")
+            if "(" in expr.strip("()") or ")" in expr.strip("()"):
+                raise FormulaTermParseError(expr, "Too many parentheses.")
+            return func(cls, expr)
+        return wrapper
+    return decorator
+
+
+def remove_parentheses(func):
+    """Remove the parentheses in the `expr` argument.
+
+    This decorator is intended to be used on `FormulaTerm.from_expr`.
+
+    Notes:
+        This decorator should be used inside `validate_parentheses`.
+    """
+    @functools.wraps(func)
+    def wrapper(cls, expr: str):
+        expr = expr.strip("()")
+        return func(cls, expr)
+    return wrapper
+
+
 @_register_term
 @define
 class ConstantTerm(FormulaTerm):
@@ -194,6 +237,8 @@ class ConstantTerm(FormulaTerm):
         return str(self.value)
 
     @classmethod
+    @validate_parentheses(must_have=False)
+    @remove_parentheses
     def from_expr(cls, expr: str) -> ConstantTerm:
         """Create a formula term from an expression.
 
@@ -207,7 +252,7 @@ class ConstantTerm(FormulaTerm):
             FormulaTermParseError: If the expression is invalid.
         """
         try:
-            value = int(expr.strip("()"))
+            value = int(expr)
         except ValueError as e:
             reason = "Could not be parsed into a ConstantTerm."
             raise FormulaTermParseError(expr, reason) from e
@@ -263,9 +308,10 @@ class NumericalTerm(FormulaTerm):
         return self.meta_property
 
     @classmethod
+    @validate_parentheses(must_have=False)
+    @remove_parentheses
     def from_expr(cls, expr: str) -> NumericalTerm:
         """Create a formula term from an expression."""
-        expr = expr.strip("()")
         meets_condition = bool(re.fullmatch(r"\w+", expr)) and not expr.isdigit()
         if not meets_condition:
             reason = "Could not be parsed into a NumericalTerm."
@@ -348,13 +394,12 @@ class CompareTerm(FormulaTerm):
         return False
 
     @classmethod
+    @validate_parentheses(must_have=True)
+    @remove_parentheses
     def from_expr(cls, expr: str) -> CompareTerm:
         """Create a formula term from an expression."""
         if not cls._valid_operator(expr):
             raise FormulaTermParseError(expr, "Conditions not met.")
-        if not expr.startswith("(") or not expr.endswith(")"):
-            raise FormulaTermParseError(expr, "Missing parentheses.")
-        expr = expr.strip("()")
 
         meta_property_p = r"(\w+)"
         operator_p = r"(==|!=|>|>=|<|<=)"
@@ -449,7 +494,7 @@ class TraitFormula:
         expr: str,
         description: str,
         *,
-        parser: Optional[FormulaParserType] = None  # Dependency injection
+        parser: Optional[FormulaParserType] = None,  # Dependency injection
     ) -> TraitFormula:
         """Create a formula from an expression.
 
@@ -473,7 +518,7 @@ class TraitFormula:
             name=name,
             description=description,
             numerators=numerators,
-            denominators=denominators
+            denominators=denominators,
         )
 
     @property
