@@ -111,16 +111,15 @@ TTerm = TypeVar("TTerm", bound="FormulaTerm")
 
 
 class FormulaTerm:
-    """The protocol for a formula term.
+    """The base class for a formula term.
 
     A formula term is a callable object that takes a meta-property table as input
     and returns a Series with the same index as the meta-property table.
     It makes some calculations based on the meta-properties.
     Normally, it will only work with one meta property.
 
-    A common using paradigm is to:
-    1. Use `meets_condition` to check if the expression could be parsed into the term.
-    2. Use `from_expr` to create a formula term from an expression.
+    The class uses `from_expr` to create a formula term from an expression,
+    and it directly validates the expression within this method.
     """
 
     def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
@@ -142,7 +141,7 @@ class FormulaTerm:
         raise NotImplementedError
 
     @classmethod
-    def from_expr(cls: Type[TTerm], expr: str) -> TTerm:
+    def from_expr(cls, expr: str) -> TTerm:
         """Create a formula term from an expression.
 
         Args:
@@ -153,18 +152,6 @@ class FormulaTerm:
 
         Raises:
             FormulaTermParseError: If the expression is invalid.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def meets_condition(expr: str) -> bool:
-        """Check if the expression could be parsed into the term.
-
-        Args:
-            expr: The condition expression.
-
-        Returns:
-            Whether the term meets the condition.
         """
         raise NotImplementedError
 
@@ -186,9 +173,13 @@ def _register_term(cls: type[FormulaTerm]) -> type[FormulaTerm]:
 @_register_term
 @define
 class ConstantTerm(FormulaTerm):
-    """Return a series with all values being constant."""
+    """Return a series with all values being constant.
 
-    value: int = field()
+    Args:
+        value: The constant value. It should be an integer greater than 0.
+    """
+
+    value: int = field(validator=attrs.validators.gt(0))
 
     def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
         """Calculate the term."""
@@ -202,17 +193,25 @@ class ConstantTerm(FormulaTerm):
         """The expression of the term."""
         return str(self.value)
 
-    @staticmethod
-    def meets_condition(expr: str) -> bool:
-        """Check if the expression could be parsed into the term."""
-        return expr.strip("()").isdigit()
-
     @classmethod
     def from_expr(cls, expr: str) -> ConstantTerm:
-        """Create a formula term from an expression."""
-        if not cls.meets_condition(expr):
-            raise FormulaTermParseError(expr, "Conditions not met.")
-        return cls(value=int(expr.strip("()")))
+        """Create a formula term from an expression.
+
+        Args:
+            expr: The expression of the term.
+
+        Returns:
+            The formula term.
+
+        Raises:
+            FormulaTermParseError: If the expression is invalid.
+        """
+        try:
+            value = int(expr.strip("()"))
+        except ValueError as e:
+            reason = "Could not be parsed into a ConstantTerm."
+            raise FormulaTermParseError(expr, reason) from e
+        return cls(value=value)
 
 
 @_register_term
@@ -263,19 +262,15 @@ class NumericalTerm(FormulaTerm):
         """The expression of the term."""
         return self.meta_property
 
-    @staticmethod
-    def meets_condition(expr: str) -> bool:
-        """Check if the expression could be parsed into the term."""
-        # Consist of digits, letters and "_", but not all digits
-        pattern = r"\w+"
-        return bool(re.fullmatch(pattern, expr.strip("()"))) and not expr.isdigit()
-
     @classmethod
     def from_expr(cls, expr: str) -> NumericalTerm:
         """Create a formula term from an expression."""
-        if not cls.meets_condition(expr):
-            raise FormulaTermParseError(expr, "Conditions not met.")
-        return cls(meta_property=expr.strip("()"))
+        expr = expr.strip("()")
+        meets_condition = bool(re.fullmatch(r"\w+", expr)) and not expr.isdigit()
+        if not meets_condition:
+            reason = "Could not be parsed into a NumericalTerm."
+            raise FormulaTermParseError(expr, reason)
+        return cls(meta_property=expr)
 
 
 OPERATORS = {"==", "!=", ">", ">=", "<", "<="}
@@ -345,8 +340,8 @@ class CompareTerm(FormulaTerm):
             return f"{self.meta_property} {self.operator} {self.value}"
 
     @staticmethod
-    def meets_condition(expr: str) -> bool:
-        """Check if the expression could be parsed into the term."""
+    def _valid_operator(expr: str) -> bool:
+        """Check if the expression has a valid operator."""
         for op in OPERATORS:
             if op in expr:
                 return True
@@ -355,7 +350,7 @@ class CompareTerm(FormulaTerm):
     @classmethod
     def from_expr(cls, expr: str) -> CompareTerm:
         """Create a formula term from an expression."""
-        if not cls.meets_condition(expr):
+        if not cls._valid_operator(expr):
             raise FormulaTermParseError(expr, "Conditions not met.")
         if not expr.startswith("(") or not expr.endswith(")"):
             raise FormulaTermParseError(expr, "Missing parentheses.")
@@ -610,8 +605,10 @@ def _parse_term(expr: str) -> FormulaTerm:
         FormulaTermParseError: If the expression is invalid.
     """
     for term_cls in _terms:
-        if term_cls.meets_condition(expr):
+        try:
             return term_cls.from_expr(expr)  # Let the exception pass through
+        except FormulaTermParseError:
+            continue
     raise FormulaTermParseError(expr, "Does not belong to any term class.")
 
 

@@ -26,7 +26,9 @@ def mp_table() -> pd.DataFrame:
     return df
 
 
-def mock_formula_parser(expr: str) -> tuple[str, list[fml.FormulaTerm], list[fml.FormulaTerm]]:
+def mock_formula_parser(
+    expr: str,
+) -> tuple[str, list[fml.FormulaTerm], list[fml.FormulaTerm]]:
     """Mock formula parser."""
     return "F", [fml.NumericalTerm("mp_int")], [fml.ConstantTerm(1)]
 
@@ -53,24 +55,9 @@ class TestConstantTerm:
         pd.testing.assert_series_equal(result, expected)
 
     @pytest.mark.parametrize(
-        "expr, expected",
-        [
-            ("1", True),
-            ("0", True),
-            ("(1)", True),
-            ("a", False),  # not a number
-            ("-1", False),  # negative number
-            ("1.0", False),  # float number
-        ],
-    )
-    def test_meets_condition(self, expr, expected):
-        assert fml.ConstantTerm.meets_condition(expr) == expected
-
-    @pytest.mark.parametrize(
         "expr, value",
         [
             ("1", 1),
-            ("0", 0),
             ("(1)", 1),
         ],
     )
@@ -78,9 +65,15 @@ class TestConstantTerm:
         term = fml.ConstantTerm.from_expr(expr)
         assert term.value == value
 
-    def test_from_expr_invalid(self):
+    @pytest.mark.parametrize("expr", ["a", "1.0"])
+    def test_from_expr_invalid(self, expr):
         with pytest.raises(fml.FormulaParseError):
-            fml.ConstantTerm.from_expr("a")
+            fml.ConstantTerm.from_expr(expr)
+
+    @pytest.mark.parametrize("value", [0, -1])
+    def test_value_error(self, value):
+        with pytest.raises(ValueError):
+            fml.ConstantTerm(value)
 
 
 class TestNumericalTerm:
@@ -109,19 +102,6 @@ class TestNumericalTerm:
             term(mp_table)
 
     @pytest.mark.parametrize(
-        "expr, expected",
-        [
-            ("mp", True),
-            ("mp_int", True),
-            ("mp1", True),
-            ("(mp)", True),
-            ("1", False),
-        ],
-    )
-    def test_meets_condition(self, expr, expected):
-        assert fml.NumericalTerm.meets_condition(expr) == expected
-
-    @pytest.mark.parametrize(
         "expr, mp",
         [
             ("mp", "mp"),
@@ -132,9 +112,12 @@ class TestNumericalTerm:
         term = fml.NumericalTerm.from_expr(expr)
         assert term.meta_property == mp
 
-    def test_from_expr_invalid(self):
+    @pytest.mark.parametrize(
+        "expr", ["1", "mp > 2", "mp == 2"]
+    )
+    def test_from_expr_invalid(self, expr):
         with pytest.raises(fml.FormulaParseError):
-            fml.NumericalTerm.from_expr("1")
+            fml.NumericalTerm.from_expr(expr)
 
 
 class TestCompareTerm:
@@ -193,23 +176,6 @@ class TestCompareTerm:
             term(mp_table)
 
     @pytest.mark.parametrize(
-        "expr, expected",
-        [
-            ("(mp_int > 2)", True),
-            ("(mp_int >= 2)", True),
-            ("(mp_int < 2)", True),
-            ("(mp_int <= 2)", True),
-            ("(mp_int == 2)", True),
-            ("(mp_int != 2)", True),
-            ("mp_int > 2", True),
-            ("mp_int", False),
-            ("1", False),
-        ],
-    )
-    def test_meets_condition(self, expr, expected):
-        assert fml.CompareTerm.meets_condition(expr) == expected
-
-    @pytest.mark.parametrize(
         "expr, mp, operator, value",
         [
             ("(mp_int > 2)", "mp_int", ">", 2),
@@ -238,6 +204,7 @@ class TestCompareTerm:
             "(mp_int > )",  # missing value
             "(mp_bool == True) & (mp_str != 'b')",  # invalid operator '&'
             "(mp_str)",  # no operator
+            "(1)"  # invalid meta property
         ],
     )
     def test_from_expr_invalid(self, expr):
@@ -357,9 +324,9 @@ class TestTraitFormula:
                 [fml.NumericalTerm("nE")],
                 [fml.NumericalTerm("1")],
                 True,
-            )
+            ),
         ],
-        ids=["nS", "nL", "nE"]
+        ids=["nS", "nL", "nE"],
     )
     def test_sia_linkage(self, numerators, denominators, expected):
         formula = fml.TraitFormula("F", "", numerators, denominators)
@@ -405,7 +372,10 @@ class TestTraitFormula:
                 [0.2, 0.4, 0.25],
             ),
             (
-                [fml.CompareTerm("mp_int", "==", 3), fml.CompareTerm("mp_int", ">=", 2)],
+                [
+                    fml.CompareTerm("mp_int", "==", 3),
+                    fml.CompareTerm("mp_int", ">=", 2),
+                ],
                 [fml.CompareTerm("mp_int", ">=", 2)],
                 [0.5, 2 / 3, 1 / 3],
             ),
@@ -416,7 +386,9 @@ class TestTraitFormula:
             ),
         ],
     )
-    def test_calcu_trait(self, mp_table, abund_table, numerators, denominators, expected):
+    def test_calcu_trait(
+        self, mp_table, abund_table, numerators, denominators, expected
+    ):
         # mp_table:
         #     mp_int  mp_bool mp_str
         # G1       1     True      a
