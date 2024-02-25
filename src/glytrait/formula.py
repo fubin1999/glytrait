@@ -390,7 +390,40 @@ FormulaParserType = Callable[[str], tuple[str, list[FormulaTerm], list[FormulaTe
 
 @define
 class TraitFormula:
-    """The trait formula."""
+    """The trait formula.
+
+    This class is used for calculating a derived trait in a vectorized manner.
+
+    Each formula has a name, a description, and two lists of formula terms:
+    numerators and denominators.
+    The formula terms are instances of `FormulaTerm`.
+
+    To create a `TraitFormula` instance, initialize it with the name, the description,
+    and the lists of formula terms,
+    or use the class method `from_expr` to parse the expression of the formula.
+
+    To calculate the derived trait values,
+    first call the `initialize` method on a meta-property table,
+    then call the `calcu_trait` method on an abundance table.
+
+    Attributes:
+        name: The name of the formula.
+        description: The description of the formula.
+        numerators: The list of formula terms in the numerator.
+        denominators: The list of formula terms in the denominator.
+        sia_linkage: Whether the formula is related to sia-linkage.
+
+    Examples:
+        >>> expr = "Trait = (A * B) / (C * D)"
+        >>> description = "Some description"
+        >>> formula = TraitFormula.from_expr(expr, description)
+        >>> formula.name
+        'Trait'
+        >>> formula.description
+        'Some description'
+        >>> formula.initialize(meta_property_table)
+        >>> trait_values = formula.calcu_trait(abundance_table)
+    """
 
     name: str = field()
     description: str = field()
