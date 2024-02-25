@@ -141,7 +141,7 @@ class FormulaTerm:
         raise NotImplementedError
 
     @classmethod
-    def from_expr(cls, expr: str) -> TTerm:
+    def from_expr(cls: Type[TTerm], expr: str) -> TTerm:
         """Create a formula term from an expression.
 
         Args:
@@ -394,8 +394,8 @@ class TraitFormula:
 
     name: str = field()
     description: str = field()
-    numerators: list[FormulaTerm] = field(converter=list, validator=attrs.validators.min_len(1))
-    denominators: list[FormulaTerm] = field(converter=list, validator=attrs.validators.min_len(1))
+    numerators: list[FormulaTerm] = field(validator=attrs.validators.min_len(1))
+    denominators: list[FormulaTerm] = field(validator=attrs.validators.min_len(1))
 
     _sia_linkage: bool = field(init=False)
     _initialized: bool = field(init=False, default=False)
