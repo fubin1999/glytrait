@@ -13,19 +13,18 @@ Functions:
 
 from __future__ import annotations
 
-import csv
-from collections.abc import Iterable, Sequence
-from pathlib import Path
-from typing import Optional, Literal
+from collections.abc import Iterable, Callable
+from typing import Optional, Literal, Protocol, cast
 
 import pandas as pd
-from attrs import define
+from attrs import define, field
+from numpy import dtype
 
 from glytrait.data_type import (
     AbundanceTable,
     GroupSeries,
 )
-from glytrait.exception import FileTypeError, FileFormatError, NotEnoughGroupsError
+from glytrait.exception import DataInputError
 from glytrait.glycan import (
     parse_structures,
     parse_compositions,
@@ -36,57 +35,227 @@ from glytrait.glycan import (
 
 __all__ = [
     "GlyTraitInputData",
+    "AbundanceCSVLoader",
+    "GroupsCSVLoader",
+    "GlycanCSVLoader",
     "load_input_data",
 ]
 
 
-# ===== The highest-level API =====
-def load_input_data(
-    *,
-    abundance_file: str,
-    glycan_file: str,
-    mode: Literal["structure", "composition"] = "structure",
-    group_file: Optional[str] = None,
-) -> GlyTraitInputData:
-    """Load all the input data for GlyTrait.
+# ===== Loaders =====
+class AbundanceLoaderProto(Protocol):
+    def load(self) -> AbundanceTable:
+        ...
 
-    Notes:
-        If `group_file` is not provided, the `groups` attribute of the returned
-        `GlyTraitInputData` will be `None`.
 
-    Args:
-        abundance_file: Path to the abundance table file.
-        glycan_file: Path to the glycan file.
-        mode: Either "structure" or "composition".
-        group_file: Path to the group file. Optional.
+class GlycanLoaderProto(Protocol):
+    def load(self) -> StructureDict | CompositionDict:
+        ...
 
-    Returns:
-        GlyTraitInputData: Input data for GlyTrait.
 
-    Raises:
-        FileTypeError: If any of the files is not a csv file.
-        FileNotFoundError: If any of the files does not exist.
-        FileFormatError: If any of the files has incorrect format.
-            See docstrings of `load_abundance_table`, `load_structures`,
-            `load_compositions`, and `load_groups` for details.
+class GroupsLoaderProto(Protocol):
+    def load(self) -> GroupSeries:
+        ...
+
+
+@define
+class DFValidator:
+    """Validator for pandas DataFrame.
+
+    Attributes:
+        must_have: List of column names that must be in the DataFrame.
+        unique: List of column names that must be unique in the DataFrame.
+        types: Dictionary of column names and their expected types.
+        default_type: Default type for columns not in `types`.
     """
-    abundance_table = load_abundance_table(abundance_file)
-    glycans: GlycanDict
-    if mode == "structure":
-        glycans = load_structures(glycan_file)
-    elif mode == "composition":
-        glycans = load_compositions(glycan_file)
-    else:
-        raise ValueError(f"Invalid mode {mode}.")
-    if group_file is not None:
-        groups = load_groups(group_file)
-    else:
-        groups = None
-    return GlyTraitInputData(
-        abundance_table=abundance_table, glycans=glycans, groups=groups
+
+    must_have: list[str] = field(kw_only=True, factory=list)
+    unique: list[str] = field(kw_only=True, factory=list)
+    types: dict[str, str] = field(kw_only=True, factory=dict)
+    default_type: dtype | str = field(kw_only=True, default=None)
+
+    def __call__(self, df: pd.DataFrame) -> None:
+        """Validate the DataFrame.
+
+        Raises:
+            DataInputError: If one of the following conditions is met:
+            - The DataFrame does not have all the columns specified in `must_have`.
+        """
+        self._test_must_have_columns(df)
+        self._test_unique_columns(df)
+        self._test_type_check(df)
+        self._test_default_type(df)
+
+    def _test_must_have_columns(self, df: pd.DataFrame):
+        if missing := {col for col in self.must_have if col not in df.columns}:
+            msg = f"The following columns are missing: {', '.join(missing)}."
+            raise DataInputError(msg)
+
+    def _test_unique_columns(self, df: pd.DataFrame):
+        if non_unique := [
+            col for col in self.unique if col in df and df[col].duplicated().any()
+        ]:
+            msg = f"The following columns are not unique: {', '.join(non_unique)}."
+            raise DataInputError(msg)
+
+    def _test_type_check(self, df: pd.DataFrame):
+        if wrong_type_cols := [
+            col
+            for col, dtype in self.types.items()
+            if col in df and df[col].dtype != dtype
+        ]:
+            expected = {col: self.types[col] for col in wrong_type_cols}
+            got = {col: df[col].dtype for col in wrong_type_cols}
+            msg = (
+                f"The following columns have incorrect types: {', '.join(wrong_type_cols)}. "
+                f"Expected types: {expected}, got: {got}."
+            )
+            raise DataInputError(msg)
+
+    def _test_default_type(self, df: pd.DataFrame):
+        if self.default_type is None:
+            return
+        cols_to_check = set(df.columns) - set(self.types)
+        if wrong_type_cols := [
+            col for col in cols_to_check if df[col].dtype != self.default_type
+        ]:
+            got = {col: df[col].dtype for col in wrong_type_cols}
+            msg = (
+                f"The following columns have incorrect types: {', '.join(wrong_type_cols)}. "
+                f"Expected types: {self.default_type}, got: {got}."
+            )
+            raise DataInputError(msg)
+
+
+@define
+class AbundanceCSVLoader:
+    """Loader for abundance table from a csv file."""
+
+    filepath: str
+    validator: DFValidator = field(
+        kw_only=True,
+        default=DFValidator(
+            must_have=["Sample"],
+            unique=["Sample"],
+            types={"Sample": "object"},
+            default_type=dtype("float64"),
+        ),
     )
 
+    def load(self) -> AbundanceTable:
+        """Returns the abundance table loaded from the file.
 
+        Raises:
+            FileNotFoundError: If the file does not exist.
+            FileFormatError: If the file format is incorrect.
+                This includes: (1) the file is empty; (2) the file could not be parsed;
+                (3) the "Sample" column is not found.
+        """
+        df = _read_csv(self.filepath)
+        self.validator(df)
+        return AbundanceTable(df.set_index("Sample"))
+
+
+@define
+class GroupsCSVLoader:
+    """Loader for groups from a csv file."""
+
+    filepath: str
+    validator: DFValidator = field(
+        kw_only=True,
+        default=DFValidator(
+            must_have=["Group", "Sample"],
+            unique=["Sample"],
+            types={"Sample": "object"},
+        ),
+    )
+
+    def load(self) -> GroupSeries:
+        """Returns the groups loaded from the file.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+            FileFormatError: If the file format is incorrect.
+                This includes: (1) the file is empty; (2) the file could not be parsed;
+                (3) the "Sample" column is not found; (4) the "Group" column is not found.
+        """
+        df = _read_csv(self.filepath)
+        self.validator(df)
+        return GroupSeries(df.set_index("Sample")["Group"])
+
+
+GlycanParserType = Callable[
+    [Iterable[tuple[str, str]]], StructureDict | CompositionDict
+]
+
+
+@define
+class GlycanCSVLoader:
+    """Loader for structures or compositions from a csv file."""
+
+    filepath: str
+    mode: Literal["structure", "composition"] = field(kw_only=True)
+    validator: DFValidator = field(kw_only=True, default=None)
+    parser: GlycanParserType = field(kw_only=True, default=None)
+
+    def __attrs_post_init__(self):
+        if self.parser is None:
+            self.parser = self._glycan_parser_factory(self.mode)
+        if self.validator is None:
+            self.validator = self._validator_factory(self.mode)
+
+    @staticmethod
+    def _glycan_parser_factory(
+        mode: Literal["structure", "composition"]
+    ) -> GlycanParserType:
+        parser = parse_structures if mode == "structure" else parse_compositions
+        return cast(GlycanParserType, parser)
+
+    @staticmethod
+    def _validator_factory(mode: Literal["structure", "composition"]) -> DFValidator:
+        glycan_col = "Structure" if mode == "structure" else "Composition"
+        return DFValidator(
+            must_have=["GlycanID", glycan_col],
+            unique=["GlycanID", glycan_col],
+            types={"GlycanID": "object", glycan_col: "object"},
+        )
+
+    def load(self) -> GlycanDict:
+        """Returns the glycans loaded from the file.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+            FileFormatError: If the file format is incorrect.
+                This includes: (1) the file is empty; (2) the file could not be parsed;
+                (3) the "GlycanID" column is not found; (4) the "Structure" or
+                "Composition" column is not found.
+            StructureParseError: If any structure cannot be parsed,
+                when `mode` is "structure".
+            CompositionParseError: If any composition cannot be parsed,
+                when `mode` is "composition".
+        """
+        df = _read_csv(self.filepath)
+        self.validator(df)
+        ids = df["GlycanID"].to_list()
+        glycan_col = self.mode.capitalize()
+        try:
+            strings = df[glycan_col].to_list()
+        except KeyError as e:
+            raise DataInputError(f"The '{glycan_col}' column is not found.") from e
+        return self.parser(zip(ids, strings))
+
+
+def _read_csv(filepath: str) -> pd.DataFrame:
+    try:
+        return pd.read_csv(filepath)
+    # FileNotFoundError is not caught here
+    except pd.errors.EmptyDataError as e:
+        raise DataInputError("Empty CSV file.") from e
+    except pd.errors.ParserError as e:
+        raise DataInputError("This CSV file could not be parsed.") from e
+
+
+# ===== Input data =====
 @define(kw_only=True)
 class GlyTraitInputData:
     """GlyTrait input data.
@@ -111,233 +280,58 @@ class GlyTraitInputData:
     glycans: StructureDict | CompositionDict
     groups: Optional[GroupSeries] = None
 
-    def __attrs_post_init__(self):
-        if self.groups is not None:
-            self._check_samples()
-        self._check_glycans()
 
-    def _check_samples(self):
-        """Check if `groups` has the same samples as `abundance_table`."""
-        if not set(self.abundance_table.index) == set(self.groups.index):
-            msg = (
-                "The samples in the abundance table and the groups should be the same."
-            )
-            raise FileFormatError(msg)
+# ===== The highest-level API =====
+def load_input_data(
+    *,
+    abundance_file: str,
+    glycan_file: str,
+    group_file: Optional[str] = None,
+    abundance_loader: Optional[AbundanceLoaderProto] = None,
+    glycan_loader: Optional[GlycanLoaderProto] = None,
+    group_loader: Optional[GroupsLoaderProto] = None,
+    mode: Literal["structure", "composition"] = "structure",
+) -> GlyTraitInputData:
+    """Load all the input data for GlyTrait.
 
-    def _check_glycans(self):
-        """Check if `glycans` has the same glycans as `abundance_table`."""
-        if not set(self.abundance_table.columns) == set(self.glycans.keys()):
-            msg = (
-                "The glycans in the abundance table and the glycans should be the same."
-            )
-            raise FileFormatError(msg)
-
-
-# ===== Functions for loading individual files =====
-def load_abundance_table(filepath: str) -> AbundanceTable:
-    """Load abundance table from filepath.
-
-    Args:
-        filepath: Path to abundance table file.
-
-    Returns:
-        AbundanceTable: Abundance table.
-
-    Raises:
-        FileTypeError: If the file is not a csv file.
-        FileNotFoundError: If the file does not exist.
-        FileFormatError: If the file format is incorrect.
-            This includes: (1) the file is not numeric; (2) the file has duplicated
-            index (glycans); (3) the file has duplicated columns (samples); (4) the
-            file does not have a "GlycanID" column.
-    """
-    _check_file_type(filepath, "csv")
-    _check_exist(filepath)
-    _check_columns("abundance table", filepath, ["Sample"])
-    df = pd.read_csv(filepath, index_col="Sample")
-    _check_numeric("abundance table", df)
-    _check_duplicated_index("abundance table", df)
-    _check_duplicated_columns("abundance table", df)
-    return AbundanceTable(df)
-
-
-def load_structures(filepath: str) -> StructureDict:
-    """Load structures from filepath.
+    Notes:
+        - If `group_file` is not provided, the `groups` attribute of the returned
+        `GlyTraitInputData` will be `None`.
+        - If `abundance_loader`, `glycan_loader`, or `group_loader` are not provided,
+        the default CSV loaders will be used.
+        - If `abundance_loader`, `glycan_loader`, or `group_loader` are provided,
+        the three "file" arguments will be ignored.
+        - The three "file" arguments will be removed in the future.
+        It exists for backward compatibility.
+        To use the new API, provide the loaders directly, and pass "" as the file paths.
 
     Args:
-        filepath: Path to structures file.
+        abundance_file: Path to the abundance table file.
+        glycan_file: Path to the glycans file.
+        group_file: Path to the groups file. Optional.
+        abundance_loader: Loader for the abundance table.
+        glycan_loader: Loader for the glycans.
+        group_loader: Loader for the groups. Optional.
+        mode: Either "structure" or "composition".
 
     Returns:
-        StructureDict: A dict with glycan ids with keys and
-            `Structure` objects as values.
-
-    Raises:
-        FileTypeError: If the file is not a csv file.
-        FileNotFoundError: If the file does not exist.
-        FileFormatError: If the file format is incorrect.
-            This includes: (1) the file has duplicated glycan ids; (2) the file has
-            duplicated structures; (3) the file does not have a "GlycanID" column
-            or a "Structure" column; (4) the file has extra columns.
-        StructureParseError: If the structure cannot be parsed.
-            All glycan ids not parsed will be listed in the error message.
+        GlyTraitInputData: Input data for GlyTrait.
     """
-    _check_exist(filepath)
-    if Path(filepath).is_dir():
-        return _load_structures_from_dir(filepath)
-    else:
-        return _load_structures_from_csv(filepath)
+    if abundance_loader is None:
+        abundance_loader = AbundanceCSVLoader(filepath=abundance_file)
+    if glycan_loader is None:
+        glycan_loader = GlycanCSVLoader(filepath=glycan_file, mode=mode)
+    if group_loader is None and group_file is not None:
+        group_loader = GroupsCSVLoader(filepath=group_file)
 
+    abundance_table = abundance_loader.load()
+    glycans = glycan_loader.load()
+    groups = group_loader.load() if group_loader else None
 
-def _load_structures_from_csv(filepath: str) -> StructureDict:
-    """Load structures from a csv file."""
-    _check_file_type(filepath, "csv")
-    _check_columns("glycan structures", filepath, ["GlycanID", "Structure"], only=True)
-    ids, strings = _load_glycans_from_csv(filepath, "Structure")
-    _check_duplicated_items("glycan ids", ids)
-    _check_duplicated_items("glycan structures", strings)
-    return parse_structures(zip(ids, strings))
-
-
-def _load_structures_from_dir(dirpath: str) -> StructureDict:
-    """Load structures from a directory."""
-    ids, strings = _load_glycans_from_dir(dirpath, "glycoct_condensed")
-    # glycan ids are not checked because they are filenames
-    _check_duplicated_items("glycan structures", strings)
-    return parse_structures(zip(ids, strings))
-
-
-def load_compositions(filepath: str) -> CompositionDict:
-    """Load compositions from filepath.
-
-    Args:
-        filepath: Path to compositions file.
-
-    Returns:
-        CompositionDict: A dict with glycan ids with keys and
-            `Composition` objects as values.
-
-    Raises:
-        FileTypeError: If the file is not a csv file.
-        FileNotFoundError: If the file does not exist.
-        FileFormatError: If the file format is incorrect.
-            This includes: (1) the file has duplicated glycan ids; (2) the file has
-            duplicated compositions; (3) the file does not have a "GlycanID" column
-            or a "Composition" column; (4) the file has extra columns.
-        CompositionParseError: If the composition cannot be parsed.
-            All glycan ids not parsed will be listed in the error message.
-    """
-    _check_file_type(filepath, "csv")
-    _check_exist(filepath)
-    _check_columns(
-        "glycan compositions", filepath, ["GlycanID", "Composition"], only=True
+    input_data = GlyTraitInputData(
+        abundance_table=abundance_table,
+        glycans=glycans,
+        groups=groups,
     )
-    ids, strings = _load_glycans_from_csv(filepath, "Composition")
-    _check_duplicated_items("glycan ids", ids)
-    _check_duplicated_items("glycan compositions", strings)
-    return parse_compositions(zip(ids, strings))
 
-
-def load_groups(filepath: str) -> GroupSeries:
-    """Load groups from filepath.
-
-    Args:
-        filepath: Path to groups file.
-
-    Returns:
-        GroupSeries: A pandas Series with sample names as index and groups as values.
-
-    Raises:
-        FileTypeError: If the file is not a csv file.
-        FileNotFoundError: If the file does not exist.
-        FileFormatError: If the file format is incorrect.
-            This includes: (1) the file does not have a "Group" column or a
-            "Sample" column; (2) the file has extra columns; (3) the file has
-            duplicated samples.
-    """
-    _check_file_type(filepath, "csv")
-    _check_exist(filepath)
-    _check_columns("groups", filepath, ["Group", "Sample"], only=True)
-    s = pd.read_csv(filepath, index_col="Sample").squeeze()
-    _check_duplicated_items("samples", s.index)
-    _check_group_number(s)
-    return GroupSeries(s)
-
-
-# ===== Helper functions =====
-def _check_file_type(filepath: str, file_type: str) -> None:
-    if Path(filepath).suffix != f".{file_type}":
-        raise FileTypeError(f"File {filepath} is not a {file_type} file.")
-
-
-def _check_exist(filepath: str) -> None:
-    if not Path(filepath).exists():
-        raise FileNotFoundError(f"File {filepath} does not exist.")
-
-
-def _check_numeric(df_name: str, df: pd.DataFrame) -> None:
-    if not df.map(lambda x: isinstance(x, (int, float))).all().all():
-        raise FileFormatError(f"The {df_name} should be numeric.")
-
-
-def _check_duplicated_index(df_name: str, df: pd.DataFrame) -> None:
-    if df.index.duplicated().any():
-        raise FileFormatError(f"The {df_name} should not have duplicated index.")
-
-
-def _check_duplicated_columns(df_name: str, df: pd.DataFrame) -> None:
-    for col in df.columns:
-        if col.endswith(".1"):
-            raise FileFormatError(f"The {df_name} should not have duplicated columns.")
-
-
-def _check_duplicated_items(item_name: str, to_check: Sequence[str]) -> None:
-    if len(set(to_check)) != len(to_check):
-        raise FileFormatError(f"The {item_name} should not be duplicated.")
-
-
-def _check_columns(
-    filename: str, filepath: str, columns: Iterable[str], only: bool = False
-) -> None:
-    def _format_columns() -> str:
-        return ", ".join(f"'{col}'" for col in columns)
-
-    with open(filepath, encoding="utf-8-sig") as f:
-        header = f.readline().strip().split(",")
-
-    if only:
-        if not set(header) == set(columns):
-            msg = f"The {filename} should only have columns {_format_columns()}."
-            raise FileFormatError(msg)
-    else:
-        if not set(columns) <= set(header):
-            msg = f"The {filename} should have columns {_format_columns()}."
-            raise FileFormatError(msg)
-
-
-def _load_glycans_from_csv(
-    filepath: str, string_col: str
-) -> tuple[list[str], list[str]]:
-    """Helper function for `load_structures` and `load_compositions`."""
-    ids: list[str] = []
-    strings: list[str] = []
-    with open(filepath, encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            ids.append(row["GlycanID"])
-            strings.append(row[string_col])
-    return ids, strings
-
-
-def _load_glycans_from_dir(dirpath: str, suffix: str) -> tuple[list[str], list[str]]:
-    """Helper function for `load_structures`."""
-    ids: list[str] = []
-    strings: list[str] = []
-    for filepath in Path(dirpath).glob(f"*.{suffix}"):
-        ids.append(filepath.stem)
-        strings.append(filepath.read_text())
-    return ids, strings
-
-
-def _check_group_number(group_series: Iterable[str]) -> None:
-    if len(set(group_series)) < 2:
-        raise NotEnoughGroupsError("There should be at least two groups.")
+    return input_data

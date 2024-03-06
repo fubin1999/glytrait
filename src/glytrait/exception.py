@@ -17,7 +17,7 @@ class CompositionParseError(GlycanParseError):
     """Raised when a composition cannot be parsed."""
 
 
-class FileFormatError(GlyTraitError):
+class DataInputError(GlyTraitError):
     """The input file format error."""
 
 
