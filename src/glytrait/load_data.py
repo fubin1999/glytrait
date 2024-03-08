@@ -129,10 +129,42 @@ class DFValidator:
 
 
 @define
-class AbundanceCSVLoader:
-    """Loader for abundance table from a csv file."""
+class CSVLoader:
+    """Base class for data loaders from csv files."""
 
     filepath: str
+    validator: DFValidator = field(kw_only=True, default=lambda df: None)
+
+    # Dependency injection
+    reader: Callable[[str], pd.DataFrame] = field(kw_only=True, default=pd.read_csv)
+
+    def load(self) -> pd.DataFrame:
+        """Returns the data loaded from the file.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+            DataInputError: If one of the following conditions is met:
+                (1) the file is empty; (2) the file could not be parsed.
+        """
+        df = self.read_csv()
+        self.validator(df)
+        return df
+
+    def read_csv(self) -> pd.DataFrame:
+        """A thin wrapper for `pd.read_csv`, with custum exceptions."""
+        try:
+            return self.reader(self.filepath)
+        # FileNotFoundError is not caught here
+        except pd.errors.EmptyDataError as e:
+            raise DataInputError("Empty CSV file.") from e
+        except pd.errors.ParserError as e:
+            raise DataInputError("This CSV file could not be parsed.") from e
+
+
+@define
+class AbundanceCSVLoader(CSVLoader):
+    """Loader for abundance table from a csv file."""
+
     validator: DFValidator = field(
         kw_only=True,
         default=DFValidator(
@@ -148,20 +180,18 @@ class AbundanceCSVLoader:
 
         Raises:
             FileNotFoundError: If the file does not exist.
-            FileFormatError: If the file format is incorrect.
+            DataInputError: If the file format is incorrect.
                 This includes: (1) the file is empty; (2) the file could not be parsed;
                 (3) the "Sample" column is not found.
         """
-        df = _read_csv(self.filepath)
-        self.validator(df)
+        df = super().load()
         return AbundanceTable(df.set_index("Sample"))
 
 
 @define
-class GroupsCSVLoader:
+class GroupsCSVLoader(CSVLoader):
     """Loader for groups from a csv file."""
 
-    filepath: str
     validator: DFValidator = field(
         kw_only=True,
         default=DFValidator(
@@ -176,12 +206,11 @@ class GroupsCSVLoader:
 
         Raises:
             FileNotFoundError: If the file does not exist.
-            FileFormatError: If the file format is incorrect.
+            DataInputError: If the file format is incorrect.
                 This includes: (1) the file is empty; (2) the file could not be parsed;
                 (3) the "Sample" column is not found; (4) the "Group" column is not found.
         """
-        df = _read_csv(self.filepath)
-        self.validator(df)
+        df = super().load()
         return GroupSeries(df.set_index("Sample")["Group"])
 
 
@@ -191,10 +220,9 @@ GlycanParserType = Callable[
 
 
 @define
-class GlycanCSVLoader:
+class GlycanCSVLoader(CSVLoader):
     """Loader for structures or compositions from a csv file."""
 
-    filepath: str
     mode: Literal["structure", "composition"] = field(kw_only=True)
     validator: DFValidator = field(kw_only=True, default=None)
     parser: GlycanParserType = field(kw_only=True, default=None)
@@ -235,8 +263,7 @@ class GlycanCSVLoader:
             CompositionParseError: If any composition cannot be parsed,
                 when `mode` is "composition".
         """
-        df = _read_csv(self.filepath)
-        self.validator(df)
+        df = super().load()
         ids = df["GlycanID"].to_list()
         glycan_col = self.mode.capitalize()
         try:
@@ -244,16 +271,6 @@ class GlycanCSVLoader:
         except KeyError as e:
             raise DataInputError(f"The '{glycan_col}' column is not found.") from e
         return self.parser(zip(ids, strings))
-
-
-def _read_csv(filepath: str) -> pd.DataFrame:
-    try:
-        return pd.read_csv(filepath)
-    # FileNotFoundError is not caught here
-    except pd.errors.EmptyDataError as e:
-        raise DataInputError("Empty CSV file.") from e
-    except pd.errors.ParserError as e:
-        raise DataInputError("This CSV file could not be parsed.") from e
 
 
 # ===== Input data =====

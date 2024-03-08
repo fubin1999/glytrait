@@ -9,6 +9,7 @@ from glytrait.exception import (
 from glytrait.glycan import StructureDict
 from glytrait.load_data import (
     load_input_data,
+    CSVLoader,
     AbundanceCSVLoader,
     GroupsCSVLoader,
     GlycanCSVLoader,
@@ -20,50 +21,58 @@ from glytrait.load_data import (
 )
 
 
-class TestReadCSV:
-    """Test `_read_csv`."""
+class TestCSVLoader:
 
-    def test_basic(self, clean_dir):
+    def test_read_csv(self, clean_dir):
         df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
         filepath = clean_dir / "test.csv"
         df.to_csv(filepath, index=False)
-        result = glytrait.load_data._read_csv(filepath)
+        result = CSVLoader(filepath).read_csv()
         pd.testing.assert_frame_equal(result, df)
 
-    def test_file_not_found(self, clean_dir):
+    def test_read_csv_file_not_found(self, clean_dir):
         filepath = clean_dir / "abundance_table.csv"
-        loader = AbundanceCSVLoader(filepath=filepath)
         with pytest.raises(FileNotFoundError):
-            loader.load()
+            result = CSVLoader(filepath).read_csv()
 
-    def test_wrong_format(self, clean_dir):
+    def test_read_csv_wrong_format(self, clean_dir):
         content = "G1,G2,G3\n1,2,3\n4,5,6\n7,8,9,10"
         filepath = clean_dir / "abundance_table.csv"
         filepath.write_text(content)
-        loader = AbundanceCSVLoader(filepath=filepath)
         with pytest.raises(DataInputError) as excinfo:
-            loader.load()
+            result = CSVLoader(filepath).read_csv()
         assert "This CSV file could not be parsed." in str(excinfo.value)
 
-    def test_empty_file(self, clean_dir):
+    def test_read_csv_empty_file(self, clean_dir):
         filepath = clean_dir / "abundance_table.csv"
         filepath.touch()
-        loader = AbundanceCSVLoader(filepath=filepath)
         with pytest.raises(DataInputError) as excinfo:
-            loader.load()
+            result = CSVLoader(filepath).read_csv()
         assert f"Empty CSV file." in str(excinfo.value)
+
+    def test_load(self, mocker):
+        validator = mocker.Mock()
+        returned_df = mocker.Mock()
+        mocker.patch("glytrait.load_data.CSVLoader.read_csv", return_value=returned_df)
+        loader = CSVLoader(filepath="test.csv", validator=validator)
+        result = loader.load()
+        assert result == returned_df
+        validator.assert_called_once_with(returned_df)
 
 
 class TestGroupsCSVLoader:
-    def test_basic(self, mocker):
+    def test_basic(self):
         df = pd.DataFrame(
             {
                 "Sample": ["sample1", "sample2", "sample3"],
                 "Group": ["group1", "group2", "group3"],
             },
         )
-        mocker.patch("glytrait.load_data._read_csv", return_value=df)
-        loader = GroupsCSVLoader(filepath="group_table.csv", validator=lambda df: None)
+        loader = GroupsCSVLoader(
+            filepath="group_table.csv",
+            reader=lambda x: df,
+            validator=lambda df: None
+        )
         result = loader.load()
         expected = pd.Series(
             ["group1", "group2", "group3"],
@@ -71,7 +80,6 @@ class TestGroupsCSVLoader:
             index=pd.Index(["sample1", "sample2", "sample3"], name="Sample"),
         )
         pd.testing.assert_series_equal(result, expected)
-        glytrait.load_data._read_csv.assert_called_once_with("group_table.csv")
 
     def test_default_validator(self):
         loader = GroupsCSVLoader(filepath="group_table.csv")
@@ -81,7 +89,7 @@ class TestGroupsCSVLoader:
 
 
 class TestAbundanceCSVLoader:
-    def test_basic(self, mocker):
+    def test_basic(self):
         df = pd.DataFrame(
             {
                 "Sample": ["sample1", "sample2", "sample3"],
@@ -89,9 +97,10 @@ class TestAbundanceCSVLoader:
                 "G2": [4, 5, 6],
             }
         )
-        mocker.patch("glytrait.load_data._read_csv", return_value=df)
         loader = AbundanceCSVLoader(
-            filepath="abundance_table.csv", validator=lambda df: None
+            filepath="abundance_table.csv",
+            reader=lambda x: df,
+            validator=lambda df: None,
         )
         result = loader.load()
         expected = pd.DataFrame(
@@ -102,7 +111,6 @@ class TestAbundanceCSVLoader:
             index=pd.Index(["sample1", "sample2", "sample3"], name="Sample"),
         )
         pd.testing.assert_frame_equal(result, expected)
-        glytrait.load_data._read_csv.assert_called_once_with("abundance_table.csv")
 
     def test_default_validator(self):
         loader = AbundanceCSVLoader(filepath="abundance_table.csv")
@@ -117,7 +125,7 @@ class TestGlycanCSVLoader:
         return StructureDict({name: string for name, string in it})
 
     @pytest.mark.parametrize("mode", ["structure", "composition"])
-    def test_basic(self, mocker, mode):
+    def test_basic(self, mode):
         glycan_col = "Structure" if mode == "structure" else "Composition"
         df = pd.DataFrame(
             {
@@ -125,11 +133,11 @@ class TestGlycanCSVLoader:
                 glycan_col: ["glycan1", "glycan2", "glycan3"],
             },
         )
-        mocker.patch("glytrait.load_data._read_csv", return_value=df)
         loader = GlycanCSVLoader(
             "structure.csv",
             mode=mode,
             parser=self.fake_parser,
+            reader=lambda x: df,
             validator=lambda df: None,
         )
         result = loader.load()
