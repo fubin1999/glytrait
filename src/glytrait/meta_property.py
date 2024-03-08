@@ -582,7 +582,9 @@ def _(glycan: Structure) -> int:
     for node in glycan.breadth_first_traversal():
         if get_mono_str(node) in ("Neu5Ac", "Neu5Gc"):
             if node.links[2][0].parent_position == -1:
-                raise SiaLinkageError("Sialic acid linkage not specified")
+                raise SiaLinkageError(
+                    f"Sialic acid linkage not specified: {glycan.composition}"
+                )
             elif node.links[2][0].parent_position == 3:
                 n = n + 1
     return n
@@ -607,7 +609,9 @@ def _(glycan: Structure) -> int:
     for node in glycan.breadth_first_traversal():
         if get_mono_str(node) in ("Neu5Ac", "Neu5Gc"):
             if node.links[2][0].parent_position == -1:
-                raise SiaLinkageError("Sialic acid linkage not specified")
+                raise SiaLinkageError(
+                    f"Sialic acid linkage not specified: {glycan.composition}"
+                )
             elif node.links[2][0].parent_position == 6:
                 n = n + 1
     return n
