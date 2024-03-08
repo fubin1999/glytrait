@@ -7,7 +7,7 @@ from glytrait.data_export import export_all
 from glytrait.data_type import MetaPropertyTable, DerivedTraitTable
 from glytrait.diff import differential_analysis
 from glytrait.formula import TraitFormula, load_formulas
-from glytrait.load_data import load_input_data, GlyTraitInputData
+from glytrait.load_data import load_input_data_from_csv, GlyTraitInputData
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
 from glytrait.preprocessing import preprocess
@@ -122,7 +122,7 @@ class GlyTrait:
     def _load_input_data(
         self, abundance_file: str, glycan_file: str, group_file: Optional[str] = None
     ) -> GlyTraitInputData:
-        return load_input_data(
+        return load_input_data_from_csv(
             abundance_file=abundance_file,
             glycan_file=glycan_file,
             group_file=group_file,
