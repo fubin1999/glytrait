@@ -13,6 +13,8 @@ from glytrait.load_data import (
     GroupsCSVLoader,
     GlycanCSVLoader,
     DFValidator,
+    GlyTraitInputData,
+    InputDataValidator
 )
 
 
@@ -219,3 +221,100 @@ class TestDFValidator:
             "Expected types: float64, got: {'B': dtype('int64')}."
         )
         assert msg in str(excinfo.value)
+
+
+class TestInputDataValidator:
+
+    def test_registered_validators(self):
+        validators = set(InputDataValidator.validators)
+        expected = {
+            glytrait.load_data.same_samples_in_abundance_and_groups,
+            glytrait.load_data.all_glycans_have_structures_or_compositions,
+        }
+        assert validators == expected
+
+
+class TestSameSamplesInAbundanceAndGroups:
+
+    @staticmethod
+    def make_abund_df(samples: list[str]):
+        """Helper function to create a simple abundance table with given sample names."""
+        return pd.DataFrame(
+            {"G1": [1] * len(samples), "G2": [1] * len(samples)},
+            index=samples
+        )
+
+    @staticmethod
+    def make_group_s(samples: list[str]):
+        """Helper function to create a simple group series with given sample names."""
+        return pd.Series(["group1"] * len(samples), index=pd.Index(samples, name="Sample"))
+
+    def test_same(self):
+        abundance = self.make_abund_df(["sample1", "sample2"])
+        groups = self.make_group_s(["sample1", "sample2"])
+        data = GlyTraitInputData(abundance_table=abundance, groups=groups, glycans=None)
+        glytrait.load_data.same_samples_in_abundance_and_groups(data)
+
+    def test_sample_missing_in_groups(self):
+        abundance = self.make_abund_df(["sample1", "sample2"])
+        groups = self.make_group_s(["sample1"])
+        data = GlyTraitInputData(abundance_table=abundance, groups=groups, glycans=None)
+        with pytest.raises(DataInputError) as excinfo:
+            glytrait.load_data.same_samples_in_abundance_and_groups(data)
+        msg = "The following samples are in the abundance table but not in the groups: sample2."
+        assert msg in str(excinfo.value)
+
+    def test_sample_missing_in_abundance(self):
+        abundance = self.make_abund_df(["sample1"])
+        groups = self.make_group_s(["sample1", "sample2"])
+        data = GlyTraitInputData(abundance_table=abundance, groups=groups, glycans=None)
+        with pytest.raises(DataInputError) as excinfo:
+            glytrait.load_data.same_samples_in_abundance_and_groups(data)
+        msg = "The following samples are in the groups but not in the abundance table: sample2."
+        assert msg in str(excinfo.value)
+
+    def test_sample_missing_in_both(self):
+        abundance = self.make_abund_df(["sample1"])
+        groups = self.make_group_s(["sample2"])
+        data = GlyTraitInputData(abundance_table=abundance, groups=groups, glycans=None)
+        with pytest.raises(DataInputError) as excinfo:
+            glytrait.load_data.same_samples_in_abundance_and_groups(data)
+        msg1 = "The following samples are in the abundance table but not in the groups: sample1."
+        msg2 = "The following samples are in the groups but not in the abundance table: sample2."
+        assert msg1 in str(excinfo.value)
+        assert msg2 in str(excinfo.value)
+
+
+class TestAllGlycansHaveStructuresOrComposition:
+
+    @staticmethod
+    def make_abund_df(glycans: list[str]) -> pd.DataFrame:
+        """Helper function to create a simple abundance table with given glycan names."""
+        return pd.DataFrame(
+            {glycan: [1] for glycan in glycans},
+            index=["sample1"]
+        )
+
+    def test_all_have_structures(self):
+        glycans = {"G1": "glycan1", "G2": "glycan2"}
+        abund_df = self.make_abund_df(glycans.keys())
+        data = GlyTraitInputData(abundance_table=abund_df, groups=None, glycans=glycans)
+        glytrait.load_data.all_glycans_have_structures_or_compositions(data)
+
+    def test_missing_structures(self):
+        glycans = {"G1": "glycan1"}
+        abund_df = self.make_abund_df(["G1", "G2"])
+        data = GlyTraitInputData(abundance_table=abund_df, groups=None, glycans=glycans)
+        with pytest.raises(DataInputError) as excinfo:
+            glytrait.load_data.all_glycans_have_structures_or_compositions(data)
+        msg = (
+            f"The following glycans in the abundance table do not have structures or "
+            f"compositions: G2."
+        )
+        assert msg in str(excinfo.value)
+
+    def test_glycans_in_structures_not_in_abundance(self):
+        glycans = {"G1": "glycan1", "G2": "glycan2"}
+        abund_df = self.make_abund_df(["G1"])
+        data = GlyTraitInputData(abundance_table=abund_df, groups=None, glycans=glycans)
+        assert glytrait.load_data.all_glycans_have_structures_or_compositions(data) is None

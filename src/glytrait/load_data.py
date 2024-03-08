@@ -14,7 +14,7 @@ Functions:
 from __future__ import annotations
 
 from collections.abc import Iterable, Callable
-from typing import Optional, Literal, Protocol, cast
+from typing import Optional, Literal, Protocol, cast, ClassVar
 
 import pandas as pd
 from attrs import define, field
@@ -281,6 +281,80 @@ class GlyTraitInputData:
     groups: Optional[GroupSeries] = None
 
 
+# ===== Input data validators =====
+ValidatorType = Callable[[GlyTraitInputData], None]
+
+
+@define
+class InputDataValidator:
+    """Validator for the input data.
+
+    This class only validates the interaction between the input data.
+    The format of each input data is validated by the loaders.
+    """
+
+    validators: ClassVar[list[ValidatorType]] = []
+
+    def __call__(self, input_data: GlyTraitInputData) -> None:
+        for validator in self.validators:
+            validator(input_data)
+
+    @classmethod
+    def add_validator(cls, validator: ValidatorType) -> ValidatorType:
+        """A decorator to add a validator to the list of validators."""
+        cls.validators.append(validator)
+        return validator
+
+
+@InputDataValidator.add_validator
+def same_samples_in_abundance_and_groups(input_data: GlyTraitInputData) -> None:
+    """Check if the abundance table and the groups have the same samples.
+
+    Raises:
+        DataInputError: If the samples in the abundance table and the groups are different.
+    """
+    if input_data.groups is None:
+        return
+    abund_samples = set(input_data.abundance_table.index)
+    groups_samples = set(input_data.groups.index)
+    if abund_samples != groups_samples:
+        samples_in_abund_not_in_groups = abund_samples - groups_samples
+        samples_in_groups_not_in_abund = groups_samples - abund_samples
+        msg = ""
+        if samples_in_abund_not_in_groups:
+            msg += (
+                f"The following samples are in the abundance table but not in the groups: "
+                f"{', '.join(samples_in_abund_not_in_groups)}. "
+            )
+        if samples_in_groups_not_in_abund:
+            msg += (
+                f"The following samples are in the groups but not in the abundance table: "
+                f"{', '.join(samples_in_groups_not_in_abund)}."
+            )
+        raise DataInputError(msg)
+
+
+@InputDataValidator.add_validator
+def all_glycans_have_structures_or_compositions(input_data: GlyTraitInputData) -> None:
+    """Check if all glycans in the abundance table have structures or compositions.
+
+    Glycans in the structure or composition dict that are not in the abundance table
+    are not checked.
+
+    Raises:
+        DataInputError: If any glycan in the abundance table does not
+            have a structure or composition.
+    """
+    abund_glycans = set(input_data.abundance_table.columns)
+    glycans = set(input_data.glycans.keys())
+    if diff := abund_glycans - glycans:
+        msg = (
+            f"The following glycans in the abundance table do not have structures or "
+            f"compositions: {', '.join(diff)}."
+        )
+        raise DataInputError(msg)
+
+
 # ===== The highest-level API =====
 def load_input_data(
     *,
@@ -291,6 +365,7 @@ def load_input_data(
     glycan_loader: Optional[GlycanLoaderProto] = None,
     group_loader: Optional[GroupsLoaderProto] = None,
     mode: Literal["structure", "composition"] = "structure",
+    validator: ValidatorType = InputDataValidator(),
 ) -> GlyTraitInputData:
     """Load all the input data for GlyTrait.
 
@@ -313,6 +388,7 @@ def load_input_data(
         glycan_loader: Loader for the glycans.
         group_loader: Loader for the groups. Optional.
         mode: Either "structure" or "composition".
+        validator: Validator for the input data.
 
     Returns:
         GlyTraitInputData: Input data for GlyTrait.
@@ -334,4 +410,5 @@ def load_input_data(
         groups=groups,
     )
 
+    validator(input_data)
     return input_data
