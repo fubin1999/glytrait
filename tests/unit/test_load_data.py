@@ -14,7 +14,9 @@ from glytrait.load_data import (
     GlycanCSVLoader,
     DFValidator,
     GlyTraitInputData,
-    InputDataValidator
+    InputDataValidator,
+    load_input_data,
+    load_input_data_from_csv,
 )
 
 
@@ -318,3 +320,68 @@ class TestAllGlycansHaveStructuresOrComposition:
         abund_df = self.make_abund_df(["G1"])
         data = GlyTraitInputData(abundance_table=abund_df, groups=None, glycans=glycans)
         assert glytrait.load_data.all_glycans_have_structures_or_compositions(data) is None
+
+
+def test_load_input_data(mocker):
+    abundance_table = mocker.Mock()
+    glycan_dict = mocker.Mock()
+    group_seris = mocker.Mock()
+
+    abundance_loader = mocker.Mock()
+    abundance_loader.load.return_value = abundance_table
+    glycan_loader = mocker.Mock()
+    glycan_loader.load.return_value = glycan_dict
+    group_loader = mocker.Mock()
+    group_loader.load.return_value = group_seris
+
+    validator = mocker.Mock()
+
+    result = load_input_data(
+        abundance_loader=abundance_loader,
+        glycan_loader=glycan_loader,
+        group_loader=group_loader,
+        validator=validator,
+    )
+
+    assert result.abundance_table == abundance_table
+    assert result.glycans == glycan_dict
+    assert result.groups == group_seris
+
+    abundance_loader.load.assert_called_once()
+    glycan_loader.load.assert_called_once()
+    group_loader.load.assert_called_once()
+    validator.assert_called_once_with(result)
+
+
+@pytest.mark.parametrize("mode", ["structure", "composition"])
+@pytest.mark.parametrize("group_file", [None, "group.csv"])
+def test_load_input_data_from_csv(mocker, mode, group_file):
+    input_data = mocker.Mock()
+    mocker.patch("glytrait.load_data.load_input_data", autospec=True, return_value=input_data)
+    abund_loader_mock = mocker.patch("glytrait.load_data.AbundanceCSVLoader", autospec=True)
+    glycan_loader_mock = mocker.patch("glytrait.load_data.GlycanCSVLoader", autospec=True)
+    group_loader_mock = mocker.patch("glytrait.load_data.GroupsCSVLoader", autospec=True)
+
+    result = load_input_data_from_csv(
+        abundance_file="abundance.csv",
+        glycan_file="glycan.csv",
+        group_file=group_file,
+        mode=mode,
+    )
+
+    assert result == input_data
+    abund_loader_mock.assert_called_once_with(filepath="abundance.csv")
+    glycan_loader_mock.assert_called_once_with(filepath="glycan.csv", mode=mode)
+    if group_file:
+        group_loader_mock.assert_called_once_with(filepath="group.csv")
+    else:
+        group_loader_mock.assert_not_called()
+
+    params = {
+        "abundance_loader": abund_loader_mock.return_value,
+        "glycan_loader": glycan_loader_mock.return_value,
+        "group_loader": group_loader_mock.return_value,
+    }
+    if not group_file:
+        params["group_loader"] = None
+    glytrait.load_data.load_input_data.assert_called_once_with(**params)

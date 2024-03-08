@@ -39,6 +39,7 @@ __all__ = [
     "GroupsCSVLoader",
     "GlycanCSVLoader",
     "load_input_data",
+    "load_input_data_from_csv",
 ]
 
 
@@ -355,35 +356,17 @@ def all_glycans_have_structures_or_compositions(input_data: GlyTraitInputData) -
         raise DataInputError(msg)
 
 
-# ===== The highest-level API =====
+# ===== The low-level API =====
 def load_input_data(
     *,
-    abundance_file: str,
-    glycan_file: str,
-    group_file: Optional[str] = None,
-    abundance_loader: Optional[AbundanceLoaderProto] = None,
-    glycan_loader: Optional[GlycanLoaderProto] = None,
+    abundance_loader: AbundanceLoaderProto,
+    glycan_loader: GlycanLoaderProto,
     group_loader: Optional[GroupsLoaderProto] = None,
-    mode: Literal["structure", "composition"] = "structure",
     validator: ValidatorType = InputDataValidator(),
 ) -> GlyTraitInputData:
     """Load all the input data for GlyTrait.
 
-    Notes:
-        - If `group_file` is not provided, the `groups` attribute of the returned
-        `GlyTraitInputData` will be `None`.
-        - If `abundance_loader`, `glycan_loader`, or `group_loader` are not provided,
-        the default CSV loaders will be used.
-        - If `abundance_loader`, `glycan_loader`, or `group_loader` are provided,
-        the three "file" arguments will be ignored.
-        - The three "file" arguments will be removed in the future.
-        It exists for backward compatibility.
-        To use the new API, provide the loaders directly, and pass "" as the file paths.
-
     Args:
-        abundance_file: Path to the abundance table file.
-        glycan_file: Path to the glycans file.
-        group_file: Path to the groups file. Optional.
         abundance_loader: Loader for the abundance table.
         glycan_loader: Loader for the glycans.
         group_loader: Loader for the groups. Optional.
@@ -393,13 +376,6 @@ def load_input_data(
     Returns:
         GlyTraitInputData: Input data for GlyTrait.
     """
-    if abundance_loader is None:
-        abundance_loader = AbundanceCSVLoader(filepath=abundance_file)
-    if glycan_loader is None:
-        glycan_loader = GlycanCSVLoader(filepath=glycan_file, mode=mode)
-    if group_loader is None and group_file is not None:
-        group_loader = GroupsCSVLoader(filepath=group_file)
-
     abundance_table = abundance_loader.load()
     glycans = glycan_loader.load()
     groups = group_loader.load() if group_loader else None
@@ -412,3 +388,32 @@ def load_input_data(
 
     validator(input_data)
     return input_data
+
+
+# ===== The high-level API =====
+def load_input_data_from_csv(
+    *,
+    abundance_file: str,
+    glycan_file: str,
+    group_file: Optional[str] = None,
+    mode: Literal["structure", "composition"],
+) -> GlyTraitInputData:
+    """Load all the input data for GlyTrait from csv files.
+
+    Args:
+        abundance_file: Path to the abundance table csv file.
+        glycan_file: Path to the glycans csv file.
+        group_file: Path to the groups csv file. Optional.
+        mode: Either "structure" or "composition".
+
+    Returns:
+        GlyTraitInputData: Input data for GlyTrait.
+    """
+    abundance_loader = AbundanceCSVLoader(filepath=abundance_file)
+    glycan_loader = GlycanCSVLoader(filepath=glycan_file, mode=mode)
+    group_loader = GroupsCSVLoader(filepath=group_file) if group_file else None
+    return load_input_data(
+        abundance_loader=abundance_loader,
+        glycan_loader=glycan_loader,
+        group_loader=group_loader,
+    )
