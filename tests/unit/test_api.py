@@ -111,7 +111,7 @@ class TestGlyTrait:
 
     @pytest.fixture(autouse=True)
     def patch_load_input_data(self, mocker, mock_input_data):
-        mocker.patch("glytrait.api.load_input_data", return_value=mock_input_data)
+        mocker.patch("glytrait.api.load_input_data_from_csv", return_value=mock_input_data)
 
     @pytest.fixture(autouse=True)
     def patch_build_meta_property_table(self, mocker):
@@ -182,7 +182,7 @@ class TestGlyTrait:
         glytrait_api.export_all.assert_called_once_with(to_export, output_path)
 
         glytrait_api.load_formulas.assert_called_once_with("structure", None, False)
-        glytrait_api.load_input_data.assert_called_once_with(
+        glytrait_api.load_input_data_from_csv.assert_called_once_with(
             abundance_file="abundance_file",
             glycan_file="glycan_file",
             group_file="group_file",
@@ -216,7 +216,7 @@ class TestGlyTrait:
             "group_file",
         )
 
-        glytrait_api.load_input_data.assert_called_once_with(
+        glytrait_api.load_input_data_from_csv.assert_called_once_with(
             abundance_file="abundance_file",
             glycan_file="glycan_file",
             group_file="group_file",
