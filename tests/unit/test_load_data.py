@@ -69,9 +69,7 @@ class TestGroupsCSVLoader:
             },
         )
         loader = GroupsCSVLoader(
-            filepath="group_table.csv",
-            reader=lambda x: df,
-            validator=lambda df: None
+            filepath="group_table.csv", reader=lambda x: df, validator=lambda df: None
         )
         result = loader.load()
         expected = pd.Series(
@@ -250,14 +248,15 @@ class TestSameSamplesInAbundanceAndGroups:
     def make_abund_df(samples: list[str]):
         """Helper function to create a simple abundance table with given sample names."""
         return pd.DataFrame(
-            {"G1": [1] * len(samples), "G2": [1] * len(samples)},
-            index=samples
+            {"G1": [1] * len(samples), "G2": [1] * len(samples)}, index=samples
         )
 
     @staticmethod
     def make_group_s(samples: list[str]):
         """Helper function to create a simple group series with given sample names."""
-        return pd.Series(["group1"] * len(samples), index=pd.Index(samples, name="Sample"))
+        return pd.Series(
+            ["group1"] * len(samples), index=pd.Index(samples, name="Sample")
+        )
 
     def test_same(self):
         abundance = self.make_abund_df(["sample1", "sample2"])
@@ -300,10 +299,7 @@ class TestAllGlycansHaveStructuresOrComposition:
     @staticmethod
     def make_abund_df(glycans: list[str]) -> pd.DataFrame:
         """Helper function to create a simple abundance table with given glycan names."""
-        return pd.DataFrame(
-            {glycan: [1] for glycan in glycans},
-            index=["sample1"]
-        )
+        return pd.DataFrame({glycan: [1] for glycan in glycans}, index=["sample1"])
 
     def test_all_have_structures(self):
         glycans = {"G1": "glycan1", "G2": "glycan2"}
@@ -327,7 +323,9 @@ class TestAllGlycansHaveStructuresOrComposition:
         glycans = {"G1": "glycan1", "G2": "glycan2"}
         abund_df = self.make_abund_df(["G1"])
         data = GlyTraitInputData(abundance_table=abund_df, groups=None, glycans=glycans)
-        assert glytrait.load_data.all_glycans_have_structures_or_compositions(data) is None
+        assert (
+            glytrait.load_data.all_glycans_have_structures_or_compositions(data) is None
+        )
 
 
 def test_load_input_data(mocker):
@@ -365,10 +363,18 @@ def test_load_input_data(mocker):
 @pytest.mark.parametrize("group_file", [None, "group.csv"])
 def test_load_input_data_from_csv(mocker, mode, group_file):
     input_data = mocker.Mock()
-    mocker.patch("glytrait.load_data.load_input_data", autospec=True, return_value=input_data)
-    abund_loader_mock = mocker.patch("glytrait.load_data.AbundanceCSVLoader", autospec=True)
-    glycan_loader_mock = mocker.patch("glytrait.load_data.GlycanCSVLoader", autospec=True)
-    group_loader_mock = mocker.patch("glytrait.load_data.GroupsCSVLoader", autospec=True)
+    mocker.patch(
+        "glytrait.load_data.load_input_data", autospec=True, return_value=input_data
+    )
+    abund_loader_mock = mocker.patch(
+        "glytrait.load_data.AbundanceCSVLoader", autospec=True
+    )
+    glycan_loader_mock = mocker.patch(
+        "glytrait.load_data.GlycanCSVLoader", autospec=True
+    )
+    group_loader_mock = mocker.patch(
+        "glytrait.load_data.GroupsCSVLoader", autospec=True
+    )
 
     result = load_input_data_from_csv(
         abundance_file="abundance.csv",

@@ -41,18 +41,15 @@ __all__ = [
 
 # ===== Loaders =====
 class AbundanceLoaderProto(Protocol):
-    def load(self) -> AbundanceTable:
-        ...
+    def load(self) -> AbundanceTable: ...
 
 
 class GlycanLoaderProto(Protocol):
-    def load(self) -> StructureDict | CompositionDict:
-        ...
+    def load(self) -> StructureDict | CompositionDict: ...
 
 
 class GroupsLoaderProto(Protocol):
-    def load(self) -> GroupSeries:
-        ...
+    def load(self) -> GroupSeries: ...
 
 
 @define

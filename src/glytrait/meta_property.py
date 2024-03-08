@@ -3,6 +3,7 @@
 Functions:
     build_meta_property_table: Build a table of meta-properties for glycans.
 """
+
 from __future__ import annotations
 
 from enum import Enum, auto
@@ -64,8 +65,7 @@ class MetaProperty(Protocol):
     name: ClassVar[str]
     sia_linkage: ClassVar[bool]
 
-    def __call__(self, glycan) -> float:
-        ...
+    def __call__(self, glycan) -> float: ...
 
 
 struc_meta_properties: list[Type[MetaProperty]] = []

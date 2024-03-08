@@ -111,7 +111,9 @@ class TestGlyTrait:
 
     @pytest.fixture(autouse=True)
     def patch_load_input_data(self, mocker, mock_input_data):
-        mocker.patch("glytrait.api.load_input_data_from_csv", return_value=mock_input_data)
+        mocker.patch(
+            "glytrait.api.load_input_data_from_csv", return_value=mock_input_data
+        )
 
     @pytest.fixture(autouse=True)
     def patch_build_meta_property_table(self, mocker):
