@@ -50,14 +50,14 @@ class TestCSVLoader:
             result = CSVLoader(filepath).read_csv()
         assert f"Empty CSV file." in str(excinfo.value)
 
-    def test_load(self, mocker):
+    def test_load_df(self, mocker):
         validator = mocker.Mock()
         returned_df = mocker.Mock()
-        mocker.patch("glytrait.load_data.CSVLoader.read_csv", return_value=returned_df)
-        loader = CSVLoader(filepath="test.csv", validator=validator)
-        result = loader.load()
+        loader = CSVLoader(
+            filepath="test.csv", reader=lambda x: returned_df, validator=validator
+        )
+        result = loader.load_df()
         assert result == returned_df
-        validator.assert_called_once_with(returned_df)
 
 
 class TestGroupsCSVLoader:

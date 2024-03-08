@@ -131,8 +131,12 @@ class CSVLoader:
     # Dependency injection
     reader: Callable[[str], pd.DataFrame] = field(kw_only=True, default=pd.read_csv)
 
-    def load(self) -> pd.DataFrame:
-        """Returns the data loaded from the file.
+    def load(self):
+        """Load the data from the file."""
+        raise NotImplementedError
+
+    def load_df(self) -> pd.DataFrame:
+        """Returns the DataFrame loaded from the file.
 
         Raises:
             FileNotFoundError: If the file does not exist.
@@ -177,7 +181,7 @@ class AbundanceCSVLoader(CSVLoader):
                 This includes: (1) the file is empty; (2) the file could not be parsed;
                 (3) the "Sample" column is not found.
         """
-        df = super().load()
+        df = self.load_df()
         return AbundanceTable(df.set_index("Sample"))
 
 
@@ -203,7 +207,7 @@ class GroupsCSVLoader(CSVLoader):
                 This includes: (1) the file is empty; (2) the file could not be parsed;
                 (3) the "Sample" column is not found; (4) the "Group" column is not found.
         """
-        df = super().load()
+        df = self.load_df()
         return GroupSeries(df.set_index("Sample")["Group"])
 
 
@@ -256,7 +260,7 @@ class GlycanCSVLoader(CSVLoader):
             CompositionParseError: If any composition cannot be parsed,
                 when `mode` is "composition".
         """
-        df = super().load()
+        df = self.load_df()
         ids = df["GlycanID"].to_list()
         glycan_col = self.mode.capitalize()
         try:
