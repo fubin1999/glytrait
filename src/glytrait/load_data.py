@@ -35,10 +35,6 @@ from glytrait.glycan import (
 
 __all__ = [
     "GlyTraitInputData",
-    "AbundanceCSVLoader",
-    "GroupsCSVLoader",
-    "GlycanCSVLoader",
-    "load_input_data",
     "load_input_data_from_csv",
 ]
 
