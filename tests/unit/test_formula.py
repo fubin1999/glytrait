@@ -40,21 +40,23 @@ class TestConstantTerm:
     def test_call(self, mp_table):
         term = fml.ConstantTerm(1)
         result = term(mp_table)
-        expected = pd.Series([1, 1, 1], index=mp_table.index, name="1", dtype="UInt8")
+        expected = pd.Series([1, 1, 1], index=mp_table.index, name="1", dtype="Float32")
         pd.testing.assert_series_equal(result, expected)
 
     @pytest.mark.parametrize(
         "expr, value",
         [
-            ("1", 1),
-            ("(1)", 1),
+            ("1", 1.),
+            ("(1)", 1.),
+            ("1.0", 1.),
+            ("0.5", 0.5),
         ],
     )
     def test_from_expr(self, expr, value):
         term = fml.ConstantTerm.from_expr(expr)
         assert term.value == value
 
-    @pytest.mark.parametrize("expr", ["a", "1.0"])
+    @pytest.mark.parametrize("expr", ["a"])
     def test_from_expr_invalid(self, expr):
         with pytest.raises(fml.FormulaParseError):
             fml.ConstantTerm.from_expr(expr)
@@ -223,7 +225,7 @@ class TestParseFormulaExpression:
             (
                 "A = (mp1 == 1) / 1",
                 ["mp1 == 1"],
-                ["1"],
+                ["1.0"],
             ),
             (
                 "A = (mp1 == 1) / (mp2 == 'b')",
@@ -243,17 +245,17 @@ class TestParseFormulaExpression:
             (
                 "A = (mp1 == 1) * (mp2 > 2)/ 1",
                 ["mp1 == 1", "mp2 > 2"],
-                ["1"],
+                ["1.0"],
             ),
             (
                 "A = (mp1 == 1) * (mp2 > 2) * (mp3 <= 4) / 1",
                 ["mp1 == 1", "mp2 > 2", "mp3 <= 4"],
-                ["1"],
+                ["1.0"],
             ),
             (
                 "A = (mp1 == 1) * 2 / 1",
-                ["mp1 == 1", "2"],
-                ["1"],
+                ["mp1 == 1", "2.0"],
+                ["1.0"],
             ),
             (
                 "A = mp1 / mp2",
@@ -263,7 +265,7 @@ class TestParseFormulaExpression:
             (
                 "A = (mp1 == 1) / (1)",  # extra parentheses
                 ["mp1 == 1"],
-                ["1"],
+                ["1.0"],
             ),
         ],
     )

@@ -226,16 +226,18 @@ class ConstantTerm(FormulaTerm):
     """Return a series with all values being constant.
 
     Args:
-        value: The constant value. It should be an integer greater than 0.
+        value: The constant value. It should be a float greater than 0.
     """
 
-    value: int = field(validator=attrs.validators.gt(0))
+    value: float = field(validator=attrs.validators.gt(0))
 
     def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
         """Calculate the term."""
-        # Add validation for the dtype of column
         return pd.Series(
-            self.value, index=meta_property_table.index, name=self.expr, dtype="UInt8"
+            data=self.value,
+            index=meta_property_table.index,
+            name=self.expr,
+            dtype="Float32",
         )
 
     @property
@@ -259,7 +261,7 @@ class ConstantTerm(FormulaTerm):
             FormulaTermParseError: If the expression is invalid.
         """
         try:
-            value = int(expr)
+            value = float(expr)
         except ValueError as e:
             reason = "Could not be parsed into a ConstantTerm."
             raise FormulaTermParseError(expr, reason) from e
