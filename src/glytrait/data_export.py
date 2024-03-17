@@ -8,7 +8,6 @@ Examples:
     >>> from glytrait.data_export import export_all
     >>> data_to_export = [
     ...     ("data.csv", pd.DataFrame(...)),
-    ...     ("formulas.txt", [TraitFormula(...), TraitFormula(...)]),
     ... ]
     >>> export_all(data_to_export, base_path="data")
 """
@@ -88,12 +87,3 @@ def dummy_exporter(data: Any, filepath: str) -> None:
 def export_dataframe(df: pd.DataFrame, filepath: str) -> None:
     """Export a pandas DataFrame to a CSV file."""
     df.to_csv(filepath, index=True)
-
-
-@register_exporter(TraitFormula, is_list=True)
-def export_formulas(formulas: list[TraitFormula], filepath: str) -> None:
-    """Export a list of TraitFormulas to a CSV file."""
-    with open(filepath, "w", encoding="utf8") as f:
-        for formula in formulas:
-            row = f"{formula.name}: {formula.description}\n"
-            f.write(row)

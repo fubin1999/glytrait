@@ -169,7 +169,6 @@ class GlyTrait:
         diff_result: Optional[pd.DataFrame] = None,
     ) -> None:
         data_to_export = [
-            ("formulas.txt", self._formulas),
             ("meta_properties.csv", meta_property_table),
             ("derived_traits.csv", derived_trait_table),
             ("glycan_abundance_processed.csv", input_data.abundance_table),

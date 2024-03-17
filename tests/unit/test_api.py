@@ -174,7 +174,6 @@ class TestGlyTrait:
         )
 
         to_export = [
-            ("formulas.txt", "formulas"),
             ("meta_properties.csv", "meta_property_table"),
             ("derived_traits.csv", "derived_trait_table"),
             ("glycan_abundance_processed.csv", "abundance_table"),
@@ -268,7 +267,6 @@ class TestGlyTrait:
         glytrait_api.post_filter.assert_not_called()
         glytrait_api.export_all.assert_called_once_with(
             [
-                ("formulas.txt", "formulas"),
                 ("meta_properties.csv", "meta_property_table"),
                 ("derived_traits.csv", "derived_trait_table"),
                 ("glycan_abundance_processed.csv", "abundance_table"),
