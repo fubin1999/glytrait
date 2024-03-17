@@ -26,20 +26,9 @@ def mp_table() -> pd.DataFrame:
     return df
 
 
-def mock_formula_parser(
-    expr: str,
-) -> tuple[str, list[fml.FormulaTerm], list[fml.FormulaTerm]]:
+def mock_formula_parser(expr: str):
     """Mock formula parser."""
-    return "F", [fml.NumericalTerm("mp_int")], [fml.ConstantTerm(1)]
-
-
-def test_terms():
-    terms = [term for term in fml._terms]
-    assert terms == [
-        fml.ConstantTerm,
-        fml.NumericalTerm,
-        fml.CompareTerm,
-    ]
+    return
 
 
 class TestConstantTerm:
@@ -112,9 +101,7 @@ class TestNumericalTerm:
         term = fml.NumericalTerm.from_expr(expr)
         assert term.meta_property == mp
 
-    @pytest.mark.parametrize(
-        "expr", ["1", "mp > 2", "mp == 2"]
-    )
+    @pytest.mark.parametrize("expr", ["1", "mp > 2", "mp == 2"])
     def test_from_expr_invalid(self, expr):
         with pytest.raises(fml.FormulaParseError):
             fml.NumericalTerm.from_expr(expr)
@@ -204,7 +191,7 @@ class TestCompareTerm:
             "(mp_int > )",  # missing value
             "(mp_bool == True) & (mp_str != 'b')",  # invalid operator '&'
             "(mp_str)",  # no operator
-            "(1)"  # invalid meta property
+            "(1)",  # invalid meta property
         ],
     )
     def test_from_expr_invalid(self, expr):
@@ -281,10 +268,11 @@ class TestParseFormulaExpression:
         ],
     )
     def test_parse(self, expr, numerators, denominators):
-        name, num_list, den_list = fml._parse_formula_expression(expr)
-        assert name == "A"
-        assert [term.expr for term in num_list] == numerators
-        assert [term.expr for term in den_list] == denominators
+        parser = fml.FormulaParser()
+        formula = parser(expr)
+        assert formula.name == "A"
+        assert [term.expr for term in formula.numerators] == numerators
+        assert [term.expr for term in formula.denominators] == denominators
 
     @pytest.mark.parametrize(
         "expr",
@@ -300,8 +288,9 @@ class TestParseFormulaExpression:
         ],
     )
     def test_invalid_expression(self, expr):
+        parser = fml.FormulaParser()
         with pytest.raises(fml.FormulaParseError):
-            fml._parse_formula_expression(expr)
+            parser(expr)
 
 
 class TestTraitFormula:
@@ -329,7 +318,7 @@ class TestTraitFormula:
         ids=["nS", "nL", "nE"],
     )
     def test_sia_linkage(self, numerators, denominators, expected):
-        formula = fml.TraitFormula("F", "", numerators, denominators)
+        formula = fml.TraitFormula("F", numerators, denominators)
         assert formula.sia_linkage == expected
 
     @pytest.fixture
@@ -349,14 +338,13 @@ class TestTraitFormula:
     def test_initialize_failed(self, mp_table):
         numerators = [fml.NumericalTerm("mp_not_exist")]
         denominators = [fml.NumericalTerm("1")]
-        formula = fml.TraitFormula("F", "", numerators, denominators)
+        formula = fml.TraitFormula("F", numerators, denominators)
         with pytest.raises(fml.FormulaCalculationError):
             formula.initialize(mp_table)
 
     def test_calcu_trait_without_initialization(self, mp_table, abund_table):
         formula = fml.TraitFormula(
             name="F",
-            description="",
             numerators=[fml.NumericalTerm("mp_int")],
             denominators=[fml.NumericalTerm("1")],
         )
@@ -394,18 +382,18 @@ class TestTraitFormula:
         # G1       1     True      a
         # G2       2    False      b
         # G3       3     True      c
-        formula = fml.TraitFormula("F", "", numerators, denominators)
+        formula = fml.TraitFormula("F", numerators, denominators)
         formula.initialize(mp_table)
         result = formula.calcu_trait(abund_table)
         expected = pd.Series(expected, index=abund_table.index, name="F")
         pd.testing.assert_series_equal(result, expected)
 
-    def test_from_expr(self):
-        result = fml.TraitFormula.from_expr("expr", "", parser=mock_formula_parser)
-        assert result.name == "F"
-        assert result.description == ""
-        assert result.numerators == [fml.NumericalTerm("mp_int")]
-        assert result.denominators == [fml.ConstantTerm(1)]
+    def test_from_expr(self, mocker):
+        parser = mocker.Mock()
+        parser.return_value = "formula"
+        result = fml.TraitFormula.from_expr("expr", parser=parser)
+        assert result == "formula"
+        parser.assert_called_once_with("expr")
 
 
 @pytest.mark.skip("`TraitFormula` to be updated.")
@@ -419,36 +407,6 @@ def test_load_default_formulas():
     assert len(structure_formulas) != len(composition_formulas)
 
 
-class TestLoadFormulasFromFile:
-    """Test `load_formulas_from_file` function."""
-
-    def test_basic(self, write_content, mocker):
-        description = "Some description"
-        expression = "Some expression"
-        file = write_content(f"@ {description}\n$ {expression}")
-        result = list(fml.load_formulas_from_file(file, parser=mock_formula_parser))
-        assert len(result) == 1
-        assert result[0].description == description
-        assert result[0].name == "F"
-
-    def test_duplicated_formulas(self, write_content):
-        description1 = "The ratio of high-mannose to hybrid glycans"
-        expression1 = "MHy = (type == 'high-mannose') / (type == 'hybrid')"
-        description2 = (
-            "Relative abundance of high mannose type glycans within total spectrum"
-        )
-        expression2 = (
-            "MHy = (type == 'high-mannose') / (type == 'hybrid')"  # same expression
-        )
-        content = (
-            f"@ {description1}\n$ {expression1}\n@ {description2}\n$ {expression2}"
-        )
-        file = write_content(content)
-        with pytest.raises(fml.FormulaFileError) as excinfo:
-            list(fml.load_formulas_from_file(file))
-        assert "Duplicate formula name: MHy." in str(excinfo.value)
-
-
 def test_save_builtin_formula(clean_dir):
     fml.save_builtin_formula(clean_dir)
     struc_file = clean_dir / "struc_builtin_formulas.txt"
@@ -457,35 +415,39 @@ def test_save_builtin_formula(clean_dir):
     assert comp_file.exists()
 
 
-class TestDeconvoluteFormulaFile:
-    """Test `deconvolute_formula_file` function."""
+class TestFormulaFileParser:
 
-    def test_basic(self, write_content):
+    def test_parse(self, write_content):
         file = write_content("@ Description\n$ Expression\n")
-        result = list(fml.deconvolute_formula_file(file))
+        parser = fml.FormulaFileParser(expr_parser=lambda x: x)
+        assert list(parser.parse(file)) == ["Expression"]
+
+    def test_deconvolute_formula_file_basic(self, write_content):
+        file = write_content("@ Description\n$ Expression\n")
+        result = list(fml.FormulaFileParser._deconvolute_formula_file(file))
         expected = [("Description", "Expression")]
         assert result == expected
 
     def test_first_line_not_description(self, write_content):
         file = write_content("$ Expression\n@ Description\n")
         with pytest.raises(fml.FormulaFileError) as excinfo:
-            list(fml.deconvolute_formula_file(file))
+            list(fml.FormulaFileParser._deconvolute_formula_file(file))
         assert "No description before expression 'Expression'" in str(excinfo.value)
 
     def test_two_descriptions(self, write_content):
         file = write_content("@ Description1\n@ Description2\n")
         with pytest.raises(fml.FormulaFileError) as excinfo:
-            list(fml.deconvolute_formula_file(file))
+            list(fml.FormulaFileParser._deconvolute_formula_file(file))
         assert "No expression follows description 'Description1'." in str(excinfo.value)
 
     def test_two_expressions(self, write_content):
         file = write_content("@ Description\n$ Expression1\n$ Expression2")
         with pytest.raises(fml.FormulaFileError) as excinfo:
-            list(fml.deconvolute_formula_file(file))
+            list(fml.FormulaFileParser._deconvolute_formula_file(file))
         assert "No description before expression 'Expression2'." in str(excinfo.value)
 
     def test_no_last_expression(self, write_content):
         file = write_content("@ Description1\n$ Expression1\n@Description2")
         with pytest.raises(fml.FormulaFileError) as excinfo:
-            list(fml.deconvolute_formula_file(file))
+            list(fml.FormulaFileParser._deconvolute_formula_file(file))
         assert "No expression follows description 'Description2'." in str(excinfo.value)

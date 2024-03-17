@@ -17,10 +17,10 @@ from __future__ import annotations
 import itertools
 import functools
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from importlib.resources import files, as_file
 from pathlib import Path
-from typing import Literal, Optional, Generator, TypeVar, Type
+from typing import Literal, Optional, Generator, TypeVar, Type, ClassVar
 
 import numpy as np
 import pandas as pd
@@ -111,6 +111,7 @@ class FormulaNotInitializedError(FormulaError):
 TTerm = TypeVar("TTerm", bound="FormulaTerm")
 
 
+@define
 class FormulaTerm:
     """The base class for a formula term.
 
@@ -186,7 +187,9 @@ def validate_parentheses(*, must_have: bool = False):
         def wrapper(cls, expr: str):
             if must_have:
                 if not (expr.startswith("(") and expr.endswith(")")):
-                    raise FormulaTermParseError(expr, "This term must have parentheses.")
+                    raise FormulaTermParseError(
+                        expr, "This term must have parentheses."
+                    )
             if expr.startswith("(") and not expr.endswith(")"):
                 raise FormulaTermParseError(expr, "Missing ')'.")
             if expr.endswith(")") and not expr.startswith("("):
@@ -194,7 +197,9 @@ def validate_parentheses(*, must_have: bool = False):
             if "(" in expr.strip("()") or ")" in expr.strip("()"):
                 raise FormulaTermParseError(expr, "Too many parentheses.")
             return func(cls, expr)
+
         return wrapper
+
     return decorator
 
 
@@ -206,10 +211,12 @@ def remove_parentheses(func):
     Notes:
         This decorator should be used inside `validate_parentheses`.
     """
+
     @functools.wraps(func)
     def wrapper(cls, expr: str):
         expr = expr.strip("()")
         return func(cls, expr)
+
     return wrapper
 
 
@@ -430,7 +437,7 @@ def _is_sia_linkage_term(term: FormulaTerm) -> bool:
     return "nE" in term.expr or "nL" in term.expr
 
 
-FormulaParserType = Callable[[str], tuple[str, list[FormulaTerm], list[FormulaTerm]]]
+FormulaParserType = Callable[[str], "TraitFormula"]
 
 
 @define
@@ -453,25 +460,20 @@ class TraitFormula:
 
     Attributes:
         name: The name of the formula.
-        description: The description of the formula.
         numerators: The list of formula terms in the numerator.
         denominators: The list of formula terms in the denominator.
         sia_linkage: Whether the formula is related to sia-linkage.
 
     Examples:
         >>> expr = "Trait = (A * B) / (C * D)"
-        >>> description = "Some description"
-        >>> formula = TraitFormula.from_expr(expr, description)
+        >>> formula = TraitFormula.from_expr(expr)
         >>> formula.name
         'Trait'
-        >>> formula.description
-        'Some description'
         >>> formula.initialize(meta_property_table)
         >>> trait_values = formula.calcu_trait(abundance_table)
     """
 
     name: str = field()
-    description: str = field()
     numerators: list[FormulaTerm] = field(validator=attrs.validators.min_len(1))
     denominators: list[FormulaTerm] = field(validator=attrs.validators.min_len(1))
 
@@ -492,7 +494,6 @@ class TraitFormula:
     def from_expr(
         cls,
         expr: str,
-        description: str,
         *,
         parser: Optional[FormulaParserType] = None,  # Dependency injection
     ) -> TraitFormula:
@@ -500,7 +501,6 @@ class TraitFormula:
 
         Args:
             expr: The expression of the formula.
-            description: The description of the formula.
             parser: The parser to parse the formula expression.
                 If None, the default parser will be used.
                 Defaults to None.
@@ -512,14 +512,8 @@ class TraitFormula:
             FormulaParseError: If the expression is invalid.
         """
         if parser is None:
-            parser = _parse_formula_expression
-        name, numerators, denominators = parser(expr)
-        return cls(
-            name=name,
-            description=description,
-            numerators=numerators,
-            denominators=denominators,
-        )
+            parser = FormulaParser()
+        return parser(expr)
 
     @property
     def sia_linkage(self) -> bool:
@@ -584,110 +578,135 @@ class TraitFormula:
         )
 
 
-def _parse_formula_expression(
-    expr: str,
-) -> tuple[str, list[FormulaTerm], list[FormulaTerm]]:
-    """Parse the formula expression.
+@define
+class FormulaParser:
+    """Parser of the trait formula expressions.
 
-    Args:
-        expr: The formula expression.
-
-    Returns:
-        The name, the numerators (a list of FormulaTerm),
-        and the denominators (a list of FormulaTerm) of the formula.
-
-    Raises:
-        FormulaParseError: If the expression is invalid.
+    Examples:
+        >>> parser = FormulaParser()
+        >>> formula1 = parser("expr1")  # As callable
+        >>> formula2 = parser.parse("expr2")  # Or use the `parse` method
     """
-    name, numerator_expr, spliter, denominator_expr = _split_formula_expression(expr)
-    numerators = _parse_terms(numerator_expr)
-    denominators = _parse_terms(denominator_expr)
-    if spliter == "//":
-        numerators.extend(denominators)
-    return name, numerators, denominators
 
+    _available_terms: ClassVar[list[Type[FormulaTerm]]] = _terms
 
-def _split_formula_expression(expr: str) -> tuple[str, str, str, str]:
-    """Split the formula expression into four parts:
+    def __call__(self, expr: str) -> TraitFormula:
+        return self.parse(expr)
 
-    - The name of the formula.
-    - The numerator expression of the formula.
-    - The slash or double-slash.
-    - The denominator expression of the formula.
+    def parse(self, expr: str) -> TraitFormula:
+        """Parse the formula expression.
 
-    Args:
-        expr: The formula expression.
+        Args:
+            expr: The formula expression.
 
-    Returns:
-        The name, the numerator expression, the spliter, and the denominator expression.
+        Returns:
+            The `TraitFormula` object.
 
-    Raises:
-        FormulaParseError: If the expression is invalid.
-    """
-    expr = expr.strip()
-    if " = " not in expr:
-        raise FormulaParseError(expr, "Missing ' = ' (spaces are important).")
+        Raises:
+            FormulaParseError: If the expression is invalid.
+        """
+        name, numerator_expr, spliter, denominator_expr = self._split_expr(expr)
+        numerators = [self._parse_term(e.strip()) for e in numerator_expr.split("*")]
+        denominators = [
+            self._parse_term(e.strip()) for e in denominator_expr.split("*")
+        ]
+        if spliter == "//":
+            numerators.extend(denominators)
+        return TraitFormula(name, numerators, denominators)
 
-    try:
-        name, expr_after_name = expr.split(" = ")
-    except ValueError:
-        raise FormulaParseError(expr, "Misuse of '=' for '=='.")
-    name = name.strip()
+    @staticmethod
+    def _split_expr(expr: str) -> tuple[str, str, str, str]:
+        """Split the formula expression into four parts:
 
-    if "//" not in expr_after_name and "/" not in expr_after_name:
-        raise FormulaParseError(expr, "no '/' or '//'.")
+        - The name of the formula.
+        - The numerator expression of the formula.
+        - The slash or double-slash.
+        - The denominator expression of the formula.
+        """
+        expr = expr.strip()
+        if " = " not in expr:
+            raise FormulaParseError(expr, "Missing ' = ' (spaces are important).")
 
-    if expr_after_name.count("//") == 1:
-        spliter = "//"
-    elif expr_after_name.count("/") == 1:
-        spliter = "/"
-    else:
-        raise FormulaParseError(expr, "too many '/' or '//'.")
-    numerator, denominator = expr_after_name.split(spliter)
-    numerator = numerator.strip()
-    denominator = denominator.strip()
-
-    return name, numerator, spliter, denominator
-
-
-def _parse_terms(expr: str) -> list[FormulaTerm]:
-    """Parse the terms in the formula expression.
-
-    Args:
-        expr: The expression of the terms.
-
-    Returns:
-        The terms.
-
-    Raises:
-        FormulaParseError: If the expression is invalid.
-    """
-    term_exprs = [t.strip() for t in expr.split("*")]
-    try:
-        return [_parse_term(t) for t in term_exprs]
-    except FormulaTermParseError as e:
-        reason = f"Could not parse term: {e.expr}. {e.reason}"
-        raise FormulaParseError(expr, reason) from e
-
-
-def _parse_term(expr: str) -> FormulaTerm:
-    """Parse a term in the formula expression.
-
-    Args:
-        expr: The expression of the term.
-
-    Returns:
-        The formula term.
-
-    Raises:
-        FormulaTermParseError: If the expression is invalid.
-    """
-    for term_cls in _terms:
         try:
-            return term_cls.from_expr(expr)  # Let the exception pass through
-        except FormulaTermParseError:
-            continue
-    raise FormulaTermParseError(expr, "Does not belong to any term class.")
+            name, expr_after_name = expr.split(" = ")
+        except ValueError:
+            raise FormulaParseError(expr, "Misuse of '=' for '=='.")
+        name = name.strip()
+
+        if "//" not in expr_after_name and "/" not in expr_after_name:
+            raise FormulaParseError(expr, "no '/' or '//'.")
+
+        if expr_after_name.count("//") == 1:
+            spliter = "//"
+        elif expr_after_name.count("/") == 1:
+            spliter = "/"
+        else:
+            raise FormulaParseError(expr, "too many '/' or '//'.")
+        numerator, denominator = expr_after_name.split(spliter)
+        numerator = numerator.strip()
+        denominator = denominator.strip()
+
+        return name, numerator, spliter, denominator
+
+    def _parse_term(self, expr: str) -> FormulaTerm:
+        for term_cls in self._available_terms:
+            try:
+                return term_cls.from_expr(expr)  # Let the exception pass through
+            except FormulaTermParseError:
+                continue
+        raise FormulaTermParseError(expr, "Does not belong to any term class.")
+
+
+@define
+class FormulaFileParser:
+    """Parser for a formula file."""
+
+    expr_parser: FormulaParserType = field(kw_only=True, default=FormulaParser())
+
+    def parse(self, filepath: str) -> Iterator[TraitFormula]:
+        """Parse the formula file and return a list of `TraitFormula` objects."""
+        for description, expression in self._deconvolute_formula_file(filepath):
+            yield TraitFormula.from_expr(expression, parser=self.expr_parser)
+
+    @staticmethod
+    def _deconvolute_formula_file(formula_file: str) -> Iterator[tuple[str, str]]:
+        """A generator that yields the formula description and the formula expression.
+
+        Args:
+            formula_file (str): The path of the formula file.
+
+        Yields:
+            tuple[str, str]: The formula description and the formula expression.
+
+        Raises:
+            FormulaFileError: If the formula file is in a wrong format.
+        """
+        with open(formula_file, "r", encoding="utf8") as f:
+            description, expression = None, None
+
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+
+                if line.startswith("@"):
+                    if description is not None:
+                        msg = f"No expression follows description '{description}'."
+                        raise FormulaFileError(msg)
+                    description = line[1:].strip()
+
+                elif line.startswith("$"):
+                    expression = line[1:].strip()
+                    if description is None:
+                        msg = f"No description before expression '{expression}'."
+                        raise FormulaFileError(msg)
+                    yield description, expression
+                    description, expression = None, None
+
+        if description is not None:
+            raise FormulaFileError(
+                f"No expression follows description '{description}'."
+            )
 
 
 def load_formulas(
@@ -715,7 +734,7 @@ def load_formulas(
 
     if user_file is not None:
         default_formula_names = {f.name for f in formulas}
-        user_formulas = load_formulas_from_file(user_file)
+        user_formulas = FormulaFileParser().parse(user_file)
         for f in user_formulas:
             if f.name in default_formula_names:
                 continue
@@ -744,74 +763,7 @@ def load_default_formulas(
     else:
         raise ValueError("Invalid formula type.")
     with as_file(file_traversable) as file:
-        yield from load_formulas_from_file(str(file))
-
-
-def load_formulas_from_file(
-    filepath: str,
-    *,
-    parser: Optional[FormulaParserType] = None,  # Dependency injection
-) -> Generator[TraitFormula, None, None]:
-    """Load formulas from a file.
-
-    Args:
-        filepath: The path of the formula file.
-        parser: The parser to parse the formula expression.
-            If None, the default parser will be used.
-            Defaults to None.
-
-    Yields:
-        The formulas parsed.
-
-    Raises:
-        FormulaFileError: If the formula file is in a wrong format.
-        FormulaParseError: If a formula string cannot be parsed.
-    """
-    formulas_parsed: set[str] = set()
-    for description, expression in deconvolute_formula_file(filepath):
-        formula = TraitFormula.from_expr(expression, description, parser=parser)
-        if formula.name in formulas_parsed:
-            raise FormulaFileError(f"Duplicate formula name: {formula.name}.")
-        yield formula
-        formulas_parsed.add(formula.name)
-
-
-def deconvolute_formula_file(
-    formula_file: str,
-) -> Generator[tuple[str, str], None, None]:
-    """A generator that yields the formula description and the formula expression.
-
-    Args:
-        formula_file (str): The path of the formula file.
-
-    Yields:
-        tuple[str, str]: The formula description and the formula expression.
-
-    Raises:
-        FormulaFileError: If the formula file is in a wrong format.
-    """
-    description = None
-    expression = None
-    with open(formula_file, "r", encoding="utf8") as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith("@"):
-                if description is not None:
-                    raise FormulaFileError(
-                        f"No expression follows description '{description}'."
-                    )
-                description = line[1:].strip()
-            elif line.startswith("$"):
-                expression = line[1:].strip()
-                if description is None:
-                    raise FormulaFileError(
-                        f"No description before expression '{expression}'."
-                    )
-                yield description, expression
-                description = None
-                expression = None
-    if description is not None:
-        raise FormulaFileError(f"No expression follows description '{description}'.")
+        yield from FormulaFileParser().parse(str(file))
 
 
 def save_builtin_formula(dirpath: str | Path) -> None:
