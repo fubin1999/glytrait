@@ -402,7 +402,7 @@ $ A4F0E0B = (isBisecting) // (isComplex * is4Antennary * noFuc * noa26Sia)
 
 # Galactosylaiton
 
-@ Galactosylation within all complex glycans
+@ Average number of galactoses on complex glycans
 $ CG = (totalGal) // (isComplex)
 
 @ Galactosylation per antenna within monoantennary glycans
@@ -660,8 +660,8 @@ $ A4F0E0G = (totalGal) // (isComplex * is4Antennary * noFuc * noa26Sia) * 1/4
 
 # Sialylation
 
-@ Sialylation per antenna within all complex glycans
-$ CS = (isComplex * totalSia) / (isComplex * totalAntenna)
+@ Average number of sialic acids on complex glycans
+$ CS = (totalSia) // (isComplex)
 
 @ Sialylation per antenna within monoantennary glycans
 $ A1S = (totalSia) // (isComplex * is1Antennary) * 1/1
