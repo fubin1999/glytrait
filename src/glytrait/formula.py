@@ -439,6 +439,47 @@ def _is_sia_linkage_term(term: FormulaTerm) -> bool:
     return "nE" in term.expr or "nL" in term.expr
 
 
+@define
+class DivisionTermWrapper:
+    """Change a term into a division term.
+
+    This is a wrapper class for a formula term.
+    If calling the original term results a vector of `a`,
+    this wrapper will return a vector of `1/a`.
+    Specially, if any element of `a` is zero, a `ZeroDivisionError` will be raised.
+
+    Notes:
+        The original term should not be a `CompareTerm`.
+
+    Args:
+        term: The original term.
+    """
+
+    term: FormulaTerm = field()
+
+    @term.validator
+    def _validate_term(self, attribute, value):
+        if isinstance(value, CompareTerm):
+            raise ValueError("The original term should not be a CompareTerm.")
+
+    def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
+        """Calculate the term.
+
+        Raises:
+            FormulaTermCalculationError: If the original term calculation fails.
+            ZeroDivisionError: If the original term is zero.
+        """
+        series = self.term(meta_property_table)
+        if np.any(series == 0):
+            raise ZeroDivisionError("Division by zero.")
+        return pd.Series(1 / series, dtype="Float32", name=self.expr)
+
+    @property
+    def expr(self) -> str:
+        """The expression of the term."""
+        return f"/ ({self.term.expr})"
+
+
 FormulaParserType = Callable[[str], "TraitFormula"]
 
 

@@ -1,5 +1,8 @@
+import numpy as np
 import pandas as pd
 import pytest
+from attrs import define
+from hypothesis import given, strategies as st
 
 import glytrait.formula as fml
 
@@ -204,6 +207,76 @@ class TestCompareTerm:
         term = fml.CompareTerm("mp_not_exist", ">", 2)
         with pytest.raises(fml.MissingMetaPropertyError):
             term(mp_table)
+
+
+class TestDivisionTermWrapper:
+
+    @given(
+        st.lists(
+            st.floats(
+                allow_nan=False,
+                allow_infinity=False,
+                min_value=0.01,
+                max_value=100.0,
+            ),
+            min_size=2
+        )
+    )
+    def test_call_values(self, values):
+        @define
+        class MockTerm:
+            expr = "mock_term"
+
+            def __call__(self, table):
+                return pd.Series(values, name=self.expr, dtype="Float32")
+
+        term = MockTerm()
+        wrapper = fml.DivisionTermWrapper(term)
+        result = wrapper(None)
+        assert np.allclose(result.values * values, 1.0, rtol=1e-6)
+
+    @given(st.text(min_size=1))
+    def test_call_expr(self, original_expr):
+        @define
+        class MockTerm:
+            expr = original_expr
+            __call__ = lambda self, table: pd.Series([1, 2, 3], name=self.expr, dtype="Float32")
+
+        term = MockTerm()
+        wrapper = fml.DivisionTermWrapper(term)
+        result = wrapper(None)
+        assert result.name == f"/ ({term.expr})"
+
+    def test_raise(self):
+        @define
+        class MockTerm:
+            expr = "mock_term"
+
+            def __call__(self, table):
+                raise fml.FormulaTermCalculationError("error")
+
+        term = MockTerm()
+        wrapper = fml.DivisionTermWrapper(term)
+        with pytest.raises(fml.FormulaTermCalculationError):
+            wrapper(None)
+
+    def test_zeros(self):
+        @define
+        class MockTerm:
+            expr = "mock_term"
+
+            def __call__(self, table):
+                return pd.Series([1, 0, 3], index=['G1', 'G2', 'G3'], name=self.expr, dtype="Float32")
+
+        term = MockTerm()
+        wrapper = fml.DivisionTermWrapper(term)
+        with pytest.raises(ZeroDivisionError):
+            wrapper(None)
+
+    def test_from_compare_term(self):
+        term = fml.CompareTerm("mp_int", ">", 2)
+        with pytest.raises(ValueError):
+            wrapper = fml.DivisionTermWrapper(term)
 
 
 class TestParseFormulaExpression:
