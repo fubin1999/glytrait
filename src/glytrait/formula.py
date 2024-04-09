@@ -20,7 +20,7 @@ import re
 from collections.abc import Callable, Iterator
 from importlib.resources import files, as_file
 from pathlib import Path
-from typing import Literal, Optional, Generator, TypeVar, Type, ClassVar
+from typing import Literal, Optional, Generator, Type, Protocol
 
 import numpy as np
 import pandas as pd
@@ -108,67 +108,27 @@ class FormulaNotInitializedError(FormulaError):
     """Raised when a formula is not initialized."""
 
 
-TTerm = TypeVar("TTerm", bound="FormulaTerm")
+class FormulaTerm(Protocol):
+    """The protocol for a formula term."""
 
-
-@define
-class FormulaTerm:
-    """The base class for a formula term.
-
-    A formula term is a callable object that takes a meta-property table as input
-    and returns a Series with the same index as the meta-property table.
-    It makes some calculations based on the meta-properties.
-    Normally, it will only work with one meta property.
-
-    The class uses `from_expr` to create a formula term from an expression,
-    and it directly validates the expression within this method.
-    """
-
-    def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
-        """Calculate the term.
-
-        The return value is a Series with the same index as the meta-property table.
-        (The index is the glycans.)
-
-        Args:
-            meta_property_table: The table of meta properties.
-
-        Returns:
-            pd.Series: The values of the term,
-                with the same index as the meta-property table.
-
-        Raises:
-            FormulaCalculationError: If calling the term fails.
-        """
-        raise NotImplementedError
-
-    @classmethod
-    def from_expr(cls: Type[TTerm], expr: str) -> TTerm:
-        """Create a formula term from an expression.
-
-        Args:
-            expr: The expression of the term.
-
-        Returns:
-            The formula term.
-
-        Raises:
-            FormulaTermParseError: If the expression is invalid.
-        """
-        raise NotImplementedError
+    def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series: ...
 
     @property
-    def expr(self) -> str:
-        """The expression of the term."""
-        raise NotImplementedError
+    def expr(self) -> str: ...
 
 
-_terms: list[type[FormulaTerm]] = []
+class FormulaTermWithParser(FormulaTerm, Protocol):
+
+    @classmethod
+    def from_expr(cls, expr: str) -> FormulaTerm: ...
 
 
-def _register_term(cls: type[FormulaTerm]) -> type[FormulaTerm]:
+_terms_with_parser: list[type[FormulaTermWithParser]] = []
+
+
+def _register_term(cls):
     """A decorator to register a formula term class."""
-    _terms.append(cls)
+    _terms_with_parser.append(cls)
     return cls
 
 
@@ -222,7 +182,7 @@ def remove_parentheses(func):
 
 @_register_term
 @define
-class ConstantTerm(FormulaTerm):
+class ConstantTerm:
     """Return a series with all values being constant.
 
     Args:
@@ -270,7 +230,7 @@ class ConstantTerm(FormulaTerm):
 
 @_register_term
 @define
-class NumericalTerm(FormulaTerm):
+class NumericalTerm:
     """Return the values of a numerical meta-property.
 
     This term simply returns a column of the meta-property table,
@@ -333,7 +293,7 @@ OPERATORS = {"==", "!=", ">", ">=", "<", "<="}
 
 @_register_term
 @define
-class CompareTerm(FormulaTerm):
+class CompareTerm:
     """Compare the value of a meta-property with a given value.
 
     The validity of `meta_property` will not be checked here.
@@ -459,7 +419,7 @@ class DivisionTermWrapper:
 
     @term.validator
     def _validate_term(self, attribute, value):
-        if isinstance(value, CompareTerm):
+        if value.__class__ is CompareTerm:
             raise ValueError("The original term should not be a CompareTerm.")
 
     def __call__(self, meta_property_table: MetaPropertyTable) -> pd.Series:
@@ -508,7 +468,7 @@ class TraitFormula:
         sia_linkage: Whether the formula is related to sia-linkage.
 
     Examples:
-        >>> expr = "Trait = (A * B) / (C * D)"
+        >>> expr = "Trait = [A * B] / [C * D]"
         >>> formula = TraitFormula.from_expr(expr)
         >>> formula.name
         'Trait'
@@ -625,13 +585,44 @@ class TraitFormula:
 class FormulaParser:
     """Parser of the trait formula expressions.
 
+    The basic format of a formula expression is:
+
+    '<name> = [<numerators>] / [<denominators>]'
+    '<name> = [<numerators>] // [<denominators>]'
+
+    In the second format, the numerators will be updated by the denominators.
+    For example, 'A = [B] // [C]' is the same as 'A = [B * C] / [C]'.
+
+    Numerators and denominators are separated by '*' or '/'.
+    For example, the following expressions are all valid:
+
+    - 'A = [B * C] / [D]'
+    - 'A = [B * C / D] // [E]'  # The same as 'A = [B * C * E / D] / [E]'
+
+    Any specific term should be a valid term expression.
+    See the concrete term classes (subclasses of `FormulaTerm`) for more details.
+    However, '*' and '/' are not allowed in the parentheses.
+
+    More examples of valid expressions:
+
+    - 'A = [B * C] / [D]'
+    - 'A = [B * C / D] // [E]'
+    - 'A = [(B == 1) * C] // [D]'
+
     Examples:
         >>> parser = FormulaParser()
         >>> formula1 = parser("expr1")  # As callable
         >>> formula2 = parser.parse("expr2")  # Or use the `parse` method
     """
 
-    _available_terms: ClassVar[list[Type[FormulaTerm]]] = _terms
+    _available_terms: list[Type[FormulaTermWithParser]] = field(
+        kw_only=True, default=None
+    )
+    _formula_factory: Type[TraitFormula] = field(kw_only=True, default=TraitFormula)
+
+    def __attrs_post_init__(self):
+        if self._available_terms is None:
+            self._available_terms = list(_terms_with_parser)
 
     def __call__(self, expr: str) -> TraitFormula:
         return self.parse(expr)
@@ -649,13 +640,11 @@ class FormulaParser:
             FormulaParseError: If the expression is invalid.
         """
         name, numerator_expr, spliter, denominator_expr = self._split_expr(expr)
-        numerators = [self._parse_term(e.strip()) for e in numerator_expr.split("*")]
-        denominators = [
-            self._parse_term(e.strip()) for e in denominator_expr.split("*")
-        ]
+        numerators = self._parse_terms_expr(numerator_expr)
+        denominators = self._parse_terms_expr(denominator_expr)
         if spliter == "//":
             numerators.extend(denominators)
-        return TraitFormula(name, numerators, denominators)
+        return self._formula_factory(name, numerators, denominators)
 
     @staticmethod
     def _split_expr(expr: str) -> tuple[str, str, str, str]:
@@ -675,23 +664,42 @@ class FormulaParser:
         except ValueError:
             raise FormulaParseError(expr, "Misuse of '=' for '=='.")
         name = name.strip()
+        expr_after_name = expr_after_name.strip()
 
-        if "//" not in expr_after_name and "/" not in expr_after_name:
-            raise FormulaParseError(expr, "no '/' or '//'.")
+        pattern = r"\[(.*?)\] (/{1,2}) \[(.*?)\]"
+        match = re.fullmatch(pattern, expr_after_name)
+        if match is None:
+            raise FormulaParseError(expr, "Invalid format.")
 
-        if expr_after_name.count("//") == 1:
-            spliter = "//"
-        elif expr_after_name.count("/") == 1:
-            spliter = "/"
-        else:
-            raise FormulaParseError(expr, "too many '/' or '//'.")
-        numerator, denominator = expr_after_name.split(spliter)
-        numerator = numerator.strip()
-        denominator = denominator.strip()
+        numerator_expr, spliter, denominator_expr = match.groups()
+        numerator_expr = numerator_expr.strip()
+        denominator_expr = denominator_expr.strip()
+        return name, numerator_expr, spliter, denominator_expr
 
-        return name, numerator, spliter, denominator
+    def _parse_terms_expr(self, expr: str) -> list[FormulaTerm]:
+        """Parse the numerator or denominator expression."""
+        terms: list[FormulaTerm] = []
+        for s, t in self._split_terms(expr):
+            try:
+                term = self._parse_term(t)
+            except FormulaTermParseError as e:
+                raise FormulaParseError(expr, str(e)) from e
+            if s == "*":
+                terms.append(term)
+            else:  # s == "/"
+                terms.append(DivisionTermWrapper(term))
+        return terms
+
+    @staticmethod
+    def _split_terms(expr: str) -> list[tuple[str, str]]:
+        """Split the numerator or denominator expression into symbols and terms."""
+        expr = "* " + expr
+        pattern = r"(\*|/)([^\*/]*)"
+        matches = re.findall(pattern, expr)
+        return [(s, t.strip()) for s, t in matches]
 
     def _parse_term(self, expr: str) -> FormulaTerm:
+        """Parse a term expression."""
         for term_cls in self._available_terms:
             try:
                 return term_cls.from_expr(expr)  # Let the exception pass through

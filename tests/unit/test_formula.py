@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from attrs import define
-from hypothesis import given, strategies as st
+from hypothesis import given, assume, strategies as st
 
 import glytrait.formula as fml
 
@@ -49,9 +49,9 @@ class TestConstantTerm:
     @pytest.mark.parametrize(
         "expr, value",
         [
-            ("1", 1.),
-            ("(1)", 1.),
-            ("1.0", 1.),
+            ("1", 1.0),
+            ("(1)", 1.0),
+            ("1.0", 1.0),
             ("0.5", 0.5),
         ],
     )
@@ -219,7 +219,7 @@ class TestDivisionTermWrapper:
                 min_value=0.01,
                 max_value=100.0,
             ),
-            min_size=2
+            min_size=2,
         )
     )
     def test_call_values(self, values):
@@ -240,7 +240,9 @@ class TestDivisionTermWrapper:
         @define
         class MockTerm:
             expr = original_expr
-            __call__ = lambda self, table: pd.Series([1, 2, 3], name=self.expr, dtype="Float32")
+            __call__ = lambda self, table: pd.Series(
+                [1, 2, 3], name=self.expr, dtype="Float32"
+            )
 
         term = MockTerm()
         wrapper = fml.DivisionTermWrapper(term)
@@ -266,7 +268,9 @@ class TestDivisionTermWrapper:
             expr = "mock_term"
 
             def __call__(self, table):
-                return pd.Series([1, 0, 3], index=['G1', 'G2', 'G3'], name=self.expr, dtype="Float32")
+                return pd.Series(
+                    [1, 0, 3], index=["G1", "G2", "G3"], name=self.expr, dtype="Float32"
+                )
 
         term = MockTerm()
         wrapper = fml.DivisionTermWrapper(term)
@@ -282,90 +286,139 @@ class TestDivisionTermWrapper:
 class TestParseFormulaExpression:
     """Test `_parse_formula_expression` function."""
 
-    @pytest.mark.parametrize(
-        "expr, numerators, denominators",
-        [
-            (
-                "A = (mp1 == 1) // (mp2 > 2)",
-                ["mp1 == 1", "mp2 > 2"],
-                ["mp2 > 2"],
-            ),
-            (
-                "A = (mp1 == 1) / (mp2 > 2)",
-                ["mp1 == 1"],
-                ["mp2 > 2"],
-            ),
-            (
-                "A = (mp1 == 1) / 1",
-                ["mp1 == 1"],
-                ["1.0"],
-            ),
-            (
-                "A = (mp1 == 1) / (mp2 == 'b')",
-                ["mp1 == 1"],
-                ["mp2 == 'b'"],
-            ),
-            (
-                'A = (mp1 == 1) / (mp2 == "b")',
-                ["mp1 == 1"],
-                ["mp2 == 'b'"],
-            ),
-            (
-                "A = (mp1 == 1) / (mp2 == True)",
-                ["mp1 == 1"],
-                ["mp2 == True"],
-            ),
-            (
-                "A = (mp1 == 1) * (mp2 > 2)/ 1",
-                ["mp1 == 1", "mp2 > 2"],
-                ["1.0"],
-            ),
-            (
-                "A = (mp1 == 1) * (mp2 > 2) * (mp3 <= 4) / 1",
-                ["mp1 == 1", "mp2 > 2", "mp3 <= 4"],
-                ["1.0"],
-            ),
-            (
-                "A = (mp1 == 1) * 2 / 1",
-                ["mp1 == 1", "2.0"],
-                ["1.0"],
-            ),
-            (
-                "A = mp1 / mp2",
-                ["mp1"],
-                ["mp2"],
-            ),
-            (
-                "A = (mp1 == 1) / (1)",  # extra parentheses
-                ["mp1 == 1"],
-                ["1.0"],
-            ),
-        ],
-    )
-    def test_parse(self, expr, numerators, denominators):
+    @given(name=st.text(min_size=1), num=st.text(min_size=1), den=st.text(min_size=1))
+    @pytest.mark.parametrize("spliter", ["//", "/"])
+    def test_split_expr(self, name, num, den, spliter):
+        not_appeared = "/[]\n\r\t"
+        assume(not any(c in name for c in not_appeared))
+        assume(not any(c in num for c in not_appeared))
+        assume(not any(c in den for c in not_appeared))
+        assume(" " not in name)
+        assume(name.strip() != "")
+        assume(num.strip() != "")
+        assume(den.strip() != "")
+
+        expr = f"{name} = [{num}] {spliter} [{den}]"
         parser = fml.FormulaParser()
-        formula = parser(expr)
-        assert formula.name == "A"
-        assert [term.expr for term in formula.numerators] == numerators
-        assert [term.expr for term in formula.denominators] == denominators
+        result = parser._split_expr(expr)
+        expected = (name.strip(), num.strip(), spliter, den.strip())
+        assert result == expected
 
     @pytest.mark.parametrize(
-        "expr",
+        "expr, expected",
         [
-            "",  # Empty string
-            "random string",  # Random string
-            "A = (mp1 == 1) / (mp2 > 2) / 1",  # No more than one '/'
-            "A = (mp1 == 1)",  # No denominator
-            "(mp1 == 1) * 2 / 1",  # No name
-            "A = mp1 == 1 * 2 / 1",  # No parentheses
-            "A = (mp1 == 1) & (mp2 > 2) / 1",  # Invalid operator '&'
-            "A = (mp1 = 1) / 1",  # Invalid operator '='
+            ("a * b", [("*", "a"), ("*", "b")]),
+            ("a * b / c", [("*", "a"), ("*", "b"), ("/", "c")]),
+            ("a / b / c", [("*", "a"), ("/", "b"), ("/", "c")]),
+            ("a", [("*", "a")]),
+            ("(a == 1) / b * c", [("*", "(a == 1)"), ("/", "b"), ("*", "c")]),
+            ("a / 2", [("*", "a"), ("/", "2")]),
         ],
     )
-    def test_invalid_expression(self, expr):
+    def test_split_terms(self, expr, expected):
         parser = fml.FormulaParser()
-        with pytest.raises(fml.FormulaParseError):
-            parser(expr)
+        result = parser._split_terms(expr)
+        assert result == expected
+
+    def test_parse_term(self):
+        VALID_EXPR = "__valid_expr__"
+
+        @define
+        class FakeTerm:
+            expr = "fake_term"
+
+            @classmethod
+            def from_expr(cls, expr):
+                if expr == VALID_EXPR:
+                    return cls()
+                raise fml.FormulaTermParseError("Invalid expression")
+
+        parser = fml.FormulaParser(available_terms=[FakeTerm])
+        result = parser._parse_term(VALID_EXPR)
+        assert result.expr == "fake_term"
+
+    def test_parse_term_invalid(self):
+        INVALID_EXPR = "__invalid_expr__"
+
+        @define
+        class FakeTerm:
+            expr = "fake_term"
+
+            @classmethod
+            def from_expr(cls, expr):
+                if expr == INVALID_EXPR:
+                    raise fml.FormulaTermParseError("Invalid expression")
+                return cls()
+
+        parser = fml.FormulaParser(available_terms=[FakeTerm])
+        with pytest.raises(fml.FormulaTermParseError):
+            parser._parse_term(INVALID_EXPR)
+
+    def test_parse_terms_expr(self, mocker):
+        split_terms_result = [("*", "a"), ("/", "b")]
+        mocker.patch(
+            "glytrait.formula.FormulaParser._split_terms",
+            return_value=split_terms_result,
+        )
+
+        term1 = mocker.Mock()
+        term2 = mocker.Mock()
+        terms = [term1, term2]
+        mocker.patch(
+            "glytrait.formula.FormulaParser._parse_term",
+            side_effect=terms,
+        )
+
+        parser = fml.FormulaParser()
+        r_term1, r_term2 = parser._parse_terms_expr("expr")
+        assert r_term1 == term1
+        assert r_term2 == fml.DivisionTermWrapper(term2)
+
+    def test_parse_one_slash(self, mocker):
+        mocker.patch(
+            "glytrait.formula.FormulaParser._split_expr",
+            return_value=("name", "num", "/", "den"),
+        )
+        mocker.patch(
+            "glytrait.formula.FormulaParser._parse_terms_expr",
+            side_effect=[["a", "b"], ["c", "d"]],
+        )
+
+        @define
+        class FakeFormula:
+            name: str
+            numerators: list[str]
+            denominators: list[str]
+
+        parser = fml.FormulaParser(formula_factory=FakeFormula)
+        result = parser.parse("expr")
+
+        assert result.name == "name"
+        assert result.numerators == ["a", "b"]
+        assert result.denominators == ["c", "d"]
+
+    def test_parse_two_slashes(self, mocker):
+        mocker.patch(
+            "glytrait.formula.FormulaParser._split_expr",
+            return_value=("name", "num", "//", "den"),
+        )
+        mocker.patch(
+            "glytrait.formula.FormulaParser._parse_terms_expr",
+            side_effect=[["a", "b"], ["c", "d"]],
+        )
+
+        @define
+        class FakeFormula:
+            name: str
+            numerators: list[str]
+            denominators: list[str]
+
+        parser = fml.FormulaParser(formula_factory=FakeFormula)
+        result = parser.parse("expr")
+
+        assert result.name == "name"
+        assert result.numerators == ["a", "b", "c", "d"]
+        assert result.denominators == ["c", "d"]
 
 
 class TestTraitFormula:
