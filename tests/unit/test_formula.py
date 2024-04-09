@@ -170,6 +170,7 @@ class TestCompareTerm:
     @pytest.mark.parametrize(
         "expr, mp, operator, value",
         [
+            ("mp_int > 2", "mp_int", ">", 2),
             ("(mp_int > 2)", "mp_int", ">", 2),
             ("(mp_int >= 2)", "mp_int", ">=", 2),
             ("(mp_int < 2)", "mp_int", "<", 2),
@@ -191,7 +192,6 @@ class TestCompareTerm:
     @pytest.mark.parametrize(
         "expr",
         [
-            "mp_int > 2",  # no parentheses
             "(mp_int > 2) > 1",  # more than one '>'
             "(mp_int > )",  # missing value
             "(mp_bool == True) & (mp_str != 'b')",  # invalid operator '&'

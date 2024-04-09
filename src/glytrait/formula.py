@@ -363,7 +363,7 @@ class CompareTerm:
         return False
 
     @classmethod
-    @validate_parentheses(must_have=True)
+    @validate_parentheses(must_have=False)
     @remove_parentheses
     def from_expr(cls, expr: str) -> CompareTerm:
         """Create a formula term from an expression."""
