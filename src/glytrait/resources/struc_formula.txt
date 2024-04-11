@@ -1,1087 +1,1087 @@
 # Glycan type
 
 @ Relative abundance of high mannose type glycans within total spectrum
-$ TM = (isHighMannose) / (.)
+$ TM = [type == 'high-mannose'] / [1]
 
 @ Relative abundance of hybrid type glycans within total spectrum
-$ THy = (isHybrid) / (.)
+$ THy = [type == 'hybrid'] / [1]
 
 @ The ratio of high-mannose to hybrid glycans
-$ MHy = (isHighMannose) / (isHybrid)
+$ MHy = [type == 'high-mannose'] / [type == 'hybrid']
 
 @ Average number of mannoses on high mannose type glycans
-$ MM = (totalMan) // (isHighMannose)
+$ MM = [nM] // [type == 'high-mannose']
 
 @ Relative abundance of monoantennary glycans within complex type glycans
-$ CA1 = (is1Antennary) // (isComplex)
+$ CA1 = [nAnt == 1] // [type == 'complex']
 
 @ Relative abundance of diantennary glycans within complex type glycans
-$ CA2 = (is2Antennary) // (isComplex)
+$ CA2 = [nAnt == 2] // [type == 'complex']
 
 @ Relative abundance of triantennary glycans within complex type glycans
-$ CA3 = (is3Antennary) // (isComplex)
+$ CA3 = [nAnt == 3] // [type == 'complex']
 
 @ Relative abundance of tetra-antennary glycans within complex type glycans
-$ CA4 = (is4Antennary) // (isComplex)
+$ CA4 = [nAnt == 4] // [type == 'complex']
 
 
 # Core Fucosylation
 
 @ Core fucosylation within complex type glycans
-$ CFc = (coreFuc) // (isComplex)
+$ CFc = [nFc > 0] // [type == 'complex']
 
 @ Core fucosylation within monoantennary glycans
-$ A1Fc = (coreFuc) // (isComplex * is1Antennary)
+$ A1Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 1)]
 
 @ Core fucosylation within diantennary glycans
-$ A2Fc = (coreFuc) // (isComplex * is2Antennary)
+$ A2Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 2)]
 
 @ Core fucosylation within triantennary glycans
-$ A3Fc = (coreFuc) // (isComplex * is3Antennary)
+$ A3Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 3)]
 
 @ Core fucosylation within tetra-antennary glycans
-$ A4Fc = (coreFuc) // (isComplex * is4Antennary)
+$ A4Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 4)]
 
 @ Core fucosylation within sialylated monoantennary glycans
-$ A1SFc = (coreFuc) // (isComplex * is1Antennary * hasSia)
+$ A1SFc = [nFc > 0] // [(type == 'complex') * (nAnt == 1) * (nS > 0)]
 
 @ Core fucosylation within sialylated diantennary glycans
-$ A2SFc = (coreFuc) // (isComplex * is2Antennary * hasSia)
+$ A2SFc = [nFc > 0] // [(type == 'complex') * (nAnt == 2) * (nS > 0)]
 
 @ Core fucosylation within sialylated triantennary glycans
-$ A3SFc = (coreFuc) // (isComplex * is3Antennary * hasSia)
+$ A3SFc = [nFc > 0] // [(type == 'complex') * (nAnt == 3) * (nS > 0)]
 
 @ Core fucosylation within sialylated tetra-antennary glycans
-$ A4SFc = (coreFuc) // (isComplex * is4Antennary * hasSia)
+$ A4SFc = [nFc > 0] // [(type == 'complex') * (nAnt == 4) * (nS > 0)]
 
 @ Core fucosylation within non-sialylated monoantennary glycans
-$ A1S0Fc = (coreFuc) // (isComplex * is1Antennary * noSia)
+$ A1S0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 1) * (nS == 0)]
 
 @ Core fucosylation within non-sialylated diantennary glycans
-$ A2S0Fc = (coreFuc) // (isComplex * is2Antennary * noSia)
+$ A2S0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 2) * (nS == 0)]
 
 @ Core fucosylation within non-sialylated triantennary glycans
-$ A3S0Fc = (coreFuc) // (isComplex * is3Antennary * noSia)
+$ A3S0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 3) * (nS == 0)]
 
 @ Core fucosylation within non-sialylated tetra-antennary glycans
-$ A4S0Fc = (coreFuc) // (isComplex * is4Antennary * noSia)
+$ A4S0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 4) * (nS == 0)]
 
 @ Core fucosylation within monoantennary glycans with α2,6-linked sialic acid
-$ A1EFc = (coreFuc) // (isComplex * is1Antennary * hasa26Sia)
+$ A1EFc = [nFc > 0] // [(type == 'complex') * (nAnt == 1) * (nE == 0)]
 
 @ Core fucosylation within diantennary glycans with α2,6-linked sialic acid
-$ A2EFc = (coreFuc) // (isComplex * is2Antennary * hasa26Sia)
+$ A2EFc = [nFc > 0] // [(type == 'complex') * (nAnt == 2) * (nE > 0)]
 
 @ Core fucosylation within triantennary glycans with α2,6-linked sialic acid
-$ A3EFc = (coreFuc) // (isComplex * is3Antennary * hasa26Sia)
+$ A3EFc = [nFc > 0] // [(type == 'complex') * (nAnt == 3) * (nE > 0)]
 
 @ Core fucosylation within tetra-antennary glycans with α2,6-linked sialic acid
-$ A4EFc = (coreFuc) // (isComplex * is4Antennary * hasa26Sia)
+$ A4EFc = [nFc > 0] // [(type == 'complex') * (nAnt == 4) * (nE > 0)]
 
 @ Core fucosylation within monoantennary glycans without α2,6-linked sialic acid
-$ A1E0Fc = (coreFuc) // (isComplex * is1Antennary * noa26Sia)
+$ A1E0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 1) * (nE == 0)]
 
 @ Core fucosylation within diantennary glycans without α2,6-linked sialic acid
-$ A2E0Fc = (coreFuc) // (isComplex * is2Antennary * noa26Sia)
+$ A2E0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 2) * (nE == 0)]
 
 @ Core fucosylation within triantennary glycans without α2,6-linked sialic acid
-$ A3E0Fc = (coreFuc) // (isComplex * is3Antennary * noa26Sia)
+$ A3E0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 3) * (nE == 0)]
 
 @ Core fucosylation within tetra-antennary glycans without α2,6-linked sialic acid
-$ A4E0Fc = (coreFuc) // (isComplex * is4Antennary * noa26Sia)
+$ A4E0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 4) * (nE == 0)]
 
 @ Core fucosylation within monoantennary glycans with α2,3-linked sialic acid
-$ A1LFc = (coreFuc) // (isComplex * is1Antennary * hasa23Sia)
+$ A1LFc = [nFc > 0] // [(type == 'complex') * (nAnt == 1) * (nL > 0)]
 
 @ Core fucosylation within diantennary glycans with α2,3-linked sialic acid
-$ A2LFc = (coreFuc) // (isComplex * is2Antennary * hasa23Sia)
+$ A2LFc = [nFc > 0] // [(type == 'complex') * (nAnt == 2) * (nL > 0)]
 
 @ Core fucosylation within triantennary glycans with α2,3-linked sialic acid
-$ A3LFc = (coreFuc) // (isComplex * is3Antennary * hasa23Sia)
+$ A3LFc = [nFc > 0] // [(type == 'complex') * (nAnt == 3) * (nL > 0)]
 
 @ Core fucosylation within tetra-antennary glycans with α2,3-linked sialic acid
-$ A4LFc = (coreFuc) // (isComplex * is4Antennary * hasa23Sia)
+$ A4LFc = [nFc > 0] // [(type == 'complex') * (nAnt == 4) * (nL > 0)]
 
 @ Core fucosylation within monoantennary glycans without α2,3-linked sialic acid
-$ A1L0Fc = (coreFuc) // (isComplex * is1Antennary * noa23Sia)
+$ A1L0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 1) * (nL == 0)]
 
 @ Core fucosylation within diantennary glycans without α2,3-linked sialic acid
-$ A2L0Fc = (coreFuc) // (isComplex * is2Antennary * noa23Sia)
+$ A2L0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 2) * (nL == 0)]
 
 @ Core fucosylation within triantennary glycans without α2,3-linked sialic acid
-$ A3L0Fc = (coreFuc) // (isComplex * is3Antennary * noa23Sia)
+$ A3L0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 3) * (nL == 0)]
 
 @ Core fucosylation within tetra-antennary glycans without α2,3-linked sialic acid
-$ A4L0Fc = (coreFuc) // (isComplex * is4Antennary * noa23Sia)
+$ A4L0Fc = [nFc > 0] // [(type == 'complex') * (nAnt == 4) * (nL == 0)]
 
 
 # Antennary fucosylation
 
 @ Antennary fucosylation within complex type glycans
-$ CFa = (antennaryFuc) // (isComplex)
+$ CFa = [nFa] // [type == 'complex']
 
 @ Antennary fucosylation within monoantennary glycans
-$ A1Fa = (antennaryFuc) // (isComplex * is1Antennary)
+$ A1Fa = [nFa] // [(type == 'complex') * (nAnt == 1)]
 
 @ Antennary fucosylation within diantennary glycans
-$ A2Fa = (antennaryFuc) // (isComplex * is2Antennary)
+$ A2Fa = [nFa] // [(type == 'complex') * (nAnt == 2)]
 
 @ Antennary fucosylation within triantennary glycans
-$ A3Fa = (antennaryFuc) // (isComplex * is3Antennary)
+$ A3Fa = [nFa] // [(type == 'complex') * (nAnt == 3)]
 
 @ Antennary fucosylation within tetra-antennary glycans
-$ A4Fa = (antennaryFuc) // (isComplex * is4Antennary)
+$ A4Fa = [nFa] // [(type == 'complex') * (nAnt == 4)]
 
 @ Antennary fucosylation within sialylated monoantennary glycans
-$ A1SFa = (antennaryFuc) // (isComplex * is1Antennary * hasSia)
+$ A1SFa = [nFa] // [(type == 'complex') * (nAnt == 1) * (nS > 0)]
 
 @ Antennary fucosylation within sialylated diantennary glycans
-$ A2SFa = (antennaryFuc) // (isComplex * is2Antennary * hasSia)
+$ A2SFa = [nFa] // [(type == 'complex') * (nAnt == 2) * (nS > 0)]
 
 @ Antennary fucosylation within sialylated triantennary glycans
-$ A3SFa = (antennaryFuc) // (isComplex * is3Antennary * hasSia)
+$ A3SFa = [nFa] // [(type == 'complex') * (nAnt == 3) * (nS > 0)]
 
 @ Antennary fucosylation within sialylated tetra-antennary glycans
-$ A4SFa = (antennaryFuc) // (isComplex * is4Antennary * hasSia)
+$ A4SFa = [nFa] // [(type == 'complex') * (nAnt == 4) * (nS > 0)]
 
 @ Antennary fucosylation within non-sialylated monoantennary glycans
-$ A1S0Fa = (antennaryFuc) // (isComplex * is1Antennary * noSia)
+$ A1S0Fa = [nFa] // [(type == 'complex') * (nAnt == 1) * (nS == 0)]
 
 @ Antennary fucosylation within non-sialylated diantennary glycans
-$ A2S0Fa = (antennaryFuc) // (isComplex * is2Antennary * noSia)
+$ A2S0Fa = [nFa] // [(type == 'complex') * (nAnt == 2) * (nS == 0)]
 
 @ Antennary fucosylation within non-sialylated triantennary glycans
-$ A3S0Fa = (antennaryFuc) // (isComplex * is3Antennary * noSia)
+$ A3S0Fa = [nFa] // [(type == 'complex') * (nAnt == 3) * (nS == 0)]
 
 @ Antennary fucosylation within non-sialylated tetra-antennary glycans
-$ A4S0Fa = (antennaryFuc) // (isComplex * is4Antennary * noSia)
+$ A4S0Fa = [nFa] // [(type == 'complex') * (nAnt == 4) * (nS == 0)]
 
 @ Antennary fucosylation within monoantennary glycans with α2,6-linked sialic acid
-$ A1EFa = (antennaryFuc) // (isComplex * is1Antennary * hasa26Sia)
+$ A1EFa = [nFa] // [(type == 'complex') * (nAnt == 1) * (nE > 0)]
 
 @ Antennary fucosylation within diantennary glycans with α2,6-linked sialic acid
-$ A2EFa = (antennaryFuc) // (isComplex * is2Antennary * hasa26Sia)
+$ A2EFa = [nFa] // [(type == 'complex') * (nAnt == 2) * (nE > 0)]
 
 @ Antennary fucosylation within triantennary glycans with α2,6-linked sialic acid
-$ A3EFa = (antennaryFuc) // (isComplex * is3Antennary * hasa26Sia)
+$ A3EFa = [nFa] // [(type == 'complex') * (nAnt == 3) * (nE > 0)]
 
 @ Antennary fucosylation within tetra-antennary glycans with α2,6-linked sialic acid
-$ A4EFa = (antennaryFuc) // (isComplex * is4Antennary * hasa26Sia)
+$ A4EFa = [nFa] // [(type == 'complex') * (nAnt == 4) * (nE > 0)]
 
 @ Antennary fucosylation within monoantennary glycans without α2,6-linked sialic acid
-$ A1E0Fa = (antennaryFuc) // (isComplex * is1Antennary * noa26Sia)
+$ A1E0Fa = [nFa] // [(type == 'complex') * (nAnt == 1) * (nE == 0)]
 
 @ Antennary fucosylation within diantennary glycans without α2,6-linked sialic acid
-$ A2E0Fa = (antennaryFuc) // (isComplex * is2Antennary * noa26Sia)
+$ A2E0Fa = [nFa] // [(type == 'complex') * (nAnt == 2) * (nE == 0)]
 
 @ Antennary fucosylation within triantennary glycans without α2,6-linked sialic acid
-$ A3E0Fa = (antennaryFuc) // (isComplex * is3Antennary * noa26Sia)
+$ A3E0Fa = [nFa] // [(type == 'complex') * (nAnt == 3) * (nE == 0)]
 
 @ Antennary fucosylation within tetra-antennary glycans without α2,6-linked sialic acid
-$ A4E0Fa = (antennaryFuc) // (isComplex * is4Antennary * noa26Sia)
+$ A4E0Fa = [nFa] // [(type == 'complex') * (nAnt == 4) * (nE == 0)]
 
 @ Antennary fucosylation within monoantennary glycans with α2,3-linked sialic acid
-$ A1LFa = (antennaryFuc) // (isComplex * is1Antennary * hasa23Sia)
+$ A1LFa = [nFa] // [(type == 'complex') * (nAnt == 1) * (nL > 0)]
 
 @ Antennary fucosylation within diantennary glycans with α2,3-linked sialic acid
-$ A2LFa = (antennaryFuc) // (isComplex * is2Antennary * hasa23Sia)
+$ A2LFa = [nFa] // [(type == 'complex') * (nAnt == 2) * (nL > 0)]
 
 @ Antennary fucosylation within triantennary glycans with α2,3-linked sialic acid
-$ A3LFa = (antennaryFuc) // (isComplex * is3Antennary * hasa23Sia)
+$ A3LFa = [nFa] // [(type == 'complex') * (nAnt == 3) * (nL > 0)]
 
 @ Antennary fucosylation within tetra-antennary glycans with α2,3-linked sialic acid
-$ A4LFa = (antennaryFuc) // (isComplex * is4Antennary * hasa23Sia)
+$ A4LFa = [nFa] // [(type == 'complex') * (nAnt == 4) * (nL > 0)]
 
 @ Antennary fucosylation within monoantennary glycans without α2,3-linked sialic acid
-$ A1L0Fa = (antennaryFuc) // (isComplex * is1Antennary * noa23Sia)
+$ A1L0Fa = [nFa] // [(type == 'complex') * (nAnt == 1) * (nL == 0)]
 
 @ Antennary fucosylation within diantennary glycans without α2,3-linked sialic acid
-$ A2L0Fa = (antennaryFuc) // (isComplex * is2Antennary * noa23Sia)
+$ A2L0Fa = [nFa] // [(type == 'complex') * (nAnt == 2) * (nL == 0)]
 
 @ Antennary fucosylation within triantennary glycans without α2,3-linked sialic acid
-$ A3L0Fa = (antennaryFuc) // (isComplex * is3Antennary * noa23Sia)
+$ A3L0Fa = [nFa] // [(type == 'complex') * (nAnt == 3) * (nL == 0)]
 
 @ Antennary fucosylation within tetra-antennary glycans without α2,3-linked sialic acid
-$ A4L0Fa = (antennaryFuc) // (isComplex * is4Antennary * noa23Sia)
+$ A4L0Fa = [nFa] // [(type == 'complex') * (nAnt == 4) * (nL == 0)]
 
 
 # Bisection
 
 @ Relative abundance of species with a bisecting GlcNAc within all complex glycans
-$ CB = (isBisecting) // (isComplex)
+$ CB = [B] // [type == 'complex']
 
 @ Relative abundance of species with a bisecting GlcNAc within diantennary glycans
-$ A2B = (isBisecting) // (isComplex * is2Antennary)
+$ A2B = [B] // [(type == 'complex') * (nAnt == 2)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated diantennary
-$ A2FB = (isBisecting) // (isComplex * is2Antennary * hasFuc)
+$ A2FB = [B] // [(type == 'complex') * (nAnt == 2) * (nF > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated diantennary glycans
-$ A2F0B = (isBisecting) // (isComplex * is2Antennary * noFuc)
+$ A2F0B = [B] // [(type == 'complex') * (nAnt == 2) * (nF == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within sialylated diantennary glycans
-$ A2SB = (isBisecting) // (isComplex * is2Antennary * hasSia)
+$ A2SB = [B] // [(type == 'complex') * (nAnt == 2) * (nS > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-sialylated diantennary glycans
-$ A2S0B = (isBisecting) // (isComplex * is2Antennary * noSia)
+$ A2S0B = [B] // [(type == 'complex') * (nAnt == 2) * (nS == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated sialylated diantennary glycans
-$ A2FSB = (isBisecting) // (isComplex * is2Antennary * hasFuc * hasSia)
+$ A2FSB = [B] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nS > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated sialylated diantennary glycans
-$ A2F0SB = (isBisecting) // (isComplex * is2Antennary * noFuc * hasSia)
+$ A2F0SB = [B] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nS > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated non-sialylated diantennary glycans
-$ A2FS0B = (isBisecting) // (isComplex * is2Antennary * hasFuc * noSia)
+$ A2FS0B = [B] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nS == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-sialylated diantennary glycans
-$ A2F0S0B = (isBisecting) // (isComplex * is2Antennary * noFuc * noSia)
+$ A2F0S0B = [B] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nS == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within a2,3-sialylated diantennary glycans
-$ A2LB = (isBisecting) // (isComplex * is2Antennary * hasa23Sia)
+$ A2LB = [B] // [(type == 'complex') * (nAnt == 2) * (nL > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-a2,3-sialylated diantennary glycans
-$ A2L0B = (isBisecting) // (isComplex * is2Antennary * noa23Sia)
+$ A2L0B = [B] // [(type == 'complex') * (nAnt == 2) * (nL == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,3-sialylated diantennary glycans
-$ A2FLB = (isBisecting) // (isComplex * is2Antennary * hasFuc * hasa23Sia)
+$ A2FLB = [B] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nL > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,3-sialylated diantennary glycans
-$ A2F0LB = (isBisecting) // (isComplex * is2Antennary * noFuc * hasa23Sia)
+$ A2F0LB = [B] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nL > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,3-sialylated diantennary glycans
-$ A2FL0B = (isBisecting) // (isComplex * is2Antennary * hasFuc * noa23Sia)
+$ A2FL0B = [B] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nL == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,3-sialylated diantennary glycans
-$ A2F0L0B = (isBisecting) // (isComplex * is2Antennary * noFuc * noa23Sia)
+$ A2F0L0B = [B] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nL == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within a2,6-sialylated diantennary glycans
-$ A2EB = (isBisecting) // (isComplex * is2Antennary * hasa26Sia)
+$ A2EB = [B] // [(type == 'complex') * (nAnt == 2) * (nE > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-a2,6-sialylated diantennary glycans
-$ A2E0B = (isBisecting) // (isComplex * is2Antennary * noa26Sia)
+$ A2E0B = [B] // [(type == 'complex') * (nAnt == 2) * (nE == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,6-sialylated diantennary glycans
-$ A2FEB = (isBisecting) // (isComplex * is2Antennary * hasFuc * hasa26Sia)
+$ A2FEB = [B] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nE > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,6-sialylated diantennary glycans
-$ A2F0EB = (isBisecting) // (isComplex * is2Antennary * noFuc * hasa26Sia)
+$ A2F0EB = [B] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nE > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,6-sialylated diantennary glycans
-$ A2FE0B = (isBisecting) // (isComplex * is2Antennary * hasFuc * noa26Sia)
+$ A2FE0B = [B] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nE == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,6-sialylated diantennary glycans
-$ A2F0E0B = (isBisecting) // (isComplex * is2Antennary * noFuc * noa26Sia)
+$ A2F0E0B = [B] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nE == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within triantennary glycans
-$ A3B = (isBisecting) // (isComplex * is3Antennary)
+$ A3B = [B] // [(type == 'complex') * (nAnt == 3)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated triantennary glycans
-$ A3FB = (isBisecting) // (isComplex * is3Antennary * hasFuc)
+$ A3FB = [B] // [(type == 'complex') * (nAnt == 3) * (nF > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated triantennary glycans
-$ A3F0B = (isBisecting) // (isComplex * is3Antennary * noFuc)
+$ A3F0B = [B] // [(type == 'complex') * (nAnt == 3) * (nF == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within sialylated triantennary glycans
-$ A3SB = (isBisecting) // (isComplex * is3Antennary * hasSia)
+$ A3SB = [B] // [(type == 'complex') * (nAnt == 3) * (nS > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-sialylated triantennary glycans
-$ A3S0B = (isBisecting) // (isComplex * is3Antennary * noSia)
+$ A3S0B = [B] // [(type == 'complex') * (nAnt == 3) * (nS == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated sialylated triantennary glycans
-$ A3FSB = (isBisecting) // (isComplex * is3Antennary * hasFuc * hasSia)
+$ A3FSB = [B] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nS > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated sialylated triantennary glycans
-$ A3F0SB = (isBisecting) // (isComplex * is3Antennary * noFuc * hasSia)
+$ A3F0SB = [B] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nS > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated non-sialylated triantennary glycans
-$ A3FS0B = (isBisecting) // (isComplex * is3Antennary * hasFuc * noSia)
+$ A3FS0B = [B] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nS == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-sialylated triantennary glycans
-$ A3F0S0B = (isBisecting) // (isComplex * is3Antennary * noFuc * noSia)
+$ A3F0S0B = [B] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nS == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within a2,3-sialylated triantennary glycans
-$ A3LB = (isBisecting) // (isComplex * is3Antennary * hasa23Sia)
+$ A3LB = [B] // [(type == 'complex') * (nAnt == 3) * (nL > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-a2,3-sialylated triantennary glycans
-$ A3L0B = (isBisecting) // (isComplex * is3Antennary * noa23Sia)
+$ A3L0B = [B] // [(type == 'complex') * (nAnt == 3) * (nL == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,3-sialylated triantennary glycans
-$ A3FLB = (isBisecting) // (isComplex * is3Antennary * hasFuc * hasa23Sia)
+$ A3FLB = [B] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nL > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,3-sialylated triantennary glycans
-$ A3F0LB = (isBisecting) // (isComplex * is3Antennary * noFuc * hasa23Sia)
+$ A3F0LB = [B] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nL > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,3-sialylated triantennary glycans
-$ A3FL0B = (isBisecting) // (isComplex * is3Antennary * hasFuc * noa23Sia)
+$ A3FL0B = [B] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nL == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,3-sialylated triantennary glycans
-$ A3F0L0B = (isBisecting) // (isComplex * is3Antennary * noFuc * noa23Sia)
+$ A3F0L0B = [B] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nL == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within a2,6-sialylated triantennary glycans
-$ A3EB = (isBisecting) // (isComplex * is3Antennary * hasa26Sia)
+$ A3EB = [B] // [(type == 'complex') * (nAnt == 3) * (nE > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-a2,6-sialylated triantennary glycans
-$ A3E0B = (isBisecting) // (isComplex * is3Antennary * noa26Sia)
+$ A3E0B = [B] // [(type == 'complex') * (nAnt == 3) * (nE == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,6-sialylated triantennary glycans
-$ A3FEB = (isBisecting) // (isComplex * is3Antennary * hasFuc * hasa26Sia)
+$ A3FEB = [B] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nE > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,6-sialylated triantennary glycans
-$ A3F0EB = (isBisecting) // (isComplex * is3Antennary * noFuc * hasa26Sia)
+$ A3F0EB = [B] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nE > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,6-sialylated triantennary glycans
-$ A3FE0B = (isBisecting) // (isComplex * is3Antennary * hasFuc * noa26Sia)
+$ A3FE0B = [B] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nE == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,6-sialylated triantennary glycans
-$ A3F0E0B = (isBisecting) // (isComplex * is3Antennary * noFuc * noa26Sia)
+$ A3F0E0B = [B] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nE == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within tetra-antennary glycans
-$ A4B = (isBisecting) // (isComplex * is4Antennary)
+$ A4B = [B] // [(type == 'complex') * (nAnt == 4)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated tetra-antennary glycans
-$ A4FB = (isBisecting) // (isComplex * is4Antennary * hasFuc)
+$ A4FB = [B] // [(type == 'complex') * (nAnt == 4) * (nF > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated tetra-antennary glycans
-$ A4F0B = (isBisecting) // (isComplex * is4Antennary * noFuc)
+$ A4F0B = [B] // [(type == 'complex') * (nAnt == 4) * (nF == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within sialylated tetra-antennary glycans
-$ A4SB = (isBisecting) // (isComplex * is4Antennary * hasSia)
+$ A4SB = [B] // [(type == 'complex') * (nAnt == 4) * (nS > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-sialylated tetra-antennary glycans
-$ A4S0B = (isBisecting) // (isComplex * is4Antennary * noSia)
+$ A4S0B = [B] // [(type == 'complex') * (nAnt == 4) * (nS == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated sialylated tetra-antennary glycans
-$ A4FSB = (isBisecting) // (isComplex * is4Antennary * hasFuc * hasSia)
+$ A4FSB = [B] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nS > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated sialylated tetra-antennary glycans
-$ A4F0SB = (isBisecting) // (isComplex * is4Antennary * noFuc * hasSia)
+$ A4F0SB = [B] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nS > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated non-sialylated tetra-antennary glycans
-$ A4FS0B = (isBisecting) // (isComplex * is4Antennary * hasFuc * noSia)
+$ A4FS0B = [B] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nS == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-sialylated tetra-antennary glycans
-$ A4F0S0B = (isBisecting) // (isComplex * is4Antennary * noFuc * noSia)
+$ A4F0S0B = [B] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nS == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within a2,3-sialylated tetra-antennary glycans
-$ A4LB = (isBisecting) // (isComplex * is4Antennary * hasa23Sia)
+$ A4LB = [B] // [(type == 'complex') * (nAnt == 4) * (nL > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-a2,3-sialylated tetra-antennary glycans
-$ A4L0B = (isBisecting) // (isComplex * is4Antennary * noa23Sia)
+$ A4L0B = [B] // [(type == 'complex') * (nAnt == 4) * (nL == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,3-sialylated tetra-antennary glycans
-$ A4FLB = (isBisecting) // (isComplex * is4Antennary * hasFuc * hasa23Sia)
+$ A4FLB = [B] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nL > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,3-sialylated tetra-antennary glycans
-$ A4F0LB = (isBisecting) // (isComplex * is4Antennary * noFuc * hasa23Sia)
+$ A4F0LB = [B] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nL > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,3-sialylated tetra-antennary glycans
-$ A4FL0B = (isBisecting) // (isComplex * is4Antennary * hasFuc * noa23Sia)
+$ A4FL0B = [B] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nL == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,3-sialylated tetra-antennary glycans
-$ A4F0L0B = (isBisecting) // (isComplex * is4Antennary * noFuc * noa23Sia)
+$ A4F0L0B = [B] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nL == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within a2,6-sialylated tetra-antennary glycans
-$ A4EB = (isBisecting) // (isComplex * is4Antennary * hasa26Sia)
+$ A4EB = [B] // [(type == 'complex') * (nAnt == 4) * (nE > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-a2,6-sialylated tetra-antennary glycans
-$ A4E0B = (isBisecting) // (isComplex * is4Antennary * noa26Sia)
+$ A4E0B = [B] // [(type == 'complex') * (nAnt == 4) * (nE == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated a2,6-sialylated tetra-antennary glycans
-$ A4FEB = (isBisecting) // (isComplex * is4Antennary * hasFuc * hasa26Sia)
+$ A4FEB = [B] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nE > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,6-sialylated tetra-antennary glycans
-$ A4F0EB = (isBisecting) // (isComplex * is4Antennary * noFuc * hasa26Sia)
+$ A4F0EB = [B] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nE > 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,6-sialylated tetra-antennary glycans
-$ A4FE0B = (isBisecting) // (isComplex * is4Antennary * hasFuc * noa26Sia)
+$ A4FE0B = [B] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nE == 0)]
 
 @ Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,6-sialylated tetra-antennary glycans
-$ A4F0E0B = (isBisecting) // (isComplex * is4Antennary * noFuc * noa26Sia)
+$ A4F0E0B = [B] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nE == 0)]
 
 
 # Galactosylaiton
 
 @ Average number of galactoses on complex glycans
-$ CG = (totalGal) // (isComplex)
+$ CG = [nG] // [type == 'complex']
 
 @ Galactosylation per antenna within monoantennary glycans
-$ A1G = (totalGal) // (isComplex * is1Antennary) * 1/1
+$ A1G = [nG] // [(type == 'complex') * (nAnt == 1)]
 
 @ Galactosylation per antenna within diantennary glycans
-$ A2G = (totalGal) // (isComplex * is2Antennary) * 1/2
+$ A2G = [nG / 2] // [(type == 'complex') * (nAnt == 2)]
 
 @ Galactosylation per antenna within triantennary glycans
-$ A3G = (totalGal) // (isComplex * is3Antennary) * 1/3
+$ A3G = [nG / 3] // [(type == 'complex') * (nAnt == 3)]
 
 @ Galactosylation per antenna within tetra-antennary glycans
-$ A4G = (totalGal) // (isComplex * is4Antennary) * 1/4
+$ A4G = [nG / 4] // [(type == 'complex') * (nAnt == 4)]
 
 @ Galactosylation per antenna within fucosylated monoantennary glycans
-$ A1FG = (totalGal) // (isComplex * is1Antennary * hasFuc) * 1/1
+$ A1FG = [nG] // [(type == 'complex') * (nAnt == 1) * (nF > 0)]
 
 @ Galactosylation per antenna within fucosylated diantennary glycans
-$ A2FG = (totalGal) // (isComplex * is2Antennary * hasFuc) * 1/2
+$ A2FG = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF > 0)]
 
 @ Galactosylation per antenna within fucosylated triantennary glycans
-$ A3FG = (totalGal) // (isComplex * is3Antennary * hasFuc) * 1/3
+$ A3FG = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF > 0)]
 
 @ Galactosylation per antenna within fucosylated tetra-antennary glycans
-$ A4FG = (totalGal) // (isComplex * is4Antennary * hasFuc) * 1/4
+$ A4FG = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF > 0)]
 
 @ Galactosylation per antenna within non-fucosylated monoantennary glycans
-$ A1F0G = (totalGal) // (isComplex * is1Antennary * noFuc) * 1/1
+$ A1F0G = [nG] // [(type == 'complex') * (nAnt == 1) * (nF == 0)]
 
 @ Galactosylation per antenna within non-fucosylated diantennary glycans
-$ A2F0G = (totalGal) // (isComplex * is2Antennary * noFuc) * 1/2
+$ A2F0G = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF == 0)]
 
 @ Galactosylation per antenna within non-fucosylated triantennary glycans
-$ A3F0G = (totalGal) // (isComplex * is3Antennary * noFuc) * 1/3
+$ A3F0G = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF == 0)]
 
 @ Galactosylation per antenna within non-fucosylated tetra-antennary glycans
-$ A4F0G = (totalGal) // (isComplex * is4Antennary * noFuc) * 1/4
+$ A4F0G = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF == 0)]
 
 @ Galactosylation per antenna within sialylated monoantennary glycans
-$ A1SG = (totalGal) // (isComplex * is1Antennary * hasSia) * 1/1
+$ A1SG = [nG] // [(type == 'complex') * (nAnt == 1) * (nS > 0)]
 
 @ Galactosylation per antenna within sialylated diantennary glycans
-$ A2SG = (totalGal) // (isComplex * is2Antennary * hasSia) * 1/2
+$ A2SG = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nS > 0)]
 
 @ Galactosylation per antenna within sialylated triantennary glycans
-$ A3SG = (totalGal) // (isComplex * is3Antennary * hasSia) * 1/3
+$ A3SG = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nS > 0)]
 
 @ Galactosylation per antenna within sialylated tetra-antennary glycans
-$ A4SG = (totalGal) // (isComplex * is4Antennary * hasSia) * 1/4
+$ A4SG = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nS > 0)]
 
 @ Galactosylation per antenna within non-sialylated monoantennary glycans
-$ A1S0G = (totalGal) // (isComplex * is1Antennary * noSia) * 1/1
+$ A1S0G = [nG] // [(type == 'complex') * (nAnt == 1) * (nS == 0)]
 
 @ Galactosylation per antenna within non-sialylated diantennary glycans
-$ A2S0G = (totalGal) // (isComplex * is2Antennary * noSia) * 1/2
+$ A2S0G = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nS == 0)]
 
 @ Galactosylation per antenna within non-sialylated triantennary glycans
-$ A3S0G = (totalGal) // (isComplex * is3Antennary * noSia) * 1/3
+$ A3S0G = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nS == 0)]
 
 @ Galactosylation per antenna within non-sialylated tetra-antennary glycans
-$ A4S0G = (totalGal) // (isComplex * is4Antennary * noSia) * 1/4
+$ A4S0G = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nS == 0)]
 
 @ Galactosylation per antenna within fucosylated sialylated monoantennary glycans
-$ A1FSG = (totalGal) // (isComplex * is1Antennary * hasFuc * hasSia) * 1/1
+$ A2FSG = [nG] // [(type == 'complex') * (nAnt == 1) * (nF > 0) * (nS > 0)]
 
 @ Galactosylation per antenna within fucosylated sialylated diantennary glycans
-$ A2FSG = (totalGal) // (isComplex * is2Antennary * hasFuc * hasSia) * 1/2
+$ A2FSG = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nS > 0)]
 
 @ Galactosylation per antenna within fucosylated sialylated triantennary glycans
-$ A3FSG = (totalGal) // (isComplex * is3Antennary * hasFuc * hasSia) * 1/3
+$ A3FSG = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nS > 0)]
 
 @ Galactosylation per antenna within fucosylated sialylated tetra-antennary glycans
-$ A4FSG = (totalGal) // (isComplex * is4Antennary * hasFuc * hasSia) * 1/4
+$ A4FSG = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nS > 0)]
 
 @ Galactosylation per antenna within non-fucosylated sialylated monoantennary glycans
-$ A1F0SG = (totalGal) // (isComplex * is1Antennary * noFuc * hasSia) * 1/1
+$ A1F0SG = [nG] // [(type == 'complex') * (nAnt == 1) * (nF == 0) * (nS > 0)]
 
 @ Galactosylation per antenna within non-fucosylated sialylated diantennary glycans
-$ A2F0SG = (totalGal) // (isComplex * is2Antennary * noFuc * hasSia) * 1/2
+$ A2F0SG = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nS > 0)]
 
 @ Galactosylation per antenna within non-fucosylated sialylated triantennary glycans
-$ A3F0SG = (totalGal) // (isComplex * is3Antennary * noFuc * hasSia) * 1/3
+$ A3F0SG = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nS > 0)]
 
 @ Galactosylation per antenna within non-fucosylated sialylated tetra-antennary glycans
-$ A4F0SG = (totalGal) // (isComplex * is4Antennary * noFuc * hasSia) * 1/4
+$ A4F0SG = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nS > 0)]
 
 @ Galactosylation per antenna within fucosylated non-sialylated monoantennary glycans
-$ A1FS0G = (totalGal) // (isComplex * is1Antennary * hasFuc * noSia) * 1/1
+$ A1FS0G = [nG] // [(type == 'complex') * (nAnt == 1) * (nF > 0) * (nS == 0)]
 
 @ Galactosylation per antenna within fucosylated non-sialylated diantennary glycans
-$ A2FS0G = (totalGal) // (isComplex * is2Antennary * hasFuc * noSia) * 1/2
+$ A2FS0G = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nS == 0)]
 
 @ Galactosylation per antenna within fucosylated non-sialylated triantennary glycans
-$ A3FS0G = (totalGal) // (isComplex * is3Antennary * hasFuc * noSia) * 1/3
+$ A3FS0G = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nS == 0)]
 
 @ Galactosylation per antenna within fucosylated non-sialylated tetra-antennary glycans
-$ A4FS0G = (totalGal) // (isComplex * is4Antennary * hasFuc * noSia) * 1/4
+$ A4FS0G = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nS == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-sialylated monoantennary glycans
-$ A1F0S0G = (totalGal) // (isComplex * is1Antennary * noFuc * noSia) * 1/1
+$ A1F0S0G = [nG] // [(type == 'complex') * (nAnt == 1) * (nF == 0) * (nS == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-sialylated diantennary glycans
-$ A2F0S0G = (totalGal) // (isComplex * is2Antennary * noFuc * noSia) * 1/2
+$ A2F0S0G = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nS == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-sialylated triantennary glycans
-$ A3F0S0G = (totalGal) // (isComplex * is3Antennary * noFuc * noSia) * 1/3
+$ A3F0S0G = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nS == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-sialylated tetra-antennary glycans
-$ A4F0S0G = (totalGal) // (isComplex * is4Antennary * noFuc * noSia) * 1/4
+$ A4F0S0G = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nS == 0)]
 
 @ Galactosylation per antenna within a2,3-sialylated monoantennary glycans
-$ A1LG = (totalGal) // (isComplex * is1Antennary * hasa23Sia) * 1/1
+$ A1LG = [nG] // [(type == 'complex') * (nAnt == 1) * (nL > 0)]
 
 @ Galactosylation per antenna within a2,3-sialylated diantennary glycans
-$ A2LG = (totalGal) // (isComplex * is2Antennary * hasa23Sia) * 1/2
+$ A2LG = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nL > 0)]
 
 @ Galactosylation per antenna within a2,3-sialylated triantennary glycans
-$ A3LG = (totalGal) // (isComplex * is3Antennary * hasa23Sia) * 1/3
+$ A3LG = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nL > 0)]
 
 @ Galactosylation per antenna within a2,3-sialylated tetra-antennary glycans
-$ A4LG = (totalGal) // (isComplex * is4Antennary * hasa23Sia) * 1/4
+$ A4LG = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nL > 0)]
 
 @ Galactosylation per antenna within non-a2,3-sialylated monoantennary glycans
-$ A1L0G = (totalGal) // (isComplex * is1Antennary * noa23Sia) * 1/1
+$ A1L0G = [nG] // [(type == 'complex') * (nAnt == 1) * (nL == 0)]
 
 @ Galactosylation per antenna within non-a2,3-sialylated diantennary glycans
-$ A2L0G = (totalGal) // (isComplex * is2Antennary * noa23Sia) * 1/2
+$ A2L0G = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nL == 0)]
 
 @ Galactosylation per antenna within non-a2,3-sialylated triantennary glycans
-$ A3L0G = (totalGal) // (isComplex * is3Antennary * noa23Sia) * 1/3
+$ A3L0G = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nL == 0)]
 
 @ Galactosylation per antenna within non-a2,3-sialylated tetra-antennary glycans
-$ A4L0G = (totalGal) // (isComplex * is4Antennary * noa23Sia) * 1/4
+$ A4L0G = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nL == 0)]
 
 @ Galactosylation per antenna within fucosylated a2,3-sialylated monoantennary glycans
-$ A1FLG = (totalGal) // (isComplex * is1Antennary * hasFuc * hasa23Sia) * 1/1
+$ A1FLG = [nG] // [(type == 'complex') * (nAnt == 1) * (nF > 0) * (nL > 0)]
 
 @ Galactosylation per antenna within fucosylated a2,3-sialylated diantennary glycans
-$ A2FLG = (totalGal) // (isComplex * is2Antennary * hasFuc * hasa23Sia) * 1/2
+$ A2FLG = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nL > 0)]
 
 @ Galactosylation per antenna within fucosylated a2,3-sialylated triantennary glycans
-$ A3FLG = (totalGal) // (isComplex * is3Antennary * hasFuc * hasa23Sia) * 1/3
+$ A3FLG = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nL > 0)]
 
 @ Galactosylation per antenna within fucosylated a2,3-sialylated tetra-antennary glycans
-$ A4FLG = (totalGal) // (isComplex * is4Antennary * hasFuc * hasa23Sia) * 1/4
+$ A4FLG = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nL > 0)]
 
 @ Galactosylation per antenna within non-fucosylated a2,3-sialylated monoantennary glycans
-$ A1F0LG = (totalGal) // (isComplex * is1Antennary * noFuc * hasa23Sia) * 1/1
+$ A1F0LG = [nG] // [(type == 'complex') * (nAnt == 1) * (nF == 0) * (nL > 0)]
 
 @ Galactosylation per antenna within non-fucosylated a2,3-sialylated diantennary glycans
-$ A2F0LG = (totalGal) // (isComplex * is2Antennary * noFuc * hasa23Sia) * 1/2
+$ A2F0LG = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nL > 0)]
 
 @ Galactosylation per antenna within non-fucosylated a2,3-sialylated triantennary glycans
-$ A3F0LG = (totalGal) // (isComplex * is3Antennary * noFuc * hasa23Sia) * 1/3
+$ A3F0LG = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nL > 0)]
 
 @ Galactosylation per antenna within non-fucosylated a2,3-sialylated tetra-antennary glycans
-$ A4F0LG = (totalGal) // (isComplex * is4Antennary * noFuc * hasa23Sia) * 1/4
+$ A4F0LG = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nL > 0)]
 
 @ Galactosylation per antenna within fucosylated non-a2,3-sialylated monoantennary glycans
-$ A1FL0G = (totalGal) // (isComplex * is1Antennary * hasFuc * noa23Sia) * 1/1
+$ A1FL0G = [nG] // [(type == 'complex') * (nAnt == 1) * (nF > 0) * (nL == 0)]
 
 @ Galactosylation per antenna within fucosylated non-a2,3-sialylated diantennary glycans
-$ A2FL0G = (totalGal) // (isComplex * is2Antennary * hasFuc * noa23Sia) * 1/2
+$ A2FL0G = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nL == 0)]
 
 @ Galactosylation per antenna within fucosylated non-a2,3-sialylated triantennary glycans
-$ A3FL0G = (totalGal) // (isComplex * is3Antennary * hasFuc * noa23Sia) * 1/3
+$ A3FL0G = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nL == 0)]
 
 @ Galactosylation per antenna within fucosylated non-a2,3-sialylated tetra-antennary glycans
-$ A4FL0G = (totalGal) // (isComplex * is4Antennary * hasFuc * noa23Sia) * 1/4
+$ A4FL0G = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nL == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-a2,3-sialylated monoantennary glycans
-$ A1F0L0G = (totalGal) // (isComplex * is1Antennary * noFuc * noa23Sia) * 1/1
+$ A1F0L0G = [nG] // [(type == 'complex') * (nAnt == 1) * (nF == 0) * (nL == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-a2,3-sialylated diantennary glycans
-$ A2F0L0G = (totalGal) // (isComplex * is2Antennary * noFuc * noa23Sia) * 1/2
+$ A2F0L0G = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nL == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-a2,3-sialylated triantennary glycans
-$ A3F0L0G = (totalGal) // (isComplex * is3Antennary * noFuc * noa23Sia) * 1/3
+$ A3F0L0G = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nL == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-a2,3-sialylated tetra-antennary glycans
-$ A4F0L0G = (totalGal) // (isComplex * is4Antennary * noFuc * noa23Sia) * 1/4
+$ A4F0L0G = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nL == 0)]
 
 @ Galactosylation per antenna within a2,6-sialylated monoantennary glycans
-$ A1EG = (totalGal) // (isComplex * is1Antennary * hasa26Sia) * 1/1
+$ A1EG = [nG] // [(type == 'complex') * (nAnt == 1) * (nE > 0)]
 
 @ Galactosylation per antenna within a2,6-sialylated diantennary glycans
-$ A2EG = (totalGal) // (isComplex * is2Antennary * hasa26Sia) * 1/2
+$ A2EG = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nE > 0)]
 
 @ Galactosylation per antenna within a2,6-sialylated triantennary glycans
-$ A3EG = (totalGal) // (isComplex * is3Antennary * hasa26Sia) * 1/3
+$ A3EG = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nE > 0)]
 
 @ Galactosylation per antenna within a2,6-sialylated tetra-antennary glycans
-$ A4EG = (totalGal) // (isComplex * is4Antennary * hasa26Sia) * 1/4
+$ A4EG = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nE > 0)]
 
 @ Galactosylation per antenna within non-a2,6-sialylated monoantennary glycans
-$ A1E0G = (totalGal) // (isComplex * is1Antennary * noa26Sia) * 1/1
+$ A1E0G = [nG] // [(type == 'complex') * (nAnt == 1) * (nE == 0)]
 
 @ Galactosylation per antenna within non-a2,6-sialylated diantennary glycans
-$ A2E0G = (totalGal) // (isComplex * is2Antennary * noa26Sia) * 1/2
+$ A2E0G = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nE == 0)]
 
 @ Galactosylation per antenna within non-a2,6-sialylated triantennary glycans
-$ A3E0G = (totalGal) // (isComplex * is3Antennary * noa26Sia) * 1/3
+$ A3E0G = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nE == 0)]
 
 @ Galactosylation per antenna within non-a2,6-sialylated tetra-antennary glycans
-$ A4E0G = (totalGal) // (isComplex * is4Antennary * noa26Sia) * 1/4
+$ A4E0G = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nE == 0)]
 
 @ Galactosylation per antenna within fucosylated a2,6-sialylated monoantennary glycans
-$ A1FEG = (totalGal) // (isComplex * is1Antennary * hasFuc * hasa26Sia) * 1/1
+$ A1FEG = [nG] // [(type == 'complex') * (nAnt == 1) * (nF > 0) * (nE > 0)]
 
 @ Galactosylation per antenna within fucosylated a2,6-sialylated diantennary glycans
-$ A2FEG = (totalGal) // (isComplex * is2Antennary * hasFuc * hasa26Sia) * 1/2
+$ A2FEG = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nE > 0)]
 
 @ Galactosylation per antenna within fucosylated a2,6-sialylated triantennary glycans
-$ A3FEG = (totalGal) // (isComplex * is3Antennary * hasFuc * hasa26Sia) * 1/3
+$ A3FEG = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nE > 0)]
 
 @ Galactosylation per antenna within fucosylated a2,6-sialylated tetra-antennary glycans
-$ A4FEG = (totalGal) // (isComplex * is4Antennary * hasFuc * hasa26Sia) * 1/4
+$ A4FEG = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nE > 0)]
 
 @ Galactosylation per antenna within non-fucosylated a2,6-sialylated monoantennary glycans
-$ A1F0EG = (totalGal) // (isComplex * is1Antennary * noFuc * hasa26Sia) * 1/1
+$ A1F0EG = [nG] // [(type == 'complex') * (nAnt == 1) * (nF == 0) * (nE > 0)]
 
 @ Galactosylation per antenna within non-fucosylated a2,6-sialylated diantennary glycans
-$ A2F0EG = (totalGal) // (isComplex * is2Antennary * noFuc * hasa26Sia) * 1/2
+$ A2F0EG = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nE > 0)]
 
 @ Galactosylation per antenna within non-fucosylated a2,6-sialylated triantennary glycans
-$ A3F0EG = (totalGal) // (isComplex * is3Antennary * noFuc * hasa26Sia) * 1/3
+$ A3F0EG = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nE > 0)]
 
 @ Galactosylation per antenna within non-fucosylated a2,6-sialylated tetra-antennary glycans
-$ A4F0EG = (totalGal) // (isComplex * is4Antennary * noFuc * hasa26Sia) * 1/4
+$ A4F0EG = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nE > 0)]
 
 @ Galactosylation per antenna within fucosylated non-a2,6-sialylated monoantennary glycans
-$ A1FE0G = (totalGal) // (isComplex * is1Antennary * hasFuc * noa26Sia) * 1/1
+$ A1FE0G = [nG] // [(type == 'complex') * (nAnt == 1) * (nF > 0) * (nE == 0)]
 
 @ Galactosylation per antenna within fucosylated non-a2,6-sialylated diantennary glycans
-$ A2FE0G = (totalGal) // (isComplex * is2Antennary * hasFuc * noa26Sia) * 1/2
+$ A2FE0G = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nE == 0)]
 
 @ Galactosylation per antenna within fucosylated non-a2,6-sialylated triantennary glycans
-$ A3FE0G = (totalGal) // (isComplex * is3Antennary * hasFuc * noa26Sia) * 1/3
+$ A3FE0G = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nE == 0)]
 
 @ Galactosylation per antenna within fucosylated non-a2,6-sialylated tetra-antennary glycans
-$ A4FE0G = (totalGal) // (isComplex * is4Antennary * hasFuc * noa26Sia) * 1/4
+$ A4FE0G = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nE == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-a2,6-sialylated monoantennary glycans
-$ A1F0E0G = (totalGal) // (isComplex * is1Antennary * noFuc * noa26Sia) * 1/1
+$ A1F0E0G = [nG] // [(type == 'complex') * (nAnt == 1) * (nF == 0) * (nE == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-a2,6-sialylated diantennary glycans
-$ A2F0E0G = (totalGal) // (isComplex * is2Antennary * noFuc * noa26Sia) * 1/2
+$ A2F0E0G = [nG / 2] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nE == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-a2,6-sialylated triantennary glycans
-$ A3F0E0G = (totalGal) // (isComplex * is3Antennary * noFuc * noa26Sia) * 1/3
+$ A3F0E0G = [nG / 3] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nE == 0)]
 
 @ Galactosylation per antenna within non-fucosylated, non-a2,6-sialylated tetra-antennary glycans
-$ A4F0E0G = (totalGal) // (isComplex * is4Antennary * noFuc * noa26Sia) * 1/4
+$ A4F0E0G = [nG / 4] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nE == 0)]
 
 
 # Sialylation
 
 @ Average number of sialic acids on complex glycans
-$ CS = (totalSia) // (isComplex)
+$ CS = [nS] // [type == 'complex']
 
 @ Sialylation per antenna within monoantennary glycans
-$ A1S = (totalSia) // (isComplex * is1Antennary) * 1/1
+$ A1S = [nS] // [(type == 'complex') * (nAnt == 1)]
 
 @ Sialylation per antenna within diantennary glycans
-$ A2S = (totalSia) // (isComplex * is2Antennary) * 1/2
+$ A2S = [nS / 2] // [(type == 'complex') * (nAnt == 2)]
 
 @ Sialylation per antenna within triantennary glycans
-$ A3S = (totalSia) // (isComplex * is3Antennary) * 1/3
+$ A3S = [nS / 3] // [(type == 'complex') * (nAnt == 3)]
 
 @ Sialylation per antenna within tetra-antennary glycans
-$ A4S = (totalSia) // (isComplex * is4Antennary) * 1/4
+$ A4S = [nS / 4] // [(type == 'complex') * (nAnt == 4)]
 
 @ Sialylation per antenna within fucosylated monoantennary glycans
-$ A1FS = (totalSia) // (isComplex * is1Antennary * hasFuc) * 1/1
+$ A1FS = [nS] // [(type == 'complex') * (nAnt == 1) * (nF > 0)]
 
 @ Sialylation per antenna within fucosylated diantennary glycans
-$ A2FS = (totalSia) // (isComplex * is2Antennary * hasFuc) * 1/2
+$ A2FS = [nS / 2] // [(type == 'complex') * (nAnt == 2) * (nF > 0)]
 
 @ Sialylation per antenna within fucosylated triantennary glycans
-$ A3FS = (totalSia) // (isComplex * is3Antennary * hasFuc) * 1/3
+$ A3FS = [nS / 3] // [(type == 'complex') * (nAnt == 3) * (nF > 0)]
 
 @ Sialylation per antenna within fucosylated tetra-antennary glycans
-$ A4FS = (totalSia) // (isComplex * is4Antennary * hasFuc) * 1/4
+$ A4FS = [nS / 4] // [(type == 'complex') * (nAnt == 4) * (nF > 0)]
 
 @ Sialylation per antenna within non-fucosylated monoantennary glycans
-$ A1F0S = (totalSia) // (isComplex * is1Antennary * noFuc) * 1/1
+$ A1F0S = [nS] // [(type == 'complex') * (nAnt == 1) * (nF == 0)]
 
 @ Sialylation per antenna within non-fucosylated diantennary glycans
-$ A2F0S = (totalSia) // (isComplex * is2Antennary * noFuc) * 1/2
+$ A2F0S = [nS / 2] // [(type == 'complex') * (nAnt == 2) * (nF == 0)]
 
 @ Sialylation per antenna within non-fucosylated triantennary glycans
-$ A3F0S = (totalSia) // (isComplex * is3Antennary * noFuc) * 1/3
+$ A3F0S = [nS / 3] // [(type == 'complex') * (nAnt == 3) * (nF == 0)]
 
 @ Sialylation per antenna within non-fucosylated tetra-antennary glycans
-$ A4F0S = (totalSia) // (isComplex * is4Antennary * noFuc) * 1/4
+$ A4F0S = [nS / 4] // [(type == 'complex') * (nAnt == 4) * (nF == 0)]
 
 @ Sialylation per galactose within monoantennary glycans
-$ A1GS = (isComplex * is1Antennary * totalSia) / (isComplex * is1Antennary * totalGal)
+$ A1GS = [nS / nG] // [(type == 'complex') * (nAnt == 1)]
 
 @ Sialylation per galactose within diantennary glycans
-$ A2GS = (isComplex * is2Antennary * totalSia) / (isComplex * is2Antennary * totalGal)
+$ A2GS = [nS / nG] // [(type == 'complex') * (nAnt == 2)]
 
 @ Sialylation per galactose within triantennary glycans
-$ A3GS = (isComplex * is3Antennary * totalSia) / (isComplex * is3Antennary * totalGal)
+$ A3GS = [nS / nG] // [(type == 'complex') * (nAnt == 3)]
 
 @ Sialylation per galactose within tetra-antennary glycans
-$ A4GS = (isComplex * is4Antennary * totalSia) / (isComplex * is4Antennary * totalGal)
+$ A4GS = [nS / nG] // [(type == 'complex') * (nAnt == 4)]
 
 @ Sialylation per galactose within fucosylated monoantennary glycans
-$ A1FGS = (isComplex * is1Antennary * hasFuc * totalSia) / (isComplex * is1Antennary * hasFuc * totalGal)
+$ A1FGS = [nS / nG] // [(type == 'complex') * (nAnt == 1) * (nF > 0)]
 
 @ Sialylation per galactose within fucosylated diantennary glycans
-$ A2FGS = (isComplex * is2Antennary * hasFuc * totalSia) / (isComplex * is2Antennary * hasFuc * totalGal)
+$ A2FGS = [nS / nG] // [(type == 'complex') * (nAnt == 2) * (nF > 0)]
 
 @ Sialylation per galactose within fucosylated triantennary glycans
-$ A3FGS = (isComplex * is3Antennary * hasFuc * totalSia) / (isComplex * is3Antennary * hasFuc * totalGal)
+$ A3FGS = [nS / nG] // [(type == 'complex') * (nAnt == 3) * (nF > 0)]
 
 @ Sialylation per galactose within fucosylated tetra-antennary glycans
-$ A4FGS = (isComplex * is4Antennary * hasFuc * totalSia) / (isComplex * is4Antennary * hasFuc * totalGal)
+$ A4FGS = [nS / nG] // [(type == 'complex') * (nAnt == 4) * (nF > 0)]
 
 @ Sialylation per galactose within non-fucosylated monoantennary glycans
-$ A1F0GS = (isComplex * is1Antennary * noFuc * totalSia) / (isComplex * is1Antennary * noFuc * totalGal)
+$ A1F0GS = [nS / nG] // [(type == 'complex') * (nAnt == 1) * (nF == 0)]
 
 @ Sialylation per galactose within non-fucosylated diantennary glycans
-$ A2F0GS = (isComplex * is2Antennary * noFuc * totalSia) / (isComplex * is2Antennary * noFuc * totalGal)
+$ A2F0GS = [nS / nG] // [(type == 'complex') * (nAnt == 2) * (nF == 0)]
 
 @ Sialylation per galactose within non-fucosylated triantennary glycans
-$ A3F0GS = (isComplex * is3Antennary * noFuc * totalSia) / (isComplex * is3Antennary * noFuc * totalGal)
+$ A3F0GS = [nS / nG] // [(type == 'complex') * (nAnt == 3) * (nF == 0)]
 
 @ Sialylation per galactose within non-fucosylated tetra-antennary glycans
-$ A4F0GS = (isComplex * is4Antennary * noFuc * totalSia) / (isComplex * is4Antennary * noFuc * totalGal)
+$ A4F0GS = [nS / nG] // [(type == 'complex') * (nAnt == 4) * (nF == 0)]
 
 
 # α2,3-linked sialylation
 
-@ α2,3-sialylation per antenna within all complex glycans
-$ CL = (isComplex * a23Sia) / (isComplex * totalAntenna)
+@ Average number of α2,3-linked sialic acids on complex glycans
+$ CL = [nL] // [type == 'complex']
 
 @ α2,3-sialylation per antenna within monoantennary glycans
-$ A1L = (a23Sia) // (isComplex * is1Antennary) * 1/1
+$ A1L = [nL] // [(type == 'complex') * (nAnt == 1)]
 
 @ α2,3-sialylation per antenna within diantennary glycans
-$ A2L = (a23Sia) // (isComplex * is2Antennary) * 1/2
+$ A2L = [nL / 2] // [(type == 'complex') * (nAnt == 2)]
 
 @ α2,3-sialylation per antenna within triantennary glycans
-$ A3L = (a23Sia) // (isComplex * is3Antennary) * 1/3
+$ A3L = [nL / 3] // [(type == 'complex') * (nAnt == 3)]
 
 @ α2,3-sialylation per antenna within tetra-antennary glycans
-$ A4L = (a23Sia) // (isComplex * is4Antennary) * 1/4
+$ A4L = [nL / 4] // [(type == 'complex') * (nAnt == 4)]
 
 @ α2,3-sialylation per antenna within fucosylated monoantennary glycans
-$ A1FL = (a23Sia) // (isComplex * is1Antennary * hasFuc) * 1/1
+$ A1FL = [nL] // [(type == 'complex') * (nAnt == 1) * (nF > 0)]
 
 @ α2,3-sialylation per antenna within fucosylated diantennary glycans
-$ A2FL = (a23Sia) // (isComplex * is2Antennary * hasFuc) * 1/2
+$ A2FL = [nL / 2] // [(type == 'complex') * (nAnt == 2) * (nF > 0)]
 
 @ α2,3-sialylation per antenna within fucosylated triantennary glycans
-$ A3FL = (a23Sia) // (isComplex * is3Antennary * hasFuc) * 1/3
+$ A3FL = [nL / 3] // [(type == 'complex') * (nAnt == 3) * (nF > 0)]
 
 @ α2,3-sialylation per antenna within fucosylated tetra-antennary glycans
-$ A4FL = (a23Sia) // (isComplex * is4Antennary * hasFuc) * 1/4
+$ A4FL = [nL / 4] // [(type == 'complex') * (nAnt == 4) * (nF > 0)]
 
 @ α2,3-sialylation per antenna within non-fucosylated monoantennary glycans
-$ A1F0L = (a23Sia) // (isComplex * is1Antennary * noFuc) * 1/1
+$ A1F0L = [nL] // [(type == 'complex') * (nAnt == 1) * (nF == 0)]
 
 @ α2,3-sialylation per antenna within non-fucosylated diantennary glycans
-$ A2F0L = (a23Sia) // (isComplex * is2Antennary * noFuc) * 1/2
+$ A2F0L = [nL / 2] // [(type == 'complex') * (nAnt == 2) * (nF == 0)]
 
 @ α2,3-sialylation per antenna within non-fucosylated triantennary glycans
-$ A3F0L = (a23Sia) // (isComplex * is3Antennary * noFuc) * 1/3
+$ A3F0L = [nL / 3] // [(type == 'complex') * (nAnt == 3) * (nF == 0)]
 
 @ α2,3-sialylation per antenna within non-fucosylated tetra-antennary glycans
-$ A4F0L = (a23Sia) // (isComplex * is4Antennary * noFuc) * 1/4
+$ A4F0L = [nL / 4] // [(type == 'complex') * (nAnt == 4) * (nF == 0)]
 
 @ α2,3-sialylation per galactose within monoantennary glycans
-$ A1GL = (isComplex * is1Antennary * a23Sia) / (isComplex * is1Antennary * totalGal)
+$ A1GL = [nL / nG] // [(type == 'complex') * (nAnt == 1)]
 
 @ α2,3-sialylation per galactose within diantennary glycans
-$ A2GL = (isComplex * is2Antennary * a23Sia) / (isComplex * is2Antennary * totalGal)
+$ A2GL = [nL / nG] // [(type == 'complex') * (nAnt == 2)]
 
 @ α2,3-sialylation per galactose within triantennary glycans
-$ A3GL = (isComplex * is3Antennary * a23Sia) / (isComplex * is3Antennary * totalGal)
+$ A3GL = [nL / nG] // [(type == 'complex') * (nAnt == 3)]
 
 @ α2,3-sialylation per galactose within tetra-antennary glycans
-$ A4GL = (isComplex * is4Antennary * a23Sia) / (isComplex * is4Antennary * totalGal)
+$ A4GL = [nL / nG] // [(type == 'complex') * (nAnt == 4)]
 
 @ α2,3-sialylation per galactose within fucosylated monoantennary glycans
-$ A1FGL = (isComplex * is1Antennary * hasFuc * a23Sia) / (isComplex * is1Antennary * hasFuc * totalGal)
+$ A1FGL = [nL / nG] // [(type == 'complex') * (nAnt == 1) * (nF > 0)]
 
 @ α2,3-sialylation per galactose within fucosylated diantennary glycans
-$ A2FGL = (isComplex * is2Antennary * hasFuc * a23Sia) / (isComplex * is2Antennary * hasFuc * totalGal)
+$ A2FGL = [nL / nG] // [(type == 'complex') * (nAnt == 2) * (nF > 0)]
 
 @ α2,3-sialylation per galactose within fucosylated triantennary glycans
-$ A3FGL = (isComplex * is3Antennary * hasFuc * a23Sia) / (isComplex * is3Antennary * hasFuc * totalGal)
+$ A3FGL = [nL / nG] // [(type == 'complex') * (nAnt == 3) * (nF > 0)]
 
 @ α2,3-sialylation per galactose within fucosylated tetra-antennary glycans
-$ A4FGL = (isComplex * is4Antennary * hasFuc * a23Sia) / (isComplex * is4Antennary * hasFuc * totalGal)
+$ A4FGL = [nL / nG] // [(type == 'complex') * (nAnt == 4) * (nF > 0)]
 
 @ α2,3-sialylation per galactose within non-fucosylated monoantennary glycans
-$ A1F0GL = (isComplex * is1Antennary * noFuc * a23Sia) / (isComplex * is1Antennary * noFuc * totalGal)
+$ A1F0GL = [nL / nG] // [(type == 'complex') * (nAnt == 1) * (nF == 0)]
 
 @ α2,3-sialylation per galactose within non-fucosylated diantennary glycans
-$ A2F0GL = (isComplex * is2Antennary * noFuc * a23Sia) / (isComplex * is2Antennary * noFuc * totalGal)
+$ A2F0GL = [nL / nG] // [(type == 'complex') * (nAnt == 2) * (nF == 0)]
 
 @ α2,3-sialylation per galactose within non-fucosylated triantennary glycans
-$ A3F0GL = (isComplex * is3Antennary * noFuc * a23Sia) / (isComplex * is3Antennary * noFuc * totalGal)
+$ A3F0GL = [nL / nG] // [(type == 'complex') * (nAnt == 3) * (nF == 0)]
 
 @ α2,3-sialylation per galactose within non-fucosylated tetra-antennary glycans
-$ A4F0GL = (isComplex * is4Antennary * noFuc * a23Sia) / (isComplex * is4Antennary * noFuc * totalGal)
+$ A4F0GL = [nL / nG] // [(type == 'complex') * (nAnt == 4) * (nF == 0)]
 
 
 # α2,6-linked sialylation
 
-@ α2,6-sialylation per antenna within all complex glycans
-$ CE = (isComplex * a26Sia) / (isComplex * totalAntenna)
+@ Average number of α2,6-linked sialic acids on complex glycans
+$ CE = [nE] // [type == 'complex']
 
 @ α2,6-sialylation per antenna within monoantennary glycans
-$ A1E = (a26Sia) // (isComplex * is1Antennary) * 1/1
+$ A1E = [nE] // [(type == 'complex') * (nAnt == 1)]
 
 @ α2,6-sialylation per antenna within diantennary glycans
-$ A2E = (a26Sia) // (isComplex * is2Antennary) * 1/2
+$ A2E = [nE / 2] // [(type == 'complex') * (nAnt == 2)]
 
 @ α2,6-sialylation per antenna within triantennary glycans
-$ A3E = (a26Sia) // (isComplex * is3Antennary) * 1/3
+$ A3E = [nE / 3] // [(type == 'complex') * (nAnt == 3)]
 
 @ α2,6-sialylation per antenna within tetra-antennary glycans
-$ A4E = (a26Sia) // (isComplex * is4Antennary) * 1/4
+$ A4E = [nE / 4] // [(type == 'complex') * (nAnt == 4)]
 
 @ α2,6-sialylation per antenna within fucosylated monoantennary glycans
-$ A1FE = (a26Sia) // (isComplex * is1Antennary * hasFuc) * 1/1
+$ A1FE = [nE] // [(type == 'complex') * (nAnt == 1) * (nF > 0)]
 
 @ α2,6-sialylation per antenna within fucosylated diantennary glycans
-$ A2FE = (a26Sia) // (isComplex * is2Antennary * hasFuc) * 1/2
+$ A2FE = [nE / 2] // [(type == 'complex') * (nAnt == 2) * (nF > 0)]
 
 @ α2,6-sialylation per antenna within fucosylated triantennary glycans
-$ A3FE = (a26Sia) // (isComplex * is3Antennary * hasFuc) * 1/3
+$ A3FE = [nE / 3] // [(type == 'complex') * (nAnt == 3) * (nF > 0)]
 
 @ α2,6-sialylation per antenna within fucosylated tetra-antennary glycans
-$ A4FE = (a26Sia) // (isComplex * is4Antennary * hasFuc) * 1/4
+$ A4FE = [nE / 4] // [(type == 'complex') * (nAnt == 4) * (nF > 0)]
 
 @ α2,6-sialylation per antenna within non-fucosylated monoantennary glycans
-$ A1F0E = (a26Sia) // (isComplex * is1Antennary * noFuc) * 1/1
+$ A1F0E = [nE] // [(type == 'complex') * (nAnt == 1) * (nF == 0)]
 
 @ α2,6-sialylation per antenna within non-fucosylated diantennary glycans
-$ A2F0E = (a26Sia) // (isComplex * is2Antennary * noFuc) * 1/2
+$ A2F0E = [nE / 2] // [(type == 'complex') * (nAnt == 2) * (nF == 0)]
 
 @ α2,6-sialylation per antenna within non-fucosylated triantennary glycans
-$ A3F0E = (a26Sia) // (isComplex * is3Antennary * noFuc) * 1/3
+$ A3F0E = [nE / 3] // [(type == 'complex') * (nAnt == 3) * (nF == 0)]
 
 @ α2,6-sialylation per antenna within non-fucosylated tetra-antennary glycans
-$ A4F0E = (a26Sia) // (isComplex * is4Antennary * noFuc) * 1/4
+$ A4F0E = [nE / 4] // [(type == 'complex') * (nAnt == 4) * (nF == 0)]
 
 @ α2,6-sialylation per galactose within monoantennary glycans
-$ A1GE = (isComplex * is1Antennary * a26Sia) / (isComplex * is1Antennary * totalGal)
+$ A1GE = [nE / nG] // [(type == 'complex') * (nAnt == 1)]
 
 @ α2,6-sialylation per galactose within diantennary glycans
-$ A2GE = (isComplex * is2Antennary * a26Sia) / (isComplex * is2Antennary * totalGal)
+$ A2GE = [nE / nG] // [(type == 'complex') * (nAnt == 2)]
 
 @ α2,6-sialylation per galactose within triantennary glycans
-$ A3GE = (isComplex * is3Antennary * a26Sia) / (isComplex * is3Antennary * totalGal)
+$ A3GE = [nE / nG] // [(type == 'complex') * (nAnt == 3)]
 
 @ α2,6-sialylation per galactose within tetra-antennary glycans
-$ A4GE = (isComplex * is4Antennary * a26Sia) / (isComplex * is4Antennary * totalGal)
+$ A4GE = [nE / nG] // [(type == 'complex') * (nAnt == 4)]
 
 @ α2,6-sialylation per galactose within fucosylated monoantennary glycans
-$ A1FGE = (isComplex * is1Antennary * hasFuc * a26Sia) / (isComplex * is1Antennary * hasFuc * totalGal)
+$ A1FGE = [nE / nG] // [(type == 'complex') * (nAnt == 1) * (nF > 0)]
 
 @ α2,6-sialylation per galactose within fucosylated diantennary glycans
-$ A2FGE = (isComplex * is2Antennary * hasFuc * a26Sia) / (isComplex * is2Antennary * hasFuc * totalGal)
+$ A2FGE = [nE / nG] // [(type == 'complex') * (nAnt == 2) * (nF > 0)]
 
 @ α2,6-sialylation per galactose within fucosylated triantennary glycans
-$ A3FGE = (isComplex * is3Antennary * hasFuc * a26Sia) / (isComplex * is3Antennary * hasFuc * totalGal)
+$ A3FGE = [nE / nG] // [(type == 'complex') * (nAnt == 3) * (nF > 0)]
 
 @ α2,6-sialylation per galactose within fucosylated tetra-antennary glycans
-$ A4FGE = (isComplex * is4Antennary * hasFuc * a26Sia) / (isComplex * is4Antennary * hasFuc * totalGal)
+$ A4FGE = [nE / nG] // [(type == 'complex') * (nAnt == 4) * (nF > 0)]
 
 @ α2,6-sialylation per galactose within non-fucosylated monoantennary glycans
-$ A1F0GE = (isComplex * is1Antennary * noFuc * a26Sia) / (isComplex * is1Antennary * noFuc * totalGal)
+$ A1F0GE = [nE / nG] // [(type == 'complex') * (nAnt == 1) * (nF == 0)]
 
 @ α2,6-sialylation per galactose within non-fucosylated diantennary glycans
-$ A2F0GE = (isComplex * is2Antennary * noFuc * a26Sia) / (isComplex * is2Antennary * noFuc * totalGal)
+$ A2F0GE = [nE / nG] // [(type == 'complex') * (nAnt == 2) * (nF == 0)]
 
 @ α2,6-sialylation per galactose within non-fucosylated triantennary glycans
-$ A3F0GE = (isComplex * is3Antennary * noFuc * a26Sia) / (isComplex * is3Antennary * noFuc * totalGal)
+$ A3F0GE = [nE / nG] // [(type == 'complex') * (nAnt == 3) * (nF == 0)]
 
 @ α2,6-sialylation per galactose within non-fucosylated tetra-antennary glycans
-$ A4F0GE = (isComplex * is4Antennary * noFuc * a26Sia) / (isComplex * is4Antennary * noFuc * totalGal)
+$ A4F0GE = [nE / nG] // [(type == 'complex') * (nAnt == 4) * (nF == 0)]
 
 
 # Poly-LacNAc
 
 @ Relative abundance of species with poly-LacNAc within all complex glycans
-$ CPl = (hasPolyLacNAc) // (isComplex)
+$ CPl = [Pl] // [type == 'complex']
 
 @ Relative abundance of species with poly-LacNAc within diantennary glycans
-$ A2Pl = (hasPolyLacNAc) // (isComplex * is2Antennary)
+$ A2Pl = [Pl] // [(type == 'complex') * (nAnt == 2)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated diantennary
-$ A2FPl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasFuc)
+$ A2FPl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated diantennary glycans
-$ A2F0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * noFuc)
+$ A2F0Pl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF == 0)]
 
 @ Relative abundance of species with poly-LacNAc within sialylated diantennary glycans
-$ A2SPl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasSia)
+$ A2SPl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nS > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-sialylated diantennary glycans
-$ A2S0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * noSia)
+$ A2S0Pl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nS == 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated sialylated diantennary glycans
-$ A2FSPl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasFuc * hasSia)
+$ A2FSPl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nS > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated sialylated diantennary glycans
-$ A2F0SPl = (hasPolyLacNAc) // (isComplex * is2Antennary * noFuc * hasSia)
+$ A2F0SPl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nS > 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated non-sialylated diantennary glycans
-$ A2FS0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasFuc * noSia)
+$ A2FS0Pl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nS == 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated non-sialylated diantennary glycans
-$ A2F0S0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * noFuc * noSia)
+$ A2F0S0Pl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nS == 0)]
 
 @ Relative abundance of species with poly-LacNAc within a2,3-sialylated diantennary glycans
-$ A2LPl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasa23Sia)
+$ A2LPl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nL > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-a2,3-sialylated diantennary glycans
-$ A2L0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * noa23Sia)
+$ A2L0Pl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nL == 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated a2,3-sialylated diantennary glycans
-$ A2FLPl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasFuc * hasa23Sia)
+$ A2FLPl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nL > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated a2,3-sialylated diantennary glycans
-$ A2F0LPl = (hasPolyLacNAc) // (isComplex * is2Antennary * noFuc * hasa23Sia)
+$ A2F0LPl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nL > 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated non-a2,3-sialylated diantennary glycans
-$ A2FL0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasFuc * noa23Sia)
+$ A2FL0Pl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nL == 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,3-sialylated diantennary glycans
-$ A2F0L0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * noFuc * noa23Sia)
+$ A2F0L0Pl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nL == 0)]
 
 @ Relative abundance of species with poly-LacNAc within a2,6-sialylated diantennary glycans
-$ A2EPl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasa26Sia)
+$ A2EPl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nE > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-a2,6-sialylated diantennary glycans
-$ A2E0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * noa26Sia)
+$ A2E0Pl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nE == 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated a2,6-sialylated diantennary glycans
-$ A2FEPl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasFuc * hasa26Sia)
+$ A2FEPl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nE > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated a2,6-sialylated diantennary glycans
-$ A2F0EPl = (hasPolyLacNAc) // (isComplex * is2Antennary * noFuc * hasa26Sia)
+$ A2F0EPl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nE > 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated non-a2,6-sialylated diantennary glycans
-$ A2FE0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * hasFuc * noa26Sia)
+$ A2FE0Pl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF > 0) * (nE == 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,6-sialylated diantennary glycans
-$ A2F0E0Pl = (hasPolyLacNAc) // (isComplex * is2Antennary * noFuc * noa26Sia)
+$ A2F0E0Pl = [Pl] // [(type == 'complex') * (nAnt == 2) * (nF == 0) * (nE == 0)]
 
 @ Relative abundance of species with poly-LacNAc within triantennary glycans
-$ A3Pl = (hasPolyLacNAc) // (isComplex * is3Antennary)
+$ A3Pl = [Pl] // [(type == 'complex') * (nAnt == 3)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated triantennary
-$ A3FPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc)
+$ A3FPl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated triantennary glycans
-$ A3F0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc)
+$ A3F0Pl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF == 0)]
 
 @ Relative abundance of species with poly-LacNAc within sialylated triantennary glycans
-$ A3SPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasSia)
+$ A3SPl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nS > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-sialylated triantennary glycans
-$ A3S0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noSia)
+$ A3S0Pl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nS == 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated sialylated triantennary glycans
-$ A3FSPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * hasSia)
+$ A3FSPl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nS > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated sialylated triantennary glycans
-$ A3F0SPl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * hasSia)
+$ A3F0SPl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nS > 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated non-sialylated triantennary glycans
-$ A3FS0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * noSia)
+$ A3FS0Pl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nS == 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated non-sialylated triantennary glycans
-$ A3F0S0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * noSia)
+$ A3F0S0Pl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nS == 0)]
 
 @ Relative abundance of species with poly-LacNAc within a2,3-sialylated triantennary glycans
-$ A3LPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasa23Sia)
+$ A3LPl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nL > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-a2,3-sialylated triantennary glycans
-$ A3L0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noa23Sia)
+$ A3L0Pl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nL == 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated a2,3-sialylated triantennary glycans
-$ A3FLPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * hasa23Sia)
+$ A3FLPl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nL > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated a2,3-sialylated triantennary glycans
-$ A3F0LPl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * hasa23Sia)
+$ A3F0LPl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nL > 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated non-a2,3-sialylated triantennary glycans
-$ A3FL0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * noa23Sia)
+$ A3FL0Pl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nL == 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,3-sialylated triantennary glycans
-$ A3F0L0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * noa23Sia)
+$ A3F0L0Pl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nL == 0)]
 
 @ Relative abundance of species with poly-LacNAc within a2,6-sialylated triantennary glycans
-$ A3EPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasa26Sia)
+$ A3EPl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nE > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-a2,6-sialylated triantennary glycans
-$ A3E0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noa26Sia)
+$ A3E0Pl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nE == 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated a2,6-sialylated triantennary glycans
-$ A3FEPl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * hasa26Sia)
+$ A3FEPl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nE > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated a2,6-sialylated triantennary glycans
-$ A3F0EPl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * hasa26Sia)
+$ A3F0EPl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nE > 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated non-a2,6-sialylated triantennary glycans
-$ A3FE0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * hasFuc * noa26Sia)
+$ A3FE0Pl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF > 0) * (nE == 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,6-sialylated triantennary glycans
-$ A3F0E0Pl = (hasPolyLacNAc) // (isComplex * is3Antennary * noFuc * noa26Sia)
+$ A3F0E0Pl = [Pl] // [(type == 'complex') * (nAnt == 3) * (nF == 0) * (nE == 0)]
 
 @ Relative abundance of species with poly-LacNAc within tetra-antennary glycans
-$ A4Pl = (hasPolyLacNAc) // (isComplex * is4Antennary)
+$ A4Pl = [Pl] // [(type == 'complex') * (nAnt == 4)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated tetra-antennary
-$ A4FPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc)
+$ A4FPl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated tetra-antennary glycans
-$ A4F0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc)
+$ A4F0Pl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF == 0)]
 
 @ Relative abundance of species with poly-LacNAc within sialylated tetra-antennary glycans
-$ A4SPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasSia)
+$ A4SPl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nS > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-sialylated tetra-antennary glycans
-$ A4S0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noSia)
+$ A4S0Pl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nS == 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated sialylated tetra-antennary glycans
-$ A4FSPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * hasSia)
+$ A4FSPl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nS > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated sialylated tetra-antennary glycans
-$ A4F0SPl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * hasSia)
+$ A4F0SPl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nS > 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated non-sialylated tetra-antennary glycans
-$ A4FS0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * noSia)
+$ A4FS0Pl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nS == 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated non-sialylated tetra-antennary glycans
-$ A4F0S0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * noSia)
+$ A4F0S0Pl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nS == 0)]
 
 @ Relative abundance of species with poly-LacNAc within a2,3-sialylated tetra-antennary glycans
-$ A4LPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasa23Sia)
+$ A4LPl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nL > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-a2,3-sialylated tetra-antennary glycans
-$ A4L0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noa23Sia)
+$ A4L0Pl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nL == 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated a2,3-sialylated tetra-antennary glycans
-$ A4FLPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * hasa23Sia)
+$ A4FLPl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nL > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated a2,3-sialylated tetra-antennary glycans
-$ A4F0LPl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * hasa23Sia)
+$ A4F0LPl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nL > 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated non-a2,3-sialylated tetra-antennary glycans
-$ A4FL0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * noa23Sia)
+$ A4FL0Pl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nL == 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,3-sialylated tetra-antennary glycans
-$ A4F0L0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * noa23Sia)
+$ A4F0L0Pl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nL == 0)]
 
 @ Relative abundance of species with poly-LacNAc within a2,6-sialylated tetra-antennary glycans
-$ A4EPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasa26Sia)
+$ A4EPl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nE > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-a2,6-sialylated tetra-antennary glycans
-$ A4E0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noa26Sia)
+$ A4E0Pl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nE == 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated a2,6-sialylated tetra-antennary glycans
-$ A4FEPl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * hasa26Sia)
+$ A4FEPl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nE > 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated a2,6-sialylated tetra-antennary glycans
-$ A4F0EPl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * hasa26Sia)
+$ A4F0EPl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nE > 0)]
 
 @ Relative abundance of species with poly-LacNAc within fucosylated non-a2,6-sialylated tetra-antennary glycans
-$ A4FE0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * hasFuc * noa26Sia)
+$ A4FE0Pl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF > 0) * (nE == 0)]
 
 @ Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,6-sialylated tetra-antennary glycans
-$ A4F0E0Pl = (hasPolyLacNAc) // (isComplex * is4Antennary * noFuc * noa26Sia)
+$ A4F0E0Pl = [Pl] // [(type == 'complex') * (nAnt == 4) * (nF == 0) * (nE == 0)]
