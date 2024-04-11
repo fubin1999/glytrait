@@ -14,7 +14,7 @@ Currently, the following meta-properties are supported:
     - nM: The number of mannoses.
     - nG: The number of galactoses.
     - nN: The number of GlcNAcs.
-    - PL: Whether the glycan has any poly-LacNAc.
+    - Pl: Whether the glycan has any poly-LacNAc.
     - nL: The number of sialic acids with an alpha-2,3 linkage.
     - nE: The number of sialic acids with an alpha-2,6 linkage.
 """
@@ -346,7 +346,7 @@ class CountGlcNAcMP(MetaProperty):
 class HasPolyLacNAcMP(MetaProperty):
     """Whether the glycan has any poly-LacNAc."""
 
-    name: ClassVar = "PL"
+    name: ClassVar = "Pl"
     supported_mode: ClassVar = "structure"
     return_type: ClassVar = "boolean"
 
