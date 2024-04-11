@@ -4,17 +4,17 @@ Functions:
     build_meta_property_table: Build a table of meta-properties for glycans.
 
 Currently, the following meta-properties are supported:
-    - type: The type of glycan.
-    - B: Whether the glycan has bisection.
-    - nAnt: The number of antennas.
+    - type: The type of glycan. (structure only)
+    - B: Whether the glycan has bisection. (structure only)
+    - nAnt: The number of antennas. (structure only)
     - nF: The number of fucoses.
-    - nFc: The number of fucoses on the core.
-    - nFa: The number of fucoses on the antenna.
+    - nFc: The number of fucoses on the core. (structure only)
+    - nFa: The number of fucoses on the antenna. (structure only)
     - nS: The number of sialic acids.
     - nM: The number of mannoses.
     - nG: The number of galactoses.
     - nN: The number of GlcNAcs.
-    - Pl: Whether the glycan has any poly-LacNAc.
+    - Pl: Whether the glycan has any poly-LacNAc. (structure only)
     - nL: The number of sialic acids with an alpha-2,3 linkage.
     - nE: The number of sialic acids with an alpha-2,6 linkage.
 """
