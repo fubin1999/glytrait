@@ -167,32 +167,27 @@ def _is_child_of(trait1: TraitFormula, trait2: TraitFormula) -> bool:
     """Whether trait1 is a child of the trait2.
 
     A formula is a child of another formula
-    if both numerator and denominator of this formula have the same additional meta
-    property as the other formula.
+    if both numerator and denominator of this formula have the same additional
+    term as the other formula.
 
     For example,
-    - A2FG is a child of A2G
-    - A2FSG is a child of A2FG, and also a child of A2SG.
+    Formula 1:
+      - Numerators: A, B, C
+      - Denominators: A, B
+    Formula 2:
+      - Numerators: A, B, C, D
+      - Denominators: A, B, D
+    Then Formula 2 is a child of Formula 1.
 
-    Note that A2FSG is not a child of A2G, for it is a grandchild of A2G.
-    Also, A2FG is not a child of CG.
     """
-    if trait1.name in ("A1S", "A2S", "A3S", "A4S") and trait2.name == "CS":
-        return True
-    if trait1.name in ("A1E", "A2E", "A3E", "A4E") and trait2.name == "CE":
-        return True
-    if trait1.name in ("A1L", "A2L", "A3L", "A4L") and trait2.name == "CL":
-        return True
-
-    num1 = set(trait1.numerator_properties)
-    den1 = set(trait1.denominator_properties)
+    num1 = set(t.expr for t in trait1.numerators)
+    den1 = set(t.expr for t in trait1.denominators)
     try:
-        num2 = set(trait2.numerator_properties)
-        den2 = set(trait2.denominator_properties)
+        num2 = set(t.expr for t in trait2.numerators)
+        den2 = set(t.expr for t in trait2.denominators)
     except AttributeError:
         raise TypeError("The other formula is not a TraitFormula instance.")
 
-    # General case
     condition = (
         not (num2 - num1)
         and not (den2 - den1)

@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
 import pytest
+from hypothesis import given, assume, strategies as st
+from attrs import define
 
 import glytrait.post_filtering as pf
-import glytrait.formula as fml
 
 
 class TestPostFilter:
@@ -173,25 +174,59 @@ def test_filter_colinearity(mocker):
     correlation_matrix_mock.assert_called_once_with(trait_table, 0.5, "pearson")
 
 
-@pytest.mark.skip("`TraitFormula` to be updated.")
-@pytest.mark.parametrize(
-    "trait1, trait2, expected",
-    [
-        ("A2G", "CG", True),
-        ("A2Fa", "CFa", True),
-        ("A2Fc", "CFc", True),
-        ("A2S", "CS", True),
-        ("A2E", "CE", True),
-        ("A2SG", "A2G", True),
-        ("A2FSG", "A2FG", True),
-        ("A2FSG", "A2SG", True),
-        ("A2F0G", "A2FG", False),
-        ("A2FSG", "A2G", False),
-    ],
+@define
+class FakeTerm:
+    expr: str
+
+
+@define
+class FakeFormula:
+    numerators: list[FakeTerm]
+    denominators: list[FakeTerm]
+
+
+@given(
+    st.lists(st.text(min_size=1, max_size=5), min_size=1, max_size=10, unique=True),
+    st.lists(st.text(min_size=1, max_size=5), min_size=1, max_size=10, unique=True),
+    st.text(min_size=1, max_size=5),
 )
-def test_is_child_of(trait1, trait2, expected):
-    formulas = fml.load_formulas("structure", sia_linkage=True)
-    formula_map = {f.name: f for f in formulas}
-    formulas1 = formula_map[trait1]
-    formulas2 = formula_map[trait2]
-    assert pf._is_child_of(formulas1, formulas2) == expected
+def test_is_child_of_true(num_1, den_1, new_term):
+    assume(new_term not in num_1 and new_term not in den_1)
+
+    num_1 = [FakeTerm(expr=term) for term in num_1]
+    den_1 = [FakeTerm(expr=term) for term in den_1]
+    formula_1 = FakeFormula(numerators=num_1, denominators=den_1)
+
+    num_2 = num_1.copy()
+    den_2 = den_1.copy()
+    num_2.append(FakeTerm(expr=new_term))
+    den_2.append(FakeTerm(expr=new_term))
+    formula_2 = FakeFormula(numerators=num_2, denominators=den_2)
+
+    assert pf._is_child_of(formula_2, formula_1)
+
+
+@given(
+    st.lists(st.text(min_size=1, max_size=5), min_size=1, max_size=10, unique=True),
+    st.lists(st.text(min_size=1, max_size=5), min_size=1, max_size=10, unique=True),
+    st.lists(st.text(min_size=1, max_size=5), min_size=1, max_size=10, unique=True),
+    st.lists(st.text(min_size=1, max_size=5), min_size=1, max_size=10, unique=True),
+    st.text(min_size=1, max_size=5),
+    st.text(min_size=1, max_size=5),
+)
+def test_is_child_of_false(num1, den1, num2, den2, new_term1, new_term2):
+    assume(new_term1 not in num1 and new_term1 not in den1)
+    assume(new_term2 not in num2 and new_term2 not in den2)
+    assume(new_term1 != new_term2)
+
+    num_1 = [FakeTerm(expr=term) for term in num1]
+    den_1 = [FakeTerm(expr=term) for term in den1]
+    den_1.append(FakeTerm(expr=new_term1))
+    formula_1 = FakeFormula(numerators=num_1, denominators=den_1)
+
+    num_2 = [FakeTerm(expr=term) for term in num2]
+    den_2 = [FakeTerm(expr=term) for term in den2]
+    den_2.append(FakeTerm(expr=new_term2))
+    formula_2 = FakeFormula(numerators=num_2, denominators=den_2)
+
+    assert not pf._is_child_of(formula_2, formula_1)
