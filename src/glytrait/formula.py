@@ -482,8 +482,8 @@ class TraitFormula:
 
     _sia_linkage: bool = field(init=False)
     _initialized: bool = field(init=False, default=False)
-    _numerator_array: pd.Series = field(init=False, default=None)
-    _denominator_array: pd.Series = field(init=False, default=None)
+    _numerator_s: pd.Series = field(init=False, default=None)
+    _denominator_s: pd.Series = field(init=False, default=None)
 
     def __attrs_post_init__(self):
         self._sia_linkage = self._init_sia_linkage()
@@ -532,8 +532,8 @@ class TraitFormula:
         Raises:
             FormulaCalculationError: If the initialization fails.
         """
-        self._numerator_array = self._initialize(meta_property_table, self.numerators)
-        self._denominator_array = self._initialize(
+        self._numerator_s = self._initialize(meta_property_table, self.numerators)
+        self._denominator_s = self._initialize(
             meta_property_table, self.denominators
         )
         self._initialized = True
@@ -566,14 +566,16 @@ class TraitFormula:
         if not self._initialized:
             raise FormulaNotInitializedError()
         pd.testing.assert_index_equal(
-            abundance_table.columns, self._numerator_array.index
+            abundance_table.columns, self._numerator_s.index
         )
         pd.testing.assert_index_equal(
-            abundance_table.columns, self._denominator_array.index
+            abundance_table.columns, self._denominator_s.index
         )
 
-        numerator = abundance_table.values @ self._numerator_array.values
-        denominator = abundance_table.values @ self._denominator_array.values
+        numerator_array = np.array(self._numerator_s.values, dtype=float)
+        denominator_array = np.array(self._denominator_s.values, dtype=float)
+        numerator = abundance_table.values @ numerator_array
+        denominator = abundance_table.values @ denominator_array
         denominator[denominator == 0] = np.nan
         values = numerator / denominator
         return pd.Series(
