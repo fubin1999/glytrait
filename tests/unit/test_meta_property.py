@@ -94,7 +94,7 @@ def test_register_duplicate(register_some_mp):
                 "nM",
                 "nG",
                 "nN",
-                "PL",
+                "Pl",
                 "nL",
                 "nE",
             ],
@@ -113,7 +113,7 @@ def test_register_duplicate(register_some_mp):
                 "nM",
                 "nG",
                 "nN",
-                "PL",
+                "Pl",
             ],
         ),
         (

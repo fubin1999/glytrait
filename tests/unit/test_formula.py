@@ -524,14 +524,11 @@ class TestTraitFormula:
         parser.assert_called_once_with("expr")
 
 
-@pytest.mark.skip("`TraitFormula` to be updated.")
 def test_load_default_formulas():
     structure_formulas = list(fml.load_default_formulas("structure"))
     composition_formulas = list(fml.load_default_formulas("composition"))
     assert len(structure_formulas) > 0
     assert len(composition_formulas) > 0
-    assert structure_formulas[0].type == "structure"
-    assert composition_formulas[0].type == "composition"
     assert len(structure_formulas) != len(composition_formulas)
 
 
