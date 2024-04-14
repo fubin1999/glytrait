@@ -1,16 +1,16 @@
 # Glycan type
 
 @ Relative abundance of high mannose type glycans within total spectrum
-$ TM = [type == 'high-mannose'] / [1]
+$ TM = [type == 'high_mannose'] / [1]
 
 @ Relative abundance of hybrid type glycans within total spectrum
 $ THy = [type == 'hybrid'] / [1]
 
 @ The ratio of high-mannose to hybrid glycans
-$ MHy = [type == 'high-mannose'] / [type == 'hybrid']
+$ MHy = [type == 'high_mannose'] / [type == 'hybrid']
 
 @ Average number of mannoses on high mannose type glycans
-$ MM = [nM] // [type == 'high-mannose']
+$ MM = [nM] // [type == 'high_mannose']
 
 @ Relative abundance of monoantennary glycans within complex type glycans
 $ CA1 = [nAnt == 1] // [type == 'complex']
