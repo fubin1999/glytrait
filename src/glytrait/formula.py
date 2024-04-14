@@ -431,7 +431,12 @@ class DivisionTermWrapper:
         """
         series = self.term(meta_property_table)
         array = np.array(series.values, dtype=float)
-        return pd.Series(np.where(array != 0, 1/array, 0), dtype="Float32", name=self.expr)
+        return pd.Series(
+            np.where(array != 0, 1/array, 0),
+            dtype="Float32",
+            name=self.expr,
+            index=meta_property_table.index,
+        )
 
     @property
     def expr(self) -> str:
