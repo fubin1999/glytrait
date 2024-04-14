@@ -90,8 +90,8 @@ from glytrait.formula import FormulaParser
             "T = [A / 2] / [1]",
             {"A", "/ (2.0)"},
             {"1.0"},
-        )
-    ]
+        ),
+    ],
 )
 def test_parse_formula(expr, numerators, denominators):
     parser = FormulaParser()

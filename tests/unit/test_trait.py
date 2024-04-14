@@ -19,7 +19,7 @@ class FakeFormula:
         return pd.Series(
             [self.value] * len(abundance_df.index),
             index=abundance_df.index,
-            name=self.name
+            name=self.name,
         )
 
 
@@ -34,7 +34,7 @@ def test_calcu_derived_trait(mocker):
         dtype=float,
     )
 
-    formulas = [FakeFormula('all1', 1), FakeFormula('all2', 2)]
+    formulas = [FakeFormula("all1", 1), FakeFormula("all2", 2)]
 
     result = calcu_derived_trait(abund_df, mocker.Mock(), formulas)
     expected = pd.DataFrame(
@@ -42,6 +42,6 @@ def test_calcu_derived_trait(mocker):
             "all1": [1, 1, 1],
             "all2": [2, 2, 2],
         },
-        index=["S1", "S2", "S3"]
+        index=["S1", "S2", "S3"],
     )
     pd.testing.assert_frame_equal(result, expected)
