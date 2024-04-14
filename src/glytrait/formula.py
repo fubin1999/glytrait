@@ -265,11 +265,11 @@ class NumericalTerm:
         except KeyError as e:
             raise MissingMetaPropertyError(self.expr, self.meta_property) from e
 
-        if mp_s.dtype == "boolean" or mp_s.dtype == "category":
-            reason = "NumericalTerm only works with numerical meta properties."
+        if mp_s.dtype == "category":
+            reason = "NumericalTerm can't be working with categorical meta-properties."
             raise MetaPropertyTypeError(self.meta_property, str(mp_s.dtype), reason)
 
-        return mp_s
+        return mp_s.astype("UInt8")
 
     @property
     def expr(self) -> str:
@@ -406,7 +406,8 @@ class DivisionTermWrapper:
     This is a wrapper class for a formula term.
     If calling the original term results a vector of `a`,
     this wrapper will return a vector of `1/a`.
-    Specially, if any element of `a` is zero, a `ZeroDivisionError` will be raised.
+    Specially, if any element of `a` is zero,
+    the corresponding element of the result will also be zero.
 
     Notes:
         The original term should not be a `CompareTerm`.
@@ -427,12 +428,10 @@ class DivisionTermWrapper:
 
         Raises:
             FormulaTermCalculationError: If the original term calculation fails.
-            ZeroDivisionError: If the original term is zero.
         """
         series = self.term(meta_property_table)
-        if np.any(series == 0):
-            raise ZeroDivisionError("Division by zero.")
-        return pd.Series(1 / series, dtype="Float32", name=self.expr)
+        array = np.array(series.values, dtype=float)
+        return pd.Series(np.where(array != 0, 1/array, 0), dtype="Float32", name=self.expr)
 
     @property
     def expr(self) -> str:

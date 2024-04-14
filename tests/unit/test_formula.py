@@ -84,7 +84,7 @@ class TestNumericalTerm:
         )
         pd.testing.assert_series_equal(result, expected)
 
-    @pytest.mark.parametrize("mp", ["mp_bool", "mp_str"])
+    @pytest.mark.parametrize("mp", ["mp_str"])
     def test_call_wrong_type(self, mp_table, mp):
         term = fml.NumericalTerm(mp)
         with pytest.raises(fml.MetaPropertyTypeError):
@@ -274,8 +274,8 @@ class TestDivisionTermWrapper:
 
         term = MockTerm()
         wrapper = fml.DivisionTermWrapper(term)
-        with pytest.raises(ZeroDivisionError):
-            wrapper(None)
+        result = wrapper(None)
+        assert np.allclose(result.values, [1, 0, 1/3], rtol=1e-6)
 
     def test_from_compare_term(self):
         term = fml.CompareTerm("mp_int", ">", 2)
