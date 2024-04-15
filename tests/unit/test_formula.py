@@ -212,7 +212,7 @@ class TestCompareTerm:
 class TestDivisionTermWrapper:
 
     @given(
-        st.lists(
+        values=st.lists(
             st.floats(
                 allow_nan=False,
                 allow_infinity=False,
@@ -228,7 +228,12 @@ class TestDivisionTermWrapper:
             expr = "mock_term"
 
             def __call__(self, table):
-                return pd.Series(values, name=self.expr, dtype="Float32")
+                return pd.Series(
+                    data=values,
+                    name=self.expr,
+                    dtype="Float32",
+                    index=[f"G{i}" for i in range(len(values))],
+                )
 
         term = MockTerm()
         wrapper = fml.DivisionTermWrapper(term)
@@ -241,7 +246,7 @@ class TestDivisionTermWrapper:
         class MockTerm:
             expr = original_expr
             __call__ = lambda self, table: pd.Series(
-                [1, 2, 3], name=self.expr, dtype="Float32"
+                [1, 2, 3], name=self.expr, dtype="Float32", index=["G1", "G2", "G3"]
             )
 
         term = MockTerm()

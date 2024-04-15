@@ -435,7 +435,7 @@ class DivisionTermWrapper:
             np.divide(1, array, where=(array != 0)),
             dtype="Float32",
             name=self.expr,
-            index=meta_property_table.index,
+            index=series.index,
         )
 
     @property
