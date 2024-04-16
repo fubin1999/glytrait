@@ -2,6 +2,11 @@
 
 # GlyTrait
 
+![PyPI - Version](https://img.shields.io/pypi/v/glytrait)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/glytrait)
+![GitHub License](https://img.shields.io/github/license/fubin1999/glytrait)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/e3e6a19dccb749f786264247738fa585)](https://app.codacy.com/gh/fubin1999/glytrait/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
 ## Overview
 
 Glycan derived trait is a more insightful way to analysis glycomics data.
