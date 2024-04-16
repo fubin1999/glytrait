@@ -25,7 +25,6 @@ glycan structures.
     - [Preprocessing](#preprocessing)
     - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
     - [Post-filtering](#post-filtering)
-    - [The GlyTrait Formula](#the-glytrait-formula-advanced)
 - [License](#license)
 
 ## Installation
@@ -308,65 +307,6 @@ To turn off postfiltering all together, use the "--no-filtering" option:
 ```shell
 glytrait abundance.csv structure.csv --no-filtering
 ```
-
-### The GlyTrait Formula (Advanced)
-
-Currently 277 derived traits (including sialic acid linkage traits) is included in the GlyTrait
-tool.
-This list is curated from literature and covers nearly all derived traits reported.
-However, you may want to add new traits to fulfill your own need.
-GlyTriat using a meta-properties-oriented formula system, the **GlyTrait Formula**,
-to represent the meaning of a trait.
-**GlyTrait Formula ** is a versatile tool allowing you to add your own traits.
-
-#### GlyTrait Formula overview
-
-**GlyTrait Formula** is a text based formula representing sys allowing you to combine various meta
-properties to get new traits.
-As an overview, the formula should be in the format of:
-
-![formula](img/formula.png)
-
-- `<Name>` is the name of the formula, which will be used as the column name in the output file.
-- `<Numerator1>`, `<Numerator2>`, ... are the meta properties of the numerator.
-- `<Denominator1>`, `<Denominator2>`, ... are the meta properties of the denominator.
-- `()` is necessary to group the numerator and denominator for clearness, even if there is only one
-  meta property on the numerator and the denominator.
-- All numerators and denominators should be separated by `*`. If there is only one numerator or
-  denominator, `*` is not needed.
-- The `/` is necessary to separate the numerator and denominator. If the trait is a proportion of
-  something within something, use `//` instead of `/`.
-- Some formulas may use all glycans as the denominator. In this case, use `(.)` as the denominator.
-  A combination of `.` and other meta properties (e.g. `(. * isComplex)`) is not
-  allowed.
-- `<Coefficient>` is the coefficient multiplied to the final result. 
-  The coefficient part (`* <Coefficient>`) is optional. 
-  If omitted, the coefficient is assumed to be 1.
-
-#### Built-in formulas
-
-To see all the built-in formulas for inspiration, use the "-b" or "--built-in" option to save a
-copy of the built-in formula file:
-
-```shell
-glytrait -b some_dir
-```
-
-#### Using the custom formulas
-
-Once you have a custom txt file with your own formulas, you can try them out.
-For incoperating the custom formulas, use the "-f" or "--formula-file" option:
-
-```shell
-glytrait data.csv -f custom_formulas.txt
-```
-
-That will do, GlyTrait will calculate the default traits, plus your cumtom traits.
-A few things to be noted:
-
-- If a custom formula has the same name with a default formula, it will be ignored.
-- If more than one custom formulas have the same name, only the first one will be used.
-- If any formula is in wrong format, GlyTrait will raise an error to inform you.
 
 ## License
 
