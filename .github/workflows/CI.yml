@@ -30,4 +30,4 @@ jobs:
         create-virtualenv: true
     - name: Test with pytest
       run: |
-        pytest
+        poetry pytest
