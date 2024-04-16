@@ -5,13 +5,13 @@ from attrs import define, field
 
 from glytrait.data_export import export_all
 from glytrait.data_type import MetaPropertyTable, DerivedTraitTable
-from glytrait.diff import differential_analysis
 from glytrait.formula import TraitFormula, load_formulas
 from glytrait.load_data import load_input_data_from_csv, GlyTraitInputData
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
 from glytrait.preprocessing import preprocess
 from glytrait.trait import calcu_derived_trait
+from glytrait.stat import t_test, anova
 
 
 class GlyTrait:
@@ -107,9 +107,9 @@ class GlyTrait:
         else:
             filtered_derived_trait_table = None
         if group_file is not None and self._config.post_filtering:
-            diff_result = self._diff_analysis(filtered_derived_trait_table, input_data)  # type: ignore
+            diff_result = self._diff_analysis(filtered_derived_trait_table, input_data)
         else:
-            diff_result = None
+            diff_result = {}
         self._export_data(
             output_dir,
             input_data,
@@ -155,9 +155,15 @@ class GlyTrait:
         )
 
     def _diff_analysis(
-        self, derived_trait_table: DerivedTraitTable, input_data: GlyTraitInputData
-    ) -> pd.DataFrame:
-        return differential_analysis(derived_trait_table, input_data.groups)  # type: ignore
+        self,
+        derived_trait_table: DerivedTraitTable,
+        input_data: GlyTraitInputData,
+    ) -> dict[str, pd.DataFrame]:
+        if input_data.groups.unique().size == 2:
+            return {'t_test.csv': t_test(derived_trait_table, input_data.groups)}
+        else:  # groups size > 2
+            anova_df, post_hoc_df = anova(derived_trait_table, input_data.groups)
+            return {'anova.csv': anova_df, 'post_hoc.csv': post_hoc_df}
 
     def _export_data(
         self,
@@ -166,7 +172,7 @@ class GlyTrait:
         meta_property_table: MetaPropertyTable,
         derived_trait_table: DerivedTraitTable,
         filtered_derived_trait_table: Optional[DerivedTraitTable] = None,
-        diff_result: Optional[pd.DataFrame] = None,
+        diff_results: Optional[dict[str, pd.DataFrame]] = None,
     ) -> None:
         data_to_export = [
             ("meta_properties.csv", meta_property_table),
@@ -177,8 +183,8 @@ class GlyTrait:
             data_to_export.append(
                 ("derived_traits_filtered.csv", filtered_derived_trait_table)
             )
-        if diff_result is not None:
-            data_to_export.append(("differential_analysis.csv", diff_result))
+        if diff_results is not None:
+            data_to_export.extend(diff_results.items())
         export_all(data_to_export, output_dir)
 
 

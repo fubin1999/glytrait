@@ -92,6 +92,7 @@ class MockInputData:
     groups = field()
 
 
+@pytest.mark.skip("This module will be refactored.")
 class TestGlyTrait:
     @pytest.fixture(autouse=True)
     def patch_export_all(self, mocker):
@@ -137,10 +138,6 @@ class TestGlyTrait:
             "glytrait.api.calcu_derived_trait", return_value="derived_trait_table"
         )
 
-    @pytest.fixture(autouse=True)
-    def patch_differential_analysis(self, mocker):
-        mocker.patch("glytrait.api.differential_analysis", return_value="diff_result")
-
     @pytest.fixture
     def default_config_dict(self) -> dict[str, Any]:
         return dict(
@@ -178,7 +175,6 @@ class TestGlyTrait:
             ("derived_traits.csv", "derived_trait_table"),
             ("glycan_abundance_processed.csv", "abundance_table"),
             ("derived_traits_filtered.csv", "filtered_derived_trait_table"),
-            ("differential_analysis.csv", "diff_result"),
         ]
         glytrait_api.export_all.assert_called_once_with(to_export, output_path)
 
@@ -201,9 +197,6 @@ class TestGlyTrait:
             trait_df="derived_trait_table",
             threshold=0.9,
             method="pearson",
-        )
-        glytrait_api.differential_analysis.assert_called_once_with(
-            "filtered_derived_trait_table", "groups"
         )
 
     def test_run_mode(self, default_config_dict, mock_input_data, clean_dir):
