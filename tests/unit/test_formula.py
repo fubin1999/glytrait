@@ -280,7 +280,7 @@ class TestDivisionTermWrapper:
         term = MockTerm()
         wrapper = fml.DivisionTermWrapper(term)
         result = wrapper(None)
-        assert np.allclose(result.values, [1, 0, 1/3], rtol=1e-6)
+        assert np.allclose(result.values, [1, 0, 1 / 3], rtol=1e-6)
 
     def test_from_compare_term(self):
         term = fml.CompareTerm("mp_int", ">", 2)

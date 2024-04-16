@@ -160,10 +160,10 @@ class GlyTrait:
         input_data: GlyTraitInputData,
     ) -> dict[str, pd.DataFrame]:
         if input_data.groups.unique().size == 2:
-            return {'t_test.csv': t_test(derived_trait_table, input_data.groups)}
+            return {"t_test.csv": t_test(derived_trait_table, input_data.groups)}
         else:  # groups size > 2
             anova_df, post_hoc_df = anova(derived_trait_table, input_data.groups)
-            return {'anova.csv': anova_df, 'post_hoc.csv': post_hoc_df}
+            return {"anova.csv": anova_df, "post_hoc.csv": post_hoc_df}
 
     def _export_data(
         self,

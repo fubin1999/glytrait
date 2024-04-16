@@ -24,4 +24,3 @@ def test_is_child_of(trait1, trait2, expected):
     formulas1 = formula_map[trait1]
     formulas2 = formula_map[trait2]
     assert pf._is_child_of(formulas1, formulas2) == expected
-

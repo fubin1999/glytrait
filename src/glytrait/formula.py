@@ -537,9 +537,7 @@ class TraitFormula:
             FormulaCalculationError: If the initialization fails.
         """
         self._numerator_s = self._initialize(meta_property_table, self.numerators)
-        self._denominator_s = self._initialize(
-            meta_property_table, self.denominators
-        )
+        self._denominator_s = self._initialize(meta_property_table, self.denominators)
         self._initialized = True
 
     @staticmethod
@@ -569,9 +567,7 @@ class TraitFormula:
         """
         if not self._initialized:
             raise FormulaNotInitializedError()
-        pd.testing.assert_index_equal(
-            abundance_table.columns, self._numerator_s.index
-        )
+        pd.testing.assert_index_equal(abundance_table.columns, self._numerator_s.index)
         pd.testing.assert_index_equal(
             abundance_table.columns, self._denominator_s.index
         )
