@@ -11,14 +11,22 @@
 
 *Q: What is GlyTrait?*
 
-*A: GlyTrait is a tool to calculate derived traits for N-glycans.*
+*A: GlyTrait is a tool to calculate derived traits for N-glycomic data.*
 
 *Q: Sounds cool! So..., what are derived traits again?*
 
 *A: Well, derived traits are artificial variables that summarize certain aspects of 
 the glycome. 
-For example, the number of antennas, the number of fucoses, the number of sialic acids,
-and their interactions, etc.*
+For example, the proportion of core-fucosylated glycans, 
+the average number of sialic acids per glycan, 
+or the proportion of bisected glycans within bi-antennary complex glycans, etc. 
+Derived traits are more biologically relavant 
+and have been used a lot in the glycomics community.*
+
+*Q: So, GlyTrait does the dirty work for me, 
+saving my time and energy for more interesting analysis?*
+
+*A: You bet!*
 
 ## Contents
 
@@ -35,6 +43,15 @@ and their interactions, etc.*
     - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
     - [Post-filtering](#post-filtering)
 - [License](#license)
+
+## Web app
+
+> Let there be no command line apps!
+> 
+> -- my colleagues
+
+A web app version of GlyTrait is on its way here...
+Ready to say goodbye to the command line?
 
 ## Installation
 
