@@ -30,4 +30,6 @@ jobs:
         create-virtualenv: true
     - name: Test with pytest
       run: |
-        poetry run pytest
+        poetry run python -m pytest --cov=glytrait --cov-report xml
+    - name: Coveralls
+      uses: coverallsapp/github-action@v2
