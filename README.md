@@ -2,18 +2,23 @@
 
 # GlyTrait
 
-![PyPI - Version](https://img.shields.io/pypi/v/glytrait)
+[![PyPI - Version](https://img.shields.io/pypi/v/glytrait)](https://pypi.org/project/glytrait/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/glytrait)
-![GitHub License](https://img.shields.io/github/license/fubin1999/glytrait)
+[![GitHub License](https://img.shields.io/github/license/fubin1999/glytrait)](https://github.com/fubin1999/glytrait/blob/main/LICENSE)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/e3e6a19dccb749f786264247738fa585)](https://app.codacy.com/gh/fubin1999/glytrait/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 ## Overview
 
-Glycan derived trait is a more insightful way to analysis glycomics data.
-However, currently there lacks a tool for automatically calculating derived traits,
-while mannual calculating is cumbersome, time-consuming and error-prone.
-GlyTrait is a tool designed for calculating N-glycan traits merely from abundance information and
-glycan structures.
+*Q: What is GlyTrait?*
+
+*A: GlyTrait is a tool to calculate derived traits for N-glycans.*
+
+*Q: Sounds cool! So..., what are derived traits again?*
+
+*A: Well, derived traits are artificial variables that summarize certain aspects of 
+the glycome. 
+For example, the number of antennas, the number of fucoses, the number of sialic acids,
+and their interactions, etc.*
 
 ## Contents
 
@@ -25,8 +30,7 @@ glycan structures.
     - [Options](#options)
     - [Mode](#mode)
     - [Input file format](#input-file-format)
-    - [Specify output path](#specify-output-path)
-    - [Structure file](#structure-file)
+    - [Specify output path](#specify-the-output-path)
     - [Preprocessing](#preprocessing)
     - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
     - [Post-filtering](#post-filtering)
@@ -40,13 +44,13 @@ glycan structures.
 python >= 3.10
 ```
 
-If python hasn't been install, download it from
-its [its website](https://www.bing.com/search?q=python&form=APMCS1&PC=APMC), or
-use [Anaconda](https://www.anaconda.com/download/) if you like.
+If python hasn't been installed, 
+download it from [its website](https://www.bing.com/search?q=python&form=APMCS1&PC=APMC),
+or use [Anaconda](https://www.anaconda.com/download/) if you like.
 
 ### Using pipx (recommended)
 
-pipx is a tool to help you install and run end-user applications written in Python.
+`pipx` is a tool to help you install and run end-user applications written in Python.
 It's roughly similar to macOS's brew, JavaScript's npx, and Linux's apt.
 
 #### Install pipx
@@ -94,10 +98,10 @@ If everything goes well, a folder named "abundance_glytrait" will be created
 in the same directory with the abundnce.csv file.
 Inside the directory are four files:
 
-1. `derived_traits.csv`: the derived traits calculated by GlyTrait.
-2. `glycan_abundance_processed.csv`: the glycan abundance after preprocessing.
-3. `meta_properties.csv`: the meta properties of all glycans.
-4. `formulas.txt`: the definations of all derived traits.
+1. `derived_traits.csv`: all derived traits calculated by GlyTrait.
+2. `derived_traits_filtered.csv`: derived traits after post-filtering.
+3. `glycan_abundance_processed.csv`: the glycan abundance after preprocessing.
+4. `meta_properties.csv`: the meta-properties of all glycans.
 
 The detailed format of the input file will be introduced in the
 [Input file format](#input-file-format) section.
@@ -140,7 +144,8 @@ Note that the "composition" mode has uncertainties to some extent. Specifically:
    kily, hybrid glycans are usually in low abundance,
    so the algorithm is a good approximation for most cases.
 2. Estimating the number of branches is not possible based on composition,
-   so GlyTrait will roughly classify glycans into 2 categories: low-branching and high-branching.
+   so GlyTrait will roughly classify glycans into two categories: 
+   low-branching and high-branching.
    Glycans with N > 4 (including bisecting diantenary glycans) are considered as high-branching,
    while others as low-branching.
 3. Telling hybrid glycans from mono-antenary complex glycans is not possible based on composition,
@@ -174,15 +179,15 @@ At least two files are needed for GlyTrait to work:
 A csv file with samples as rows and glycan IDs as columns.
 An example file would be like:
 
-| Sample | Glycan1 | Glycan2 | Glycan3 |
-|--------|---------|---------|---------|
+| Sample  | Glycan1 | Glycan2 | Glycan3 |
+|---------|---------|---------|---------|
 | Sample1 | 0.0417  | 0.0503  | 0.0354  |
 | Sample2 | 0.0233  | 0.0533  | 0.0593  |
 | Sample3 | 0.0123  | 0.0133  | 0.0194  |
 
 The header of the first column should be "Sample",
 and the header of the other columns should be glycan IDs.
-Glycan IDs can be any string, e.g. the composition strings ("H3N4").
+Glycan IDs can be any string, e.g., the composition strings ("H3N4").
 
 **Both glycan IDs and samples should be unique.**
 
@@ -204,7 +209,7 @@ In the "composition" mode, the second column should be "Composition" instead of 
 and the composition strings should be used instead of the structure strings.
 Condensed format ("H3N4F1S1") is supported.
 
-### Specify output path
+### Specify the output path
 
 You might have noticed before that GlyTrait saves the output file to the same directory 
 as the abundance file with a "_glytrait" suffix.
@@ -236,7 +241,7 @@ The imputation method could be specified by the "-i" or the "--impute-method" op
 The default method is "zero",
 which means missing values will be imputed by 0.
 Other supported methods are "mean", "median", "zero", "lod".
-You can change imputation method to "min" by:
+You can change the imputation method to "min" by:
 
 ```shell
 glytrait abundance.csv structure.csv -i min
@@ -253,7 +258,7 @@ A full list of supported imputation methods are:
 
 ### Sialic-acid-linkage traits
 
-Sialic acids can have different linkages for N-glycans (e.g. α2,3 and α2,6).
+Sialic acids can have different linkages for N-glycans (e.g., α2,3 and α2,6).
 Different sialic acid linkage has different biological functions.
 GlyTrait supports calculating derived traits regarding these linkages.
 To use this feature, you need to have siaic acid linkage information.
@@ -266,8 +271,8 @@ This can be easily done using GlycoWorkbench.
 In the composition mode, the "Composition" column must contain the linkage information.
 GlyTrait uses a common notation for sialic acid with different linkages:
 "E" for a2,6-linked sialic acids, and "L" a2,3-linked sialic acids.
-For example, "H5N4F1E1L1" contains 2 sialic acids, one is a2,6-linked and the other is
-a2,3-linked.
+For example, "H5N4F1E1L1" contains two sialic acids, one is a2,6-linked, 
+and the other is a2,3-linked.
 
 You can use the "-l" or "--sia-linkage" option to include sialic-acid-linkage traits:
 
@@ -276,7 +281,7 @@ glytrait abundance.csv structure.csv -l
 ```
 
 Note that if you use this option, all glycans with sialic acids should have linkage information.
-That is to say all structure strings should have structure information in the structure mode and
+That is to say, all structure strings should have structure information in the structure mode and
 no "S" in composition strings in the composition mode.
 
 ### Post-Filtering
@@ -291,15 +296,15 @@ Second, highly correlated traits will be pruned,
 keeping only the traits considering more glycans.
 
 GlyTrait filters out highly correlated traits, using a "trait family tree" filtering method.
-Briefly, for a two correlated traits, the "parent" trait,
+Briefly, for two correlated traits, the "parent" trait,
 which normally considers more glycans, will be kept.
-For example, for the two high correlated traits: A2FG and A2G, the latter will be kept,
+For example, for the two high-correlated traits: A2FG and A2G, the latter will be kept 
 because it is more general, and more robust for considering more glycans.
 Thanks to the dynamic "trait family tree" generated by GlyTrait,
 user-defined traits will also be considered in this filtering process.
 
-By default, GlyTrait only filtering trarits with Pearson correlation coefficient of 1,
-i.e. traits with perfect collinearity.
+By default, GlyTrait only filters trarits with Pearson correlation coefficient of 1,
+i.e., traits with perfect collinearity.
 This threshold can be changed by the "-c" or "--corr-threshold" option:
 
 ```shell
