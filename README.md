@@ -48,7 +48,7 @@ If python hasn't been installed,
 download it from [its website](https://www.bing.com/search?q=python&form=APMCS1&PC=APMC),
 or use [Anaconda](https://www.anaconda.com/download/) if you like.
 
-### Using pipx (recommended)
+### Option 1: Using pipx (recommended)
 
 `pipx` is a tool to help you install and run end-user applications written in Python.
 It's roughly similar to macOS's brew, JavaScript's npx, and Linux's apt.
@@ -63,21 +63,21 @@ Install pipx following its [Document](https://pypa.github.io/pipx/installation/)
 pipx install glytrait
 ```
 
-### Using Conda environment
+### Option 2: Using pip
 
-#### Create a new environment
+#### 1. Create a new conda environment (optional)
 
 ```shell
 conda create -n glytrait python=3.10
 ```
 
-#### Activate the environment
+and activate the environment.
 
 ```shell
 conda activate glytrait
 ```
 
-#### Install GlyTrait from PyPi
+#### 2. Install GlyTrait from PyPi
 
 ```shell
 pip install glytrait
