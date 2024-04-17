@@ -5,6 +5,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/glytrait)](https://pypi.org/project/glytrait/)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/glytrait)
 [![GitHub License](https://img.shields.io/github/license/fubin1999/glytrait)](https://github.com/fubin1999/glytrait/blob/main/LICENSE)
+[![Coverage Status](https://coveralls.io/repos/github/fubin1999/glytrait/badge.svg?branch=main)](https://coveralls.io/github/fubin1999/glytrait?branch=main)
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/e3e6a19dccb749f786264247738fa585)](https://app.codacy.com/gh/fubin1999/glytrait/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 ## Overview
