@@ -32,6 +32,7 @@ from glytrait.data_type import AbundanceTable, MetaPropertyTable
 __all__ = [
     "TraitFormula",
     "load_formulas",
+    "load_default_formulas",
     "save_builtin_formula",
 ]
 
@@ -763,17 +764,14 @@ class FormulaFileParser:
 
 
 def load_formulas(
-    type_: Literal["structure", "composition"],
-    user_file: Optional[str] = None,
+    file: str,
     sia_linkage: bool = False,
 ) -> list[TraitFormula]:
-    """Load both the default formulas and the user-defined formulas.
+    """Load formulas from a formula file.
 
     Args:
-        type_ (Literal["structure", "composition"]): The type of the formulas.
-        user_file (Optional[str], optional): The path of the user-defined formula file.
-            Defaults to None.
-        sia_linkage (bool, optional): Whether to include formulas with sia-linkage
+        file: The path of the formula file.
+        sia_linkage: Whether to include formulas with sia-linkage
             meta-properties. Defaults to False.
 
     Returns:
@@ -783,40 +781,34 @@ def load_formulas(
         FormulaFileError: If the formula file is in a wrong format.
         FormulaParseError: If a formula string cannot be parsed.
     """
-    formulas = list(load_default_formulas(type_=type_))
-
-    if user_file is not None:
-        default_formula_names = {f.name for f in formulas}
-        user_formulas = FormulaFileParser().parse(user_file)
-        for f in user_formulas:
-            if f.name in default_formula_names:
-                continue
-            formulas.append(f)
-
+    formulas = [f for f in FormulaFileParser().parse(file)]
     if not sia_linkage:
         formulas = [f for f in formulas if not f.sia_linkage]
     return formulas
 
 
 def load_default_formulas(
-    type_: Literal["structure", "composition"]
-) -> Generator[TraitFormula, None, None]:
+    mode: Literal["structure", "composition"],
+    sia_linkage: bool = False,
+) -> list[TraitFormula]:
     """Load the default formulas.
 
     Args:
-        type_ (Literal["structure", "composition"]): The type of the formulas.
+        mode: The type of the formulas.
+        sia_linkage: Whether to include formulas with sia-linkage
+            meta-properties. Defaults to False.
 
-    Yields:
-        The formulas parsed.
+    Returns:
+        list[TraitFormula]: The formulas.
     """
-    if type_ == "composition":
+    if mode == "composition":
         file_traversable = default_comp_formula_file
-    elif type_ == "structure":
+    elif mode == "structure":
         file_traversable = default_struc_formula_file
     else:
         raise ValueError("Invalid formula type.")
     with as_file(file_traversable) as file:
-        yield from FormulaFileParser().parse(str(file))
+        return load_formulas(file, sia_linkage=sia_linkage)
 
 
 def save_builtin_formula(dirpath: str | Path) -> None:

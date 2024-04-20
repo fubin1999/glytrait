@@ -529,6 +529,25 @@ class TestTraitFormula:
         parser.assert_called_once_with("expr")
 
 
+@pytest.mark.parametrize(
+    "sia_linkage, expected", [(False, ["F1"]), (True, ["F1", "F2"])]
+)
+def test_load_formulas(mocker, sia_linkage, expected):
+    @define
+    class FakeFormula:
+        name: str
+        sia_linkage: bool
+
+    @define
+    class FakeParser:
+        def parse(self, file):
+            return [FakeFormula("F1", False), FakeFormula("F2", True)]
+
+    mocker.patch("glytrait.formula.FormulaFileParser", return_value=FakeParser())
+    formulas = fml.load_formulas("file", sia_linkage=sia_linkage)
+    assert [f.name for f in formulas] == expected
+
+
 def test_load_default_formulas():
     structure_formulas = list(fml.load_default_formulas("structure"))
     composition_formulas = list(fml.load_default_formulas("composition"))

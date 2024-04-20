@@ -19,7 +19,7 @@ from glytrait import post_filtering as pf
     ],
 )
 def test_is_child_of(trait1, trait2, expected):
-    formulas = fml.load_formulas("structure", sia_linkage=True)
+    formulas = fml.load_default_formulas("structure", sia_linkage=True)
     formula_map = {f.name: f for f in formulas}
     formulas1 = formula_map[trait1]
     formulas2 = formula_map[trait2]
