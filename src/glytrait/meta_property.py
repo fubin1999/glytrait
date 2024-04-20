@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 from functools import singledispatch, cache
-from typing import Literal, Any, ClassVar, Type
+from typing import Literal, ClassVar, Type
 
 import pandas as pd
 from attrs import define

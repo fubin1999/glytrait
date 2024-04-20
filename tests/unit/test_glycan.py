@@ -1,22 +1,22 @@
 import pytest
 
 from glytrait import glycan as glyc
-from glytrait.exception import *
-from .glycoct import *
+import glytrait.exception as exc
+from . import glycoct as ct
 
 
 class TestLoadStructures:
     def test_normal(self):
         names = ["test_1", "test_2", "test_3"]
-        glycocts = [test_glycoct_1, test_glycoct_2, test_glycoct_3]
+        glycocts = [ct.test_glycoct_1, ct.test_glycoct_2, ct.test_glycoct_3]
         result = glyc.parse_structures(zip(names, glycocts))
         assert len(result) == 3
         assert isinstance(result, dict)
 
     def test_invalid(self):
         names = ["test_1", "test_2", "test_3"]
-        glycocts = [test_glycoct_1, "invalid", "invalid"]
-        with pytest.raises(StructureParseError) as excinfo:
+        glycocts = [ct.test_glycoct_1, "invalid", "invalid"]
+        with pytest.raises(exc.StructureParseError) as excinfo:
             glyc.parse_structures(zip(names, glycocts))
         msg = "Could not parse structures for: 'test_2', 'test_3'."
         assert msg == str(excinfo.value)
@@ -33,7 +33,7 @@ class TestLoadCompositions:
     def test_invalid(self):
         names = ["test_1", "test_2", "test_3"]
         comps = ["H5N4F1S1", "invalid", "invalid"]
-        with pytest.raises(CompositionParseError) as excinfo:
+        with pytest.raises(exc.CompositionParseError) as excinfo:
             glyc.parse_compositions(zip(names, comps))
         msg = "Could not parse compositions for: 'test_2', 'test_3'."
         assert msg == str(excinfo.value)
@@ -41,25 +41,27 @@ class TestLoadCompositions:
 
 class TestGlycan:
     def test_from_string(self):
-        glycan = glyc.Structure.from_string("glycan1", test_glycoct_1, format="glycoct")
+        glycan = glyc.Structure.from_string(
+            "glycan1", ct.test_glycoct_1, format="glycoct"
+        )
         assert repr(glycan) == "Structure(name='glycan1')"
 
     def test_from_string_wrong_format(self):
-        with pytest.raises(StructureParseError) as excinfo:
-            glyc.Structure.from_string("glycan1", test_glycoct_1, format="unknown")
+        with pytest.raises(exc.StructureParseError) as excinfo:
+            glyc.Structure.from_string("glycan1", ct.test_glycoct_1, format="unknown")
             assert "Unknown format: unknown" in str(excinfo.value)
 
     def test_from_string_wrong_string(self):
-        with pytest.raises(StructureParseError) as excinfo:
+        with pytest.raises(exc.StructureParseError) as excinfo:
             glyc.Structure.from_string("glycan1", "wrong string", format="glycoct")
             assert "Could not parse string: wrong string" in str(excinfo.value)
 
     def test_from_glycoct(self):
-        glycan = glyc.Structure.from_glycoct("glycan1", test_glycoct_1)
+        glycan = glyc.Structure.from_glycoct("glycan1", ct.test_glycoct_1)
         assert repr(glycan) == "Structure(name='glycan1')"
 
     def test_from_glycoct_wrong_string(self):
-        with pytest.raises(StructureParseError) as excinfo:
+        with pytest.raises(exc.StructureParseError) as excinfo:
             glyc.Structure.from_glycoct("glycan1", "wrong string")
             assert "Could not parse string: wrong string" in str(excinfo.value)
 
@@ -67,7 +69,7 @@ class TestGlycan:
         "glycoct, mode, expected",
         [
             (
-                test_glycoct_1,
+                ct.test_glycoct_1,
                 "bfs",
                 [
                     "Glc2NAc",
@@ -84,7 +86,7 @@ class TestGlycan:
                 ],
             ),
             (
-                test_glycoct_1,
+                ct.test_glycoct_1,
                 "dfs",
                 [
                     "Glc2NAc",
@@ -110,7 +112,7 @@ class TestGlycan:
         "glycoct, expected",
         [
             (
-                test_glycoct_1,
+                ct.test_glycoct_1,
                 [
                     "Glc2NAc",
                     "Glc2NAc",
@@ -132,7 +134,7 @@ class TestGlycan:
         "glycoct, expected",
         [
             (
-                test_glycoct_1,
+                ct.test_glycoct_1,
                 [
                     "Glc2NAc",
                     "Glc2NAc",
@@ -151,21 +153,21 @@ class TestGlycan:
         assert list(glyc.get_mono_str(mono) for mono in it) == expected
 
     def test_traversal_both_skip_and_only(self, make_structure):
-        glycan = make_structure(test_glycoct_1)
+        glycan = make_structure(ct.test_glycoct_1)
         with pytest.raises(ValueError) as excinfo:
             for _ in glycan._traversal("bfs", skip=["Gal"], only=["Glc2NAc"]):
                 pass
         assert "Cannot specify both `skip` and `only`." in str(excinfo.value)
 
     def test_wrong_traversal_mode(self, make_structure):
-        glycan = make_structure(test_glycoct_1)
+        glycan = make_structure(ct.test_glycoct_1)
         with pytest.raises(ValueError) as excinfo:
             for _ in glycan._traversal("wrong"):
                 pass
         assert "Unknown traversal method: wrong" in str(excinfo.value)
 
     def test_composition(self, make_structure):
-        glycan = make_structure(test_glycoct_1)
+        glycan = make_structure(ct.test_glycoct_1)
         assert dict(glycan.composition) == {
             "Glc2NAc": 4,
             "Man": 3,
@@ -189,18 +191,18 @@ class TestComposition:
         assert str(comp) == expected
 
     def test_init_unknown_mono(self):
-        with pytest.raises(CompositionParseError) as excinfo:
+        with pytest.raises(exc.CompositionParseError) as excinfo:
             glyc.Composition("H5N4P1", dict(H=5, N=4, P=1))
         assert "Unknown monosaccharide: P" in str(excinfo.value)
 
     def test_init_negative_mono(self):
-        with pytest.raises(CompositionParseError) as excinfo:
+        with pytest.raises(exc.CompositionParseError) as excinfo:
             glyc.Composition("H5N4F-1", dict(H=5, N=4, F=-1))
         assert "Monosacharride must be above 0: F=-1." in str(excinfo.value)
 
     def test_init_S_and_LE(self):
         """S must not be with L or E in a glycan composition."""
-        with pytest.raises(CompositionParseError) as excinfo:
+        with pytest.raises(exc.CompositionParseError) as excinfo:
             glyc.Composition("H5N4F1S1", dict(H=5, N=4, F=1, S=1, L=1))
         assert "S must not be with L or E." in str(excinfo.value)
 
@@ -221,17 +223,17 @@ class TestComposition:
 
     @pytest.mark.parametrize("s", ["H5N4FS", "1HN4", "abc"])
     def test_from_string_invalid(self, s):
-        with pytest.raises(CompositionParseError) as excinfo:
+        with pytest.raises(exc.CompositionParseError) as excinfo:
             glyc.Composition.from_string(s, s)
         assert f"Invalid composition: {s}." in str(excinfo.value)
 
     def test_from_string_invalid_mono(self):
-        with pytest.raises(CompositionParseError) as excinfo:
+        with pytest.raises(exc.CompositionParseError) as excinfo:
             glyc.Composition.from_string("G", "H5N4F1P1")
         assert "Unknown monosaccharide: P" in str(excinfo.value)
 
     def test_from_string_emtpy(self):
-        with pytest.raises(CompositionParseError) as excinfo:
+        with pytest.raises(exc.CompositionParseError) as excinfo:
             glyc.Composition.from_string("G", "")
         assert "Empty string." in str(excinfo.value)
 

@@ -1,5 +1,4 @@
 import pandas as pd
-import pytest
 
 from glytrait.data_export import export_all
 

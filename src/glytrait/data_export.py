@@ -18,8 +18,6 @@ from typing import Type, TypeVar, Any
 
 import pandas as pd
 
-from glytrait.formula import TraitFormula
-
 __all__ = ["export_all"]
 
 

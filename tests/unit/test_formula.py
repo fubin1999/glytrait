@@ -285,7 +285,7 @@ class TestDivisionTermWrapper:
     def test_from_compare_term(self):
         term = fml.CompareTerm("mp_int", ">", 2)
         with pytest.raises(ValueError):
-            wrapper = fml.DivisionTermWrapper(term)
+            fml.DivisionTermWrapper(term)
 
 
 class TestParseFormulaExpression:

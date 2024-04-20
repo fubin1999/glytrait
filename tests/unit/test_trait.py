@@ -1,5 +1,3 @@
-from itertools import permutations
-
 import pandas as pd
 from attrs import define
 

@@ -4,7 +4,7 @@ from attrs import define
 
 from glytrait import meta_property as mp
 from glytrait.meta_property import Glycan
-from .glycoct import *
+from . import glycoct as ct
 
 
 def test_build_meta_property_table(mocker):
@@ -162,13 +162,13 @@ def _test_meta_property(meta_property, string, expected, make_glycan):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, 2),
-        (test_glycoct_2, 2),
-        (test_glycoct_3, 0),  # High-mannose
-        (test_glycoct_4, 0),  # Hybrid
-        (test_glycoct_6, 1),
-        (test_glycoct_8, 3),
-        (test_glycoct_14, 4),
+        (ct.test_glycoct_1, 2),
+        (ct.test_glycoct_2, 2),
+        (ct.test_glycoct_3, 0),  # High-mannose
+        (ct.test_glycoct_4, 0),  # Hybrid
+        (ct.test_glycoct_6, 1),
+        (ct.test_glycoct_8, 3),
+        (ct.test_glycoct_14, 4),
     ],
 )
 def test_count_antenna_mp(glycoct, expected, make_structure):
@@ -178,9 +178,9 @@ def test_count_antenna_mp(glycoct, expected, make_structure):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, 0),
-        (test_glycoct_2, 1),
-        (test_glycoct_9, 3),
+        (ct.test_glycoct_1, 0),
+        (ct.test_glycoct_2, 1),
+        (ct.test_glycoct_9, 3),
     ],
 )
 def test_count_fuc_mp_struc(glycoct, expected, make_structure):
@@ -202,9 +202,9 @@ def test_count_fuc_mp_comp(comp, expected, make_composition):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, 0),
-        (test_glycoct_2, 1),
-        (test_glycoct_9, 1),
+        (ct.test_glycoct_1, 0),
+        (ct.test_glycoct_2, 1),
+        (ct.test_glycoct_9, 1),
     ],
 )
 def test_count_core_fuc_mp(glycoct, expected, make_structure):
@@ -214,9 +214,9 @@ def test_count_core_fuc_mp(glycoct, expected, make_structure):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, 0),
-        (test_glycoct_2, 0),
-        (test_glycoct_9, 2),
+        (ct.test_glycoct_1, 0),
+        (ct.test_glycoct_2, 0),
+        (ct.test_glycoct_9, 2),
     ],
 )
 def test_count_antennary_fuc_mp(glycoct, expected, make_structure):
@@ -226,11 +226,11 @@ def test_count_antennary_fuc_mp(glycoct, expected, make_structure):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, 2),
-        (test_glycoct_2, 1),
-        (test_glycoct_3, 0),
-        (test_glycoct_4, 1),
-        (test_glycoct_10, 2),
+        (ct.test_glycoct_1, 2),
+        (ct.test_glycoct_2, 1),
+        (ct.test_glycoct_3, 0),
+        (ct.test_glycoct_4, 1),
+        (ct.test_glycoct_10, 2),
     ],
 )
 def test_count_sia_struc_mp(glycoct, expected, make_structure):
@@ -252,13 +252,13 @@ def test_count_sia_comp_mp(comp, expected, make_composition):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, "complex"),
-        (test_glycoct_2, "complex"),
-        (test_glycoct_3, "high_mannose"),
-        (test_glycoct_4, "hybrid"),
-        (test_glycoct_5, "complex"),
-        (test_glycoct_6, "complex"),
-        (test_glycoct_11, "complex"),
+        (ct.test_glycoct_1, "complex"),
+        (ct.test_glycoct_2, "complex"),
+        (ct.test_glycoct_3, "high_mannose"),
+        (ct.test_glycoct_4, "hybrid"),
+        (ct.test_glycoct_5, "complex"),
+        (ct.test_glycoct_6, "complex"),
+        (ct.test_glycoct_11, "complex"),
     ],
 )
 def test_glycan_type_mp(glycoct, expected, make_structure):
@@ -268,11 +268,11 @@ def test_glycan_type_mp(glycoct, expected, make_structure):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, False),
-        (test_glycoct_2, True),
-        (test_glycoct_3, False),
-        (test_glycoct_4, False),
-        (test_glycoct_8, True),
+        (ct.test_glycoct_1, False),
+        (ct.test_glycoct_2, True),
+        (ct.test_glycoct_3, False),
+        (ct.test_glycoct_4, False),
+        (ct.test_glycoct_8, True),
     ],
 )
 def test_bisection_mp(glycoct, expected, make_structure):
@@ -282,9 +282,9 @@ def test_bisection_mp(glycoct, expected, make_structure):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, 3),
-        (test_glycoct_3, 5),
-        (test_glycoct_5, 3),
+        (ct.test_glycoct_1, 3),
+        (ct.test_glycoct_3, 5),
+        (ct.test_glycoct_5, 3),
     ],
 )
 def test_count_man_mp_struc(glycoct, expected, make_structure):
@@ -306,9 +306,9 @@ def test_count_man_mp_comp(comp, expected, make_composition):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, 2),
-        (test_glycoct_3, 0),
-        (test_glycoct_4, 1),
+        (ct.test_glycoct_1, 2),
+        (ct.test_glycoct_3, 0),
+        (ct.test_glycoct_4, 1),
     ],
 )
 def test_count_gal_mp_struc(glycoct, expected, make_structure):
@@ -330,9 +330,9 @@ def test_count_gal_mp_comp(comp, expected, make_composition):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, 4),
-        (test_glycoct_2, 5),
-        (test_glycoct_3, 2),
+        (ct.test_glycoct_1, 4),
+        (ct.test_glycoct_2, 5),
+        (ct.test_glycoct_3, 2),
     ],
 )
 def test_count_glcnac_mp_struc(glycoct, expected, make_structure):
@@ -354,8 +354,8 @@ def test_count_glcnac_mp_comp(comp, expected, make_composition):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_1, False),
-        (test_glycoct_14, True),
+        (ct.test_glycoct_1, False),
+        (ct.test_glycoct_14, True),
     ],
 )
 def test_has_poly_lacnac_mp(glycoct, expected, make_structure):
@@ -365,9 +365,9 @@ def test_has_poly_lacnac_mp(glycoct, expected, make_structure):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_10, 0),
-        (test_glycoct_11, 2),
-        (test_glycoct_12, 1),
+        (ct.test_glycoct_10, 0),
+        (ct.test_glycoct_11, 2),
+        (ct.test_glycoct_12, 1),
     ],
 )
 def test_count_a23_sia_mp_struc(glycoct, expected, make_structure):
@@ -390,9 +390,9 @@ def test_count_a23_sia_mp_comp(comp, expected, make_composition):
 @pytest.mark.parametrize(
     "glycoct, expected",
     [
-        (test_glycoct_10, 2),
-        (test_glycoct_11, 0),
-        (test_glycoct_12, 1),
+        (ct.test_glycoct_10, 2),
+        (ct.test_glycoct_11, 0),
+        (ct.test_glycoct_12, 1),
     ],
 )
 def test_count_a26_sia_mp_struc(glycoct, expected, make_structure):

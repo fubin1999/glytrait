@@ -14,17 +14,17 @@ Functions:
 
 from __future__ import annotations
 
-import itertools
 import functools
+import itertools
 import re
 from collections.abc import Callable, Iterator
 from importlib.resources import files, as_file
 from pathlib import Path
-from typing import Literal, Optional, Generator, Type, Protocol
+from typing import Literal, Optional, Type, Protocol
 
+import attrs
 import numpy as np
 import pandas as pd
-import attrs
 from attrs import field, define
 
 from glytrait.data_type import AbundanceTable, MetaPropertyTable

@@ -16,7 +16,6 @@ from glytrait.load_data import (
     DFValidator,
     GlyTraitInputData,
     InputDataValidator,
-    load_input_data,
     load_input_data_from_csv,
 )
 
@@ -33,22 +32,22 @@ class TestCSVLoader:
     def test_read_csv_file_not_found(self, clean_dir):
         filepath = clean_dir / "abundance_table.csv"
         with pytest.raises(FileNotFoundError):
-            result = CSVLoader(filepath).read_csv()
+            CSVLoader(filepath).read_csv()
 
     def test_read_csv_wrong_format(self, clean_dir):
         content = "G1,G2,G3\n1,2,3\n4,5,6\n7,8,9,10"
         filepath = clean_dir / "abundance_table.csv"
         filepath.write_text(content)
         with pytest.raises(DataInputError) as excinfo:
-            result = CSVLoader(filepath).read_csv()
+            CSVLoader(filepath).read_csv()
         assert "This CSV file could not be parsed." in str(excinfo.value)
 
     def test_read_csv_empty_file(self, clean_dir):
         filepath = clean_dir / "abundance_table.csv"
         filepath.touch()
         with pytest.raises(DataInputError) as excinfo:
-            result = CSVLoader(filepath).read_csv()
-        assert f"Empty CSV file." in str(excinfo.value)
+            CSVLoader(filepath).read_csv()
+        assert "Empty CSV file." in str(excinfo.value)
 
     def test_load_df(self, mocker):
         validator = mocker.Mock()
@@ -314,8 +313,8 @@ class TestAllGlycansHaveStructuresOrComposition:
         with pytest.raises(DataInputError) as excinfo:
             glytrait.load_data.all_glycans_have_structures_or_compositions(data)
         msg = (
-            f"The following glycans in the abundance table do not have structures or "
-            f"compositions: G2."
+            "The following glycans in the abundance table do not have structures or "
+            "compositions: G2."
         )
         assert msg in str(excinfo.value)
 
