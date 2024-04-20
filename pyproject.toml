@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "glytrait"
-version = "0.1.0"
-description = ""
+version = "0.1.1"
+description = "A tool for calculating derived traits for N-glycome"
 authors = ["fubin1999 <65430559+fubin1999@users.noreply.github.com>"]
 readme = "README.md"
 
