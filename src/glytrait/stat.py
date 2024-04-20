@@ -62,8 +62,7 @@ def _prepare_for_anova(
 ) -> pd.DataFrame:
     """Combine the trait data and group information."""
     groups = groups.rename("group")
-    trait_df = trait_df.merge(groups, left_index=True, right_index=True)
-    return trait_df
+    return trait_df.merge(groups, left_index=True, right_index=True)
 
 
 def _anova(prepared_df: pd.DataFrame, trait_names: list[str]) -> pd.DataFrame:

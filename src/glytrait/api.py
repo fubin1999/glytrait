@@ -1,10 +1,10 @@
-from typing import Literal, Optional
+from typing import cast, Literal, Optional
 
 import pandas as pd
 from attrs import define, field
 
 from glytrait.data_export import export_all
-from glytrait.data_type import MetaPropertyTable, DerivedTraitTable
+from glytrait.data_type import MetaPropertyTable, DerivedTraitTable, GroupSeries
 from glytrait.formula import TraitFormula, load_formulas, load_default_formulas
 from glytrait.load_data import load_input_data_from_csv, GlyTraitInputData
 from glytrait.meta_property import build_meta_property_table
@@ -160,13 +160,15 @@ class GlyTrait:
 
     def _diff_analysis(
         self,
-        derived_trait_table: DerivedTraitTable,
+        derived_trait_table: DerivedTraitTable | None,
         input_data: GlyTraitInputData,
     ) -> dict[str, pd.DataFrame]:
-        if input_data.groups.unique().size == 2:
-            return {"t_test.csv": t_test(derived_trait_table, input_data.groups)}
+        groups = cast(GroupSeries, input_data.groups)
+        trait_table = cast(DerivedTraitTable, derived_trait_table)
+        if groups.unique().size == 2:
+            return {"t_test.csv": t_test(trait_table, groups)}
         else:  # groups size > 2
-            anova_df, post_hoc_df = anova(derived_trait_table, input_data.groups)
+            anova_df, post_hoc_df = anova(trait_table, groups)
             return {"anova.csv": anova_df, "post_hoc.csv": post_hoc_df}
 
     def _export_data(

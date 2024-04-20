@@ -808,7 +808,7 @@ def load_default_formulas(
     else:
         raise ValueError("Invalid formula type.")
     with as_file(file_traversable) as file:
-        return load_formulas(file, sia_linkage=sia_linkage)
+        return load_formulas(str(file), sia_linkage=sia_linkage)
 
 
 def save_builtin_formula(dirpath: str | Path) -> None:
