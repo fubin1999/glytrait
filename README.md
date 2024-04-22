@@ -31,9 +31,8 @@ saving my time and energy for more interesting analysis?*
 
 ## Contents
 
+- [Web app](#web-app)
 - [Installation](#installation)
-    - [Requirement](#requirement)
-    - [Using pipx (recommended)](#using-pipx-recommended)
 - [Usage](#usage)
     - [Quick start](#quick-start)
     - [Options](#options)
@@ -47,7 +46,7 @@ saving my time and energy for more interesting analysis?*
 
 ## Web app
 
-> Let there be no command line apps!
+> Let there be no code!
 > 
 > -- my colleagues
 
@@ -108,10 +107,11 @@ pip install glytrait
 1. Download the [example files](https://github.com/fubin1999/glytrait/tree/main/example_data)
 to a new directory: `glytrait_example`.
 
-2. Open a terminal and navigate to the directory:
+2. Open a terminal and navigate to the directory 
+(you need to replace `path/to/glytrait_example` with the actual path):
 
 ```shell
-cd glytrait_example
+cd path/to/glytrait_example
 ```
 
 3. Run the following command:
