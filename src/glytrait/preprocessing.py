@@ -5,9 +5,9 @@ The only high-level function that client code will use is `preprocess`.
 
 from typing import Literal, Protocol
 
-from attrs import define
+from attrs import define, field
+from attrs.validators import in_
 
-from glytrait.load_data import GlyTraitInputData
 from glytrait.data_type import AbundanceTable
 
 __all__ = ["preprocess"]
@@ -15,19 +15,22 @@ __all__ = ["preprocess"]
 
 # This is the high-level function that client code will use.
 def preprocess(
-    data: GlyTraitInputData,
+    data: AbundanceTable,
     filter_max_na: float,
     impute_method: Literal["zero", "min", "lod", "mean", "median"],
-) -> None:
+) -> AbundanceTable:
     """Preprocess the abundance table.
 
     Notes:
         This function will modify the input data in place.
 
     Args:
-        data (GlyTraitInputData): The input data.
+        data (AbundanceTable): The abundance table.
         filter_max_na (float): The maximum proportion of missing values allowed for a glycan.
         impute_method (Literal["zero", "min", "lod", "mean", "median"]): The imputation method.
+
+    Returns:
+        AbundanceTable: The preprocessed abundance table.
     """
     steps = [
         FilterGlycans(max_na=filter_max_na),
@@ -35,13 +38,13 @@ def preprocess(
         Normalize(),
     ]
     pipeline = ProcessingPipeline(steps=steps)
-    pipeline(data)
+    return pipeline(data)
 
 
 class ProcessingStep(Protocol):
     """The protocol for processing steps."""
 
-    def __call__(self, data: GlyTraitInputData) -> None: ...
+    def __call__(self, data: AbundanceTable) -> AbundanceTable: ...
 
 
 @define
@@ -50,9 +53,10 @@ class ProcessingPipeline:
 
     _steps: list[ProcessingStep]
 
-    def __call__(self, data: GlyTraitInputData) -> None:
+    def __call__(self, data: AbundanceTable) -> AbundanceTable:
         for step in self._steps:
-            step(data)
+            data = step(data)
+        return data
 
 
 @define
@@ -65,19 +69,9 @@ class FilterGlycans(ProcessingStep):
 
     max_na: float
 
-    def __call__(self, data: GlyTraitInputData) -> None:
-        glycans_to_keep = _filter_glycans(data.abundance_table, self.max_na)
-        data.abundance_table = AbundanceTable(
-            data.abundance_table.filter(items=glycans_to_keep)
-        )
-        for glycan in set(data.glycans).difference(glycans_to_keep):
-            del data.glycans[glycan]
-
-
-def _filter_glycans(abundance_df: AbundanceTable, max_na: float) -> list[str]:
-    to_keep_mask = abundance_df.isna().mean() <= max_na
-    glycans_to_keep = list(abundance_df.columns[to_keep_mask])
-    return glycans_to_keep
+    def __call__(self, data: AbundanceTable) -> AbundanceTable:
+        to_keep_mask = data.isna().mean() <= self.max_na
+        return AbundanceTable(data.loc[:, to_keep_mask])
 
 
 @define
@@ -97,49 +91,29 @@ class Impute(ProcessingStep):
             Can be "zero", "min", "lod", "mean", "median".
     """
 
-    method: Literal["zero", "min", "lod", "mean", "median"]
+    method: Literal["zero", "min", "lod", "mean", "median"] = field(
+        validator=in_(["zero", "min", "lod", "mean", "median"])
+    )
 
-    def __call__(self, data: GlyTraitInputData) -> None:
-        data.abundance_table = _impute(data.abundance_table, self.method)
-
-
-def _impute(
-    abundance_df: AbundanceTable,
-    method: Literal["zero", "min", "lod", "mean", "median"],
-) -> AbundanceTable:
-    if method == "zero":
-        imputed_df = abundance_df.fillna(0)
-    elif method == "min":
-        imputed_df = abundance_df.fillna(abundance_df.min())
-    elif method == "lod":
-        imputed_df = abundance_df.fillna(abundance_df.min() / 5)
-    elif method == "mean":
-        imputed_df = abundance_df.fillna(abundance_df.mean())
-    elif method == "median":
-        imputed_df = abundance_df.fillna(abundance_df.median())
-    else:
-        raise ValueError("The imputation method is not supported.")
-    return AbundanceTable(imputed_df)
+    def __call__(self, data: AbundanceTable) -> AbundanceTable:
+        if self.method == "zero":
+            imputed_df = data.fillna(0)
+        elif self.method == "min":
+            imputed_df = data.fillna(data.min())
+        elif self.method == "lod":
+            imputed_df = data.fillna(data.min() / 5)
+        elif self.method == "mean":
+            imputed_df = data.fillna(data.mean())
+        elif self.method == "median":
+            imputed_df = data.fillna(data.median())
+        return AbundanceTable(imputed_df)
 
 
 @define
 class Normalize(ProcessingStep):
     """Normalize the abundance table by dividing the sum of each sample."""
 
-    def __call__(self, data: GlyTraitInputData) -> None:
-        data.abundance_table = _normalization(data.abundance_table)
-
-
-def _normalization(abundance_df: AbundanceTable) -> AbundanceTable:
-    """Normalize the abundance table by dividing the sum of each sample.
-
-    Args:
-        abundance_df (AbundanceTable): The abundance table,
-            with samples as index and Compositions as columns.
-
-    Returns:
-        normalized_df (AbundanceTable): The normalized abundance table.
-    """
-    row_sums = abundance_df.sum(axis=1)
-    normalized_df = abundance_df.div(row_sums, axis=0).round(6)
-    return AbundanceTable(normalized_df)
+    def __call__(self, data: AbundanceTable) -> AbundanceTable:
+        row_sums = data.sum(axis=1)
+        normalized_df = data.div(row_sums, axis=0)
+        return AbundanceTable(normalized_df)

@@ -134,7 +134,14 @@ class GlyTrait:
         )
 
     def _preprocess(self, input_data: GlyTraitInputData) -> None:
-        preprocess(input_data, self._config.filter_max_na, self._config.impute_method)
+        processed_abund_df = preprocess(
+            data=input_data.abundance_table,
+            filter_max_na=self._config.filter_max_na,
+            impute_method=self._config.impute_method,
+        )
+        input_data.abundance_table = processed_abund_df
+        for glycan in set(input_data.glycans).difference(processed_abund_df.columns):
+            del input_data.glycans[glycan]
 
     def _calcu_meta_property(self, input_data: GlyTraitInputData) -> MetaPropertyTable:
         return build_meta_property_table(

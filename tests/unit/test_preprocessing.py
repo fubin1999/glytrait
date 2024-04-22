@@ -1,119 +1,116 @@
+import numpy as np
 import pandas as pd
 import pytest
+from hypothesis import given, strategies as st
+from hypothesis.extra.pandas import columns, data_frames
 
 from glytrait import preprocessing as pp
-from glytrait.load_data import GlyTraitInputData
 
 
-class TestImpute:
-    @pytest.mark.parametrize(
-        "method, expected",
-        [
-            ("zero", 0),
-            ("min", 0.1),
-            ("lod", 0.02),
-            ("mean", 0.2),
-            ("median", 0.2),
-        ],
+@given(
+    data=data_frames(columns([f"G{i}" for i in range(1, 11)], dtype=float)),
+    max_na=st.floats(min_value=0, max_value=1, allow_nan=False),
+)
+def test_filter(data, max_na):
+    data = data.abs()
+    filter = pp.FilterGlycans(max_na=max_na)
+    result = filter(data)
+    # Assert the NA proportions of remaining columns are all less than `max_na`.
+    assert np.sum(result.isna().mean() > max_na) == 0
+
+
+@pytest.mark.parametrize(
+    "method, expected",
+    [
+        (
+            "zero",
+            pd.DataFrame(
+                {
+                    "Glycan1": [0.1, 0.2, 0.0, 0.4],
+                    "Glycan2": [0.2, 0.0, 0.0, 0.5],
+                    "Glycan3": [0.3, 0.4, 0.5, 0.6],
+                },
+                index=pd.Index(["S1", "S2", "S3", "S4"], name="Sample"),
+            ),
+        ),
+        (
+            "min",
+            pd.DataFrame(
+                {
+                    "Glycan1": [0.1, 0.2, 0.1, 0.4],
+                    "Glycan2": [0.2, 0.2, 0.2, 0.5],
+                    "Glycan3": [0.3, 0.4, 0.5, 0.6],
+                },
+                index=pd.Index(["S1", "S2", "S3", "S4"], name="Sample"),
+            ),
+        ),
+        (
+            "lod",
+            pd.DataFrame(
+                {
+                    "Glycan1": [0.1, 0.2, 0.02, 0.4],
+                    "Glycan2": [0.2, 0.04, 0.04, 0.5],
+                    "Glycan3": [0.3, 0.4, 0.5, 0.6],
+                },
+                index=pd.Index(["S1", "S2", "S3", "S4"], name="Sample"),
+            ),
+        ),
+        (
+            "mean",
+            pd.DataFrame(
+                {
+                    "Glycan1": [0.1, 0.2, 0.7 / 3, 0.4],
+                    "Glycan2": [0.2, 0.35, 0.35, 0.5],
+                    "Glycan3": [0.3, 0.4, 0.5, 0.6],
+                },
+                index=pd.Index(["S1", "S2", "S3", "S4"], name="Sample"),
+            ),
+        ),
+        (
+            "median",
+            pd.DataFrame(
+                {
+                    "Glycan1": [0.1, 0.2, 0.2, 0.4],
+                    "Glycan2": [0.2, 0.35, 0.35, 0.5],
+                    "Glycan3": [0.3, 0.4, 0.5, 0.6],
+                },
+                index=pd.Index(["S1", "S2", "S3", "S4"], name="Sample"),
+            ),
+        ),
+    ],
+)
+def test_impute(method, expected):
+    data = pd.DataFrame(
+        {
+            "Glycan1": [0.1, 0.2, None, 0.4],
+            "Glycan2": [0.2, None, None, 0.5],
+            "Glycan3": [0.3, 0.4, 0.5, 0.6],
+        },
+        index=pd.Index(["S1", "S2", "S3", "S4"], name="Sample"),
     )
-    def test_impute_logc(self, method, expected):
-        df = pd.DataFrame(
-            {
-                "Glycan1": [0.1, None, 0.3],
-                "Glycan2": [0.2, 0.3, 0.4],
-                "Glycan3": [0.3, 0.4, 0.5],
-            }
-        )
-        result = pp._impute(df, method)
-        assert result.iloc[1, 0] == expected
-
-    def test_impute_step(self):
-        df = pd.DataFrame(
-            {
-                "G1": [1, 2, None],
-                "G2": [1, 2, 3],
-            },
-            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
-        )
-        data = GlyTraitInputData(
-            abundance_table=df, glycans={"G1": "Glycan1", "G2": "Glycan2"}
-        )
-        step = pp.Impute(method="zero")
-        step(data)
-        assert data.abundance_table.isna().sum().sum() == 0
+    imputer = pp.Impute(method=method)
+    result = imputer(data)
+    pd.testing.assert_frame_equal(result, expected)
 
 
-class TestFilterGlycans:
-    @pytest.mark.parametrize(
-        "ratio, expected",
-        [
-            (0, ["Glycan2"]),
-            (0.3, ["Glycan1", "Glycan2"]),
-            (0.5, ["Glycan1", "Glycan2", "Glycan3"]),
-            (0.7, ["Glycan1", "Glycan2", "Glycan3", "Glycan4"]),
-            (1, ["Glycan1", "Glycan2", "Glycan3", "Glycan4", "Glycan5", "Glycan6"]),
-        ],
-    )
-    def test_filter_glycans_logic(self, ratio, expected):
-        df = pd.DataFrame(
-            {
-                "Glycan1": [0.1, None, 0.3, 0.1, 0.2],
-                "Glycan2": [0.2, 0.3, 0.4, 0.2, 0.3],
-                "Glycan3": [0.3, 0.4, None, None, 0.4],
-                "Glycan4": [None, None, None, 0.3, 0.5],
-                "Glycan5": [None, None, None, 0.4, None],
-                "Glycan6": [None, None, None, None, None],
-            }
-        )
-        result = pp._filter_glycans(df, ratio)
-        assert sorted(result) == sorted(expected)
-
-    def test_filter_glycans_step(self):
-        df = pd.DataFrame(
-            {
-                "G1": [1, 2, None],
-                "G2": [1, 2, 3],
-            },
-            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
-        )
-        glycans = {"G1": "Glycan1", "G2": "Glycan2"}
-        data = GlyTraitInputData(abundance_table=df, glycans=glycans)
-        step = pp.FilterGlycans(max_na=0.2)
-        step(data)
-        assert data.abundance_table.columns.tolist() == ["G2"]
-        assert data.glycans == {"G2": "Glycan2"}
+def test_unknown_impute_method():
+    with pytest.raises(ValueError):
+        pp.Impute(method="unknown")
 
 
-class TestNormalize:
-    def test_normalization_logic(self):
-        df = pd.DataFrame(
-            {
-                "Glycan1": [0.1, 0.2, 0.3],
-                "Glycan2": [0.2, 0.3, 0.4],
-                "Glycan3": [0.3, 0.4, 0.5],
-            }
-        )
-        result = pp._normalization(df)
-        expected = pd.DataFrame(
-            {
-                "Glycan1": [0.1 / 0.6, 0.2 / 0.9, 0.3 / 1.2],
-                "Glycan2": [0.2 / 0.6, 0.3 / 0.9, 0.4 / 1.2],
-                "Glycan3": [0.3 / 0.6, 0.4 / 0.9, 0.5 / 1.2],
-            }
-        )
-        pd.testing.assert_frame_equal(result, expected)
-
-    def test_normalization_step(self):
-        df = pd.DataFrame(
-            {
-                "G1": [1, 2, 1],
-                "G2": [1, 2, 1],
-            },
-            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
-        )
-        data = GlyTraitInputData(
-            abundance_table=df, glycans={"G1": "Glycan1", "G2": "Glycan2"}
-        )
-        step = pp.Normalize()
-        step(data)
-        assert data.abundance_table.sum().sum() == len(df.index)
+@given(
+    st.lists(
+        st.floats(min_value=0.1, max_value=100, allow_nan=False), min_size=3, max_size=3
+    ),
+    st.lists(
+        st.floats(min_value=0.1, max_value=100, allow_nan=False), min_size=3, max_size=3
+    ),
+    st.lists(
+        st.floats(min_value=0.1, max_value=100, allow_nan=False), min_size=3, max_size=3
+    ),
+)
+def test_normalize(a1, a2, a3):
+    data = pd.DataFrame({"G1": a1, "G2": a2, "G3": a3})
+    normalizer = pp.Normalize()
+    result = normalizer(data)
+    np.testing.assert_allclose(result.sum(axis=1).values, np.ones(len(result.index)))
