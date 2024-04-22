@@ -6,7 +6,7 @@ from attrs import define, field
 from glytrait.data_export import export_all
 from glytrait.data_type import MetaPropertyTable, DerivedTraitTable, GroupSeries
 from glytrait.formula import TraitFormula, load_formulas, load_default_formulas
-from glytrait.load_data import load_input_data_from_csv, GlyTraitInputData
+from glytrait.load_data import GlyTraitInputData, load_data
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
 from glytrait.preprocessing import preprocess
@@ -126,12 +126,13 @@ class GlyTrait:
     def _load_input_data(
         self, abundance_file: str, glycan_file: str, group_file: Optional[str] = None
     ) -> GlyTraitInputData:
-        return load_input_data_from_csv(
-            abundance_file=abundance_file,
-            glycan_file=glycan_file,
-            group_file=group_file,
-            mode=self._config.mode,
-        )
+        abundance_df = pd.read_csv(abundance_file)
+        glycan_df = pd.read_csv(glycan_file)
+        if group_file is not None:
+            group_df = pd.read_csv(group_file)
+        else:
+            group_df = None
+        return load_data(abundance_df, glycan_df, group_df, mode=self._config.mode)
 
     def _preprocess(self, input_data: GlyTraitInputData) -> None:
         processed_abund_df = preprocess(
@@ -139,7 +140,7 @@ class GlyTrait:
             filter_max_na=self._config.filter_max_na,
             impute_method=self._config.impute_method,
         )
-        input_data.abundance_table = processed_abund_df
+        input_data._abundance_table = processed_abund_df
         for glycan in set(input_data.glycans).difference(processed_abund_df.columns):
             del input_data.glycans[glycan]
 

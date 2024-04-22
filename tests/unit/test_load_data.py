@@ -1,3 +1,6 @@
+from collections import namedtuple
+from typing import Any
+
 import pandas as pd
 import pytest
 from numpy import dtype
@@ -6,166 +9,15 @@ import glytrait
 from glytrait.exception import (
     DataInputError,
 )
-from glytrait.glycan import StructureDict
+from glytrait.glycan import parse_structures, parse_compositions
 from glytrait.load_data import (
-    load_input_data,
-    CSVLoader,
-    AbundanceCSVLoader,
-    GroupsCSVLoader,
-    GlycanCSVLoader,
+    DataLoader,
+    AbundanceLoader,
+    GroupsLoader,
+    GlycanLoader,
     DFValidator,
-    GlyTraitInputData,
-    InputDataValidator,
-    load_input_data_from_csv,
+    GlyTraitInputData, load_data,
 )
-
-
-class TestCSVLoader:
-
-    def test_read_csv(self, clean_dir):
-        df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
-        filepath = clean_dir / "test.csv"
-        df.to_csv(filepath, index=False)
-        result = CSVLoader(filepath).read_csv()
-        pd.testing.assert_frame_equal(result, df)
-
-    def test_read_csv_file_not_found(self, clean_dir):
-        filepath = clean_dir / "abundance_table.csv"
-        with pytest.raises(FileNotFoundError):
-            CSVLoader(filepath).read_csv()
-
-    def test_read_csv_wrong_format(self, clean_dir):
-        content = "G1,G2,G3\n1,2,3\n4,5,6\n7,8,9,10"
-        filepath = clean_dir / "abundance_table.csv"
-        filepath.write_text(content)
-        with pytest.raises(DataInputError) as excinfo:
-            CSVLoader(filepath).read_csv()
-        assert "This CSV file could not be parsed." in str(excinfo.value)
-
-    def test_read_csv_empty_file(self, clean_dir):
-        filepath = clean_dir / "abundance_table.csv"
-        filepath.touch()
-        with pytest.raises(DataInputError) as excinfo:
-            CSVLoader(filepath).read_csv()
-        assert "Empty CSV file." in str(excinfo.value)
-
-    def test_load_df(self, mocker):
-        validator = mocker.Mock()
-        returned_df = mocker.Mock()
-        loader = CSVLoader(
-            filepath="test.csv", reader=lambda x: returned_df, validator=validator
-        )
-        result = loader.load_df()
-        assert result == returned_df
-
-
-class TestGroupsCSVLoader:
-    def test_basic(self):
-        df = pd.DataFrame(
-            {
-                "Sample": ["sample1", "sample2", "sample3"],
-                "Group": ["group1", "group2", "group3"],
-            },
-        )
-        loader = GroupsCSVLoader(
-            filepath="group_table.csv", reader=lambda x: df, validator=lambda df: None
-        )
-        result = loader.load()
-        expected = pd.Series(
-            ["group1", "group2", "group3"],
-            name="Group",
-            index=pd.Index(["sample1", "sample2", "sample3"], name="Sample"),
-        )
-        pd.testing.assert_series_equal(result, expected)
-
-    def test_default_validator(self):
-        loader = GroupsCSVLoader(filepath="group_table.csv")
-        assert loader.validator == DFValidator(
-            must_have=["Group", "Sample"], unique=["Sample"], types={"Sample": "object"}
-        )
-
-
-class TestAbundanceCSVLoader:
-    def test_basic(self):
-        df = pd.DataFrame(
-            {
-                "Sample": ["sample1", "sample2", "sample3"],
-                "G1": [1, 2, 3],
-                "G2": [4, 5, 6],
-            }
-        )
-        loader = AbundanceCSVLoader(
-            filepath="abundance_table.csv",
-            reader=lambda x: df,
-            validator=lambda df: None,
-        )
-        result = loader.load()
-        expected = pd.DataFrame(
-            {
-                "G1": [1, 2, 3],
-                "G2": [4, 5, 6],
-            },
-            index=pd.Index(["sample1", "sample2", "sample3"], name="Sample"),
-        )
-        pd.testing.assert_frame_equal(result, expected)
-
-    def test_default_validator(self):
-        loader = AbundanceCSVLoader(filepath="abundance_table.csv")
-        assert loader.validator == DFValidator(
-            must_have=["Sample"], unique=["Sample"], types={"Sample": "object"}
-        )
-
-
-class TestGlycanCSVLoader:
-    @staticmethod
-    def fake_parser(it):
-        return StructureDict({name: string for name, string in it})
-
-    @pytest.mark.parametrize("mode", ["structure", "composition"])
-    def test_basic(self, mode):
-        glycan_col = "Structure" if mode == "structure" else "Composition"
-        df = pd.DataFrame(
-            {
-                "GlycanID": ["G1", "G2", "G3"],
-                glycan_col: ["glycan1", "glycan2", "glycan3"],
-            },
-        )
-        loader = GlycanCSVLoader(
-            "structure.csv",
-            mode=mode,
-            parser=self.fake_parser,
-            reader=lambda x: df,
-            validator=lambda df: None,
-        )
-        result = loader.load()
-        expected = {"G1": "glycan1", "G2": "glycan2", "G3": "glycan3"}
-        assert result == expected
-
-    @pytest.mark.parametrize(
-        "mode, parser",
-        [
-            ("structure", glytrait.glycan.parse_structures),
-            ("composition", glytrait.glycan.parse_compositions),
-        ],
-    )
-    def test_default_parser(self, mode, parser):
-        loader = GlycanCSVLoader("structure.csv", mode=mode)
-        assert loader.parser == parser
-
-    @pytest.mark.parametrize(
-        "mode, glycan_col",
-        [
-            ("structure", "Structure"),
-            ("composition", "Composition"),
-        ],
-    )
-    def test_default_validator(self, mode, glycan_col):
-        loader = GlycanCSVLoader("structure.csv", mode=mode)
-        assert loader.validator == DFValidator(
-            must_have=["GlycanID", glycan_col],
-            unique=["GlycanID", glycan_col],
-            types={"GlycanID": "object", glycan_col: "object"},
-        )
 
 
 class TestDFValidator:
@@ -230,15 +82,183 @@ class TestDFValidator:
         assert msg in str(excinfo.value)
 
 
-class TestInputDataValidator:
+def test_data_loader_base_class(mocker):
+    class TestDataLoader(DataLoader):
+        def _validate_data(self, df: pd.DataFrame) -> None:
+            pass
 
-    def test_registered_validators(self):
-        validators = set(InputDataValidator.validators)
-        expected = {
-            glytrait.load_data.same_samples_in_abundance_and_groups,
-            glytrait.load_data.all_glycans_have_structures_or_compositions,
-        }
-        assert validators == expected
+        def _load_data(self, df: pd.DataFrame) -> Any:
+            pass
+
+    df = mocker.Mock()
+    loader = TestDataLoader()
+    loader._validate_data = mocker.Mock()
+    loader._load_data = mocker.Mock(return_value="loaded")
+    assert loader.load(df) == "loaded"
+    loader._validate_data.assert_called_once_with(df)
+    loader._load_data.assert_called_once_with(df)
+
+
+class TestAbundanceLoader:
+
+    def test_basic(self):
+        df = pd.DataFrame(
+            {
+                "Sample": ["S1", "S2", "S3"],
+                "G1": [1., 2., 3.],
+                "G2": [4., 5., 6.],
+                "G3": [7., 8., 9.],
+            }
+        )
+        loader = AbundanceLoader()
+        result = loader.load(df)
+        expected = pd.DataFrame(
+            {
+                "G1": [1., 2., 3.],
+                "G2": [4., 5., 6.],
+                "G3": [7., 8., 9.],
+            },
+            index=pd.Index(["S1", "S2", "S3"], name="Sample")
+        )
+        pd.testing.assert_frame_equal(result, expected)
+
+    def test_no_sample_col(self):
+        df = pd.DataFrame(
+            {
+                "G1": [1., 2., 3.],
+                "G2": [4., 5., 6.],
+                "G3": [7., 8., 9.],
+            }
+        )
+        loader = AbundanceLoader()
+        with pytest.raises(DataInputError):
+            loader.load(df)
+
+    def test_duplicate_samples(self):
+        df = pd.DataFrame(
+            {
+                "Sample": ["S1", "S1", "S3"],
+                "G1": [1., 2., 3.],
+                "G2": [4., 5., 6.],
+                "G3": [7., 8., 9.],
+            }
+        )
+        loader = AbundanceLoader()
+        with pytest.raises(DataInputError):
+            loader.load(df)
+
+    def test_wrong_type(self):
+        df = pd.DataFrame(
+            {
+                "Sample": ["S1", "S2", "S3"],
+                "G1": ["A", "B", "C"],
+                "G2": [4., 5., 6.],
+                "G3": [7., 8., 9.],
+            }
+        )
+        loader = AbundanceLoader()
+        with pytest.raises(DataInputError):
+            loader.load(df)
+
+    @pytest.mark.skip("Not implemented")
+    def test_only_sample_col(self):
+        df = pd.DataFrame(
+            {
+                "Sample": ["S1", "S2", "S3"]
+            }
+        )
+        loader = AbundanceLoader()
+        with pytest.raises(DataInputError):
+            loader.load(df)
+
+
+class TestGroupsLoader:
+
+    def test_basic(self):
+        df = pd.DataFrame(
+            {
+                "Sample": ["S1", "S2", "S3"],
+                "Group": ["G1", "G2", "G3"],
+            }
+        )
+        loader = GroupsLoader()
+        result = loader.load(df)
+        expected = pd.Series(
+            ["G1", "G2", "G3"],
+            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
+            name="Group",
+        )
+        pd.testing.assert_series_equal(result, expected)
+
+    @pytest.mark.skip("Not implemented")
+    def test_wrong_cols(self):
+        df = pd.DataFrame(
+            {
+                "Sample": ["S1", "S2", "S3"],
+                "Group": ["G1", "G2", "G3"],
+                "Extra": [1, 2, 3],
+            }
+        )
+        loader = GroupsLoader()
+        with pytest.raises(DataInputError):
+            loader.load(df)
+
+    def test_missing_sample_col(self):
+        df = pd.DataFrame(
+            {
+                "Group": ["G1", "G2", "G3"],
+            }
+        )
+        loader = GroupsLoader()
+        with pytest.raises(DataInputError):
+            loader.load(df)
+
+    def test_missing_group_col(self):
+        df = pd.DataFrame(
+            {
+                "Sample": ["S1", "S2", "S3"],
+            }
+        )
+        loader = GroupsLoader()
+        with pytest.raises(DataInputError):
+            loader.load(df)
+
+    def test_duplicate_samples(self):
+        df = pd.DataFrame(
+            {
+                "Sample": ["S1", "S1", "S3"],
+                "Group": ["G1", "G2", "G3"],
+            }
+        )
+        loader = GroupsLoader()
+        with pytest.raises(DataInputError):
+            loader.load(df)
+
+
+class TestGlycanLoader:
+
+    @pytest.mark.parametrize(
+        "mode, expected",
+        [
+            ("structure", parse_structures),
+            ("composition", parse_compositions),
+        ]
+    )
+    def test_glycan_parser_factory(self, mode, expected):
+        result = GlycanLoader._glycan_parser_factory(mode)
+        assert result == expected
+
+    def test_basic(self):
+        df = pd.DataFrame(
+            {
+                "GlycanID": ["G1", "G2", "G3"],
+                "Structure": ["A", "B", "C"],
+            }
+        )
+        loader = GlycanLoader(mode="structure", parser=lambda x: {k: v for k, v in x})
+        result = loader.load(df)
+        expected = {"G1": "A", "G2": "B", "G3": "C"}
+        assert result == expected
 
 
 class TestSameSamplesInAbundanceAndGroups:
@@ -260,33 +280,29 @@ class TestSameSamplesInAbundanceAndGroups:
     def test_same(self):
         abundance = self.make_abund_df(["sample1", "sample2"])
         groups = self.make_group_s(["sample1", "sample2"])
-        data = GlyTraitInputData(abundance_table=abundance, groups=groups, glycans=None)
-        glytrait.load_data.same_samples_in_abundance_and_groups(data)
+        glytrait.load_data.check_same_samples_in_abund_and_groups(abundance, groups)
 
     def test_sample_missing_in_groups(self):
         abundance = self.make_abund_df(["sample1", "sample2"])
         groups = self.make_group_s(["sample1"])
-        data = GlyTraitInputData(abundance_table=abundance, groups=groups, glycans=None)
         with pytest.raises(DataInputError) as excinfo:
-            glytrait.load_data.same_samples_in_abundance_and_groups(data)
+            glytrait.load_data.check_same_samples_in_abund_and_groups(abundance, groups)
         msg = "The following samples are in the abundance table but not in the groups: sample2."
         assert msg in str(excinfo.value)
 
     def test_sample_missing_in_abundance(self):
         abundance = self.make_abund_df(["sample1"])
         groups = self.make_group_s(["sample1", "sample2"])
-        data = GlyTraitInputData(abundance_table=abundance, groups=groups, glycans=None)
         with pytest.raises(DataInputError) as excinfo:
-            glytrait.load_data.same_samples_in_abundance_and_groups(data)
+            glytrait.load_data.check_same_samples_in_abund_and_groups(abundance, groups)
         msg = "The following samples are in the groups but not in the abundance table: sample2."
         assert msg in str(excinfo.value)
 
     def test_sample_missing_in_both(self):
         abundance = self.make_abund_df(["sample1"])
         groups = self.make_group_s(["sample2"])
-        data = GlyTraitInputData(abundance_table=abundance, groups=groups, glycans=None)
         with pytest.raises(DataInputError) as excinfo:
-            glytrait.load_data.same_samples_in_abundance_and_groups(data)
+            glytrait.load_data.check_same_samples_in_abund_and_groups(abundance, groups)
         msg1 = "The following samples are in the abundance table but not in the groups: sample1."
         msg2 = "The following samples are in the groups but not in the abundance table: sample2."
         assert msg1 in str(excinfo.value)
@@ -303,15 +319,13 @@ class TestAllGlycansHaveStructuresOrComposition:
     def test_all_have_structures(self):
         glycans = {"G1": "glycan1", "G2": "glycan2"}
         abund_df = self.make_abund_df(glycans.keys())
-        data = GlyTraitInputData(abundance_table=abund_df, groups=None, glycans=glycans)
-        glytrait.load_data.all_glycans_have_structures_or_compositions(data)
+        glytrait.load_data.check_all_glycans_have_struct_or_comp(abund_df, glycans)
 
     def test_missing_structures(self):
         glycans = {"G1": "glycan1"}
         abund_df = self.make_abund_df(["G1", "G2"])
-        data = GlyTraitInputData(abundance_table=abund_df, groups=None, glycans=glycans)
         with pytest.raises(DataInputError) as excinfo:
-            glytrait.load_data.all_glycans_have_structures_or_compositions(data)
+            glytrait.load_data.check_all_glycans_have_struct_or_comp(abund_df, glycans)
         msg = (
             "The following glycans in the abundance table do not have structures or "
             "compositions: G2."
@@ -321,80 +335,53 @@ class TestAllGlycansHaveStructuresOrComposition:
     def test_glycans_in_structures_not_in_abundance(self):
         glycans = {"G1": "glycan1", "G2": "glycan2"}
         abund_df = self.make_abund_df(["G1"])
-        data = GlyTraitInputData(abundance_table=abund_df, groups=None, glycans=glycans)
-        assert (
-            glytrait.load_data.all_glycans_have_structures_or_compositions(data) is None
+        glytrait.load_data.check_all_glycans_have_struct_or_comp(abund_df, glycans)
+
+
+class TestGlyTraitInputData:
+
+    @pytest.fixture(autouse=True)
+    def patch_checker(self, mocker):
+        mocker.patch("glytrait.load_data.check_same_samples_in_abund_and_groups")
+        mocker.patch("glytrait.load_data.check_all_glycans_have_struct_or_comp")
+
+    @pytest.fixture
+    def input_data(self):
+        return GlyTraitInputData(
+            abundance_table="abundance",
+            glycans="glycans",
+            groups="groups",
         )
 
+    def test_abundance_table_getter(self, input_data):
+        assert input_data.abundance_table == "abundance"
 
-def test_load_input_data(mocker):
-    abundance_table = mocker.Mock()
-    glycan_dict = mocker.Mock()
-    group_seris = mocker.Mock()
+    def test_abundance_table_setter(self, input_data):
+        input_data.abundance_table = "new_abundance"
+        assert input_data.abundance_table == "new_abundance"
+        assert glytrait.load_data.check_same_samples_in_abund_and_groups.called_once_with(
+            "new_abundance", "groups"
+        )
+        assert glytrait.load_data.check_all_glycans_have_struct_or_comp.called_once_with(
+            "new_abundance", "glycans"
+        )
 
-    abundance_loader = mocker.Mock()
-    abundance_loader.load.return_value = abundance_table
-    glycan_loader = mocker.Mock()
-    glycan_loader.load.return_value = glycan_dict
-    group_loader = mocker.Mock()
-    group_loader.load.return_value = group_seris
+    def test_glycans_getter(self, input_data):
+        assert input_data.glycans == "glycans"
 
-    validator = mocker.Mock()
+    def test_glycans_setter(self, input_data):
+        input_data.glycans = "new_glycans"
+        assert input_data.glycans == "new_glycans"
+        assert glytrait.load_data.check_all_glycans_have_struct_or_comp.called_once_with(
+            "abundance", "new_glycans"
+        )
 
-    result = load_input_data(
-        abundance_loader=abundance_loader,
-        glycan_loader=glycan_loader,
-        group_loader=group_loader,
-        validator=validator,
-    )
+    def test_groups_getter(self, input_data):
+        assert input_data.groups == "groups"
 
-    assert result.abundance_table == abundance_table
-    assert result.glycans == glycan_dict
-    assert result.groups == group_seris
-
-    abundance_loader.load.assert_called_once()
-    glycan_loader.load.assert_called_once()
-    group_loader.load.assert_called_once()
-    validator.assert_called_once_with(result)
-
-
-@pytest.mark.parametrize("mode", ["structure", "composition"])
-@pytest.mark.parametrize("group_file", [None, "group.csv"])
-def test_load_input_data_from_csv(mocker, mode, group_file):
-    input_data = mocker.Mock()
-    mocker.patch(
-        "glytrait.load_data.load_input_data", autospec=True, return_value=input_data
-    )
-    abund_loader_mock = mocker.patch(
-        "glytrait.load_data.AbundanceCSVLoader", autospec=True
-    )
-    glycan_loader_mock = mocker.patch(
-        "glytrait.load_data.GlycanCSVLoader", autospec=True
-    )
-    group_loader_mock = mocker.patch(
-        "glytrait.load_data.GroupsCSVLoader", autospec=True
-    )
-
-    result = load_input_data_from_csv(
-        abundance_file="abundance.csv",
-        glycan_file="glycan.csv",
-        group_file=group_file,
-        mode=mode,
-    )
-
-    assert result == input_data
-    abund_loader_mock.assert_called_once_with(filepath="abundance.csv")
-    glycan_loader_mock.assert_called_once_with(filepath="glycan.csv", mode=mode)
-    if group_file:
-        group_loader_mock.assert_called_once_with(filepath="group.csv")
-    else:
-        group_loader_mock.assert_not_called()
-
-    params = {
-        "abundance_loader": abund_loader_mock.return_value,
-        "glycan_loader": glycan_loader_mock.return_value,
-        "group_loader": group_loader_mock.return_value,
-    }
-    if not group_file:
-        params["group_loader"] = None
-    glytrait.load_data.load_input_data.assert_called_once_with(**params)
+    def test_groups_setter(self, input_data):
+        input_data.groups = "new_groups"
+        assert input_data.groups == "new_groups"
+        assert glytrait.load_data.check_same_samples_in_abund_and_groups.callec_once_with(
+            "abundance", "new_groups"
+        )

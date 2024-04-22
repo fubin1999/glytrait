@@ -13,8 +13,9 @@ Functions:
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from collections.abc import Iterable, Callable
-from typing import Optional, Literal, Protocol, cast, ClassVar
+from typing import Optional, Literal, Any, cast
 
 import pandas as pd
 from attrs import define, field
@@ -30,26 +31,12 @@ from glytrait.glycan import (
     parse_compositions,
     StructureDict,
     CompositionDict,
-    GlycanDict,
 )
 
 __all__ = [
+    "load_data",
     "GlyTraitInputData",
-    "load_input_data_from_csv",
 ]
-
-
-# ===== Loaders =====
-class AbundanceLoaderProto(Protocol):
-    def load(self) -> AbundanceTable: ...
-
-
-class GlycanLoaderProto(Protocol):
-    def load(self) -> StructureDict | CompositionDict: ...
-
-
-class GroupsLoaderProto(Protocol):
-    def load(self) -> GroupSeries: ...
 
 
 @define
@@ -121,93 +108,55 @@ class DFValidator:
             raise DataInputError(msg)
 
 
-@define
-class CSVLoader:
-    """Base class for data loaders from csv files."""
+class DataLoader(ABC):
+    """Base class for a data loader."""
 
-    filepath: str
-    validator: DFValidator = field(kw_only=True, default=lambda df: None)
+    def load(self, df: pd.DataFrame) -> Any:
+        """Load data from the DataFrame."""
+        self._validate_data(df)
+        return self._load_data(df)
 
-    # Dependency injection
-    reader: Callable[[str], pd.DataFrame] = field(kw_only=True, default=pd.read_csv)
-
-    def load(self):
-        """Load the data from the file."""
+    @abstractmethod
+    def _validate_data(self, df: pd.DataFrame) -> None:
+        """Validate the DataFrame."""
         raise NotImplementedError
 
-    def load_df(self) -> pd.DataFrame:
-        """Returns the DataFrame loaded from the file.
-
-        Raises:
-            FileNotFoundError: If the file does not exist.
-            DataInputError: If one of the following conditions is met:
-                (1) the file is empty; (2) the file could not be parsed.
-        """
-        df = self.read_csv()
-        self.validator(df)
-        return df
-
-    def read_csv(self) -> pd.DataFrame:
-        """A thin wrapper for `pd.read_csv`, with custum exceptions."""
-        try:
-            return self.reader(self.filepath)
-        # FileNotFoundError is not caught here
-        except pd.errors.EmptyDataError as e:
-            raise DataInputError("Empty CSV file.") from e
-        except pd.errors.ParserError as e:
-            raise DataInputError("This CSV file could not be parsed.") from e
+    @abstractmethod
+    def _load_data(self, df: pd.DataFrame) -> Any:
+        """Load data from the DataFrame."""
+        raise NotImplementedError
 
 
 @define
-class AbundanceCSVLoader(CSVLoader):
-    """Loader for abundance table from a csv file."""
+class AbundanceLoader(DataLoader):
+    """Loader of the abundance table."""
 
-    validator: DFValidator = field(
-        kw_only=True,
-        default=DFValidator(
+    def _validate_data(self, df: pd.DataFrame) -> None:
+        validator = DFValidator(
             must_have=["Sample"],
             unique=["Sample"],
             types={"Sample": "object"},
             default_type=dtype("float64"),
-        ),
-    )
+        )
+        validator(df)
 
-    def load(self) -> AbundanceTable:
-        """Returns the abundance table loaded from the file.
-
-        Raises:
-            FileNotFoundError: If the file does not exist.
-            DataInputError: If the file format is incorrect.
-                This includes: (1) the file is empty; (2) the file could not be parsed;
-                (3) the "Sample" column is not found.
-        """
-        df = self.load_df()
+    def _load_data(self, df: pd.DataFrame) -> AbundanceTable:
         return AbundanceTable(df.set_index("Sample"))
 
 
 @define
-class GroupsCSVLoader(CSVLoader):
-    """Loader for groups from a csv file."""
+class GroupsLoader(DataLoader):
+    """Loader of the group series."""
 
-    validator: DFValidator = field(
-        kw_only=True,
-        default=DFValidator(
+    def _validate_data(self, df: pd.DataFrame) -> None:
+        validator = DFValidator(
             must_have=["Group", "Sample"],
             unique=["Sample"],
             types={"Sample": "object"},
-        ),
-    )
+        )
+        validator(df)
 
-    def load(self) -> GroupSeries:
-        """Returns the groups loaded from the file.
-
-        Raises:
-            FileNotFoundError: If the file does not exist.
-            DataInputError: If the file format is incorrect.
-                This includes: (1) the file is empty; (2) the file could not be parsed;
-                (3) the "Sample" column is not found; (4) the "Group" column is not found.
-        """
-        df = self.load_df()
+    def _load_data(self, df: pd.DataFrame) -> GroupSeries:
         return GroupSeries(df.set_index("Sample")["Group"])
 
 
@@ -217,18 +166,15 @@ GlycanParserType = Callable[
 
 
 @define
-class GlycanCSVLoader(CSVLoader):
+class GlycanLoader(DataLoader):
     """Loader for structures or compositions from a csv file."""
 
     mode: Literal["structure", "composition"] = field(kw_only=True)
-    validator: DFValidator = field(kw_only=True, default=None)
     parser: GlycanParserType = field(kw_only=True, default=None)
 
     def __attrs_post_init__(self):
         if self.parser is None:
             self.parser = self._glycan_parser_factory(self.mode)
-        if self.validator is None:
-            self.validator = self._validator_factory(self.mode)
 
     @staticmethod
     def _glycan_parser_factory(
@@ -246,27 +192,14 @@ class GlycanCSVLoader(CSVLoader):
             types={"GlycanID": "object", glycan_col: "object"},
         )
 
-    def load(self) -> GlycanDict:
-        """Returns the glycans loaded from the file.
+    def _validate_data(self, df: pd.DataFrame) -> None:
+        validator = self._validator_factory(self.mode)
+        validator(df)
 
-        Raises:
-            FileNotFoundError: If the file does not exist.
-            FileFormatError: If the file format is incorrect.
-                This includes: (1) the file is empty; (2) the file could not be parsed;
-                (3) the "GlycanID" column is not found; (4) the "Structure" or
-                "Composition" column is not found.
-            StructureParseError: If any structure cannot be parsed,
-                when `mode` is "structure".
-            CompositionParseError: If any composition cannot be parsed,
-                when `mode` is "composition".
-        """
-        df = self.load_df()
+    def _load_data(self, df: pd.DataFrame) -> CompositionDict | StructureDict:
         ids = df["GlycanID"].to_list()
         glycan_col = self.mode.capitalize()
-        try:
-            strings = df[glycan_col].to_list()
-        except KeyError as e:
-            raise DataInputError(f"The '{glycan_col}' column is not found.") from e
+        strings = df[glycan_col].to_list()
         return self.parser(zip(ids, strings))
 
 
@@ -287,51 +220,68 @@ class GlyTraitInputData:
         samples in the groups.
 
     Raises:
-        FileFormatError: If the abundance table has different samples as the groups,
+        DataInputError: If the abundance table has different samples as the groups,
             or if the glycan dict has different glycans as the abundance table.
     """
 
-    abundance_table: AbundanceTable
-    glycans: StructureDict | CompositionDict
-    groups: Optional[GroupSeries] = None
+    _abundance_table: AbundanceTable
+    _glycans: StructureDict | CompositionDict
+    _groups: Optional[GroupSeries] = None
+
+    def __attrs_post_init__(self):
+        if self._groups is not None:
+            check_same_samples_in_abund_and_groups(self._abundance_table, self._groups)
+        check_all_glycans_have_struct_or_comp(self._abundance_table, self._glycans)
+
+    @property
+    def abundance_table(self) -> AbundanceTable:
+        """The abundance table as a pandas DataFrame."""
+        return self._abundance_table
+
+    @abundance_table.setter
+    def abundance_table(self, value: AbundanceTable) -> None:
+        if self._groups is not None:
+            check_same_samples_in_abund_and_groups(value, self._groups)
+        check_all_glycans_have_struct_or_comp(value, self._glycans)
+        self._abundance_table = value
+
+    @property
+    def glycans(self) -> CompositionDict | StructureDict:
+        """The glycans as a dict of `Structure` or `Composition` objects."""
+        return self._glycans
+
+    @glycans.setter
+    def glycans(self, value: CompositionDict | StructureDict) -> None:
+        check_all_glycans_have_struct_or_comp(self._abundance_table, value)
+        self._glycans = value
+
+    @property
+    def groups(self) -> GroupSeries | None:
+        """The sample groups as a pandas Series."""
+        return self._groups
+
+    @groups.setter
+    def groups(self, value: GroupSeries | None) -> None:
+        if value is not None:
+            check_same_samples_in_abund_and_groups(self._abundance_table, value)
+        self._groups = value
 
 
-# ===== Input data validators =====
-ValidatorType = Callable[[GlyTraitInputData], None]
-
-
-@define
-class InputDataValidator:
-    """Validator for the input data.
-
-    This class only validates the interaction between the input data.
-    The format of each input data is validated by the loaders.
-    """
-
-    validators: ClassVar[list[ValidatorType]] = []
-
-    def __call__(self, input_data: GlyTraitInputData) -> None:
-        for validator in self.validators:
-            validator(input_data)
-
-    @classmethod
-    def add_validator(cls, validator: ValidatorType) -> ValidatorType:
-        """A decorator to add a validator to the list of validators."""
-        cls.validators.append(validator)
-        return validator
-
-
-@InputDataValidator.add_validator
-def same_samples_in_abundance_and_groups(input_data: GlyTraitInputData) -> None:
+def check_same_samples_in_abund_and_groups(
+    abundance_df: AbundanceTable,
+    groups: GroupSeries,
+) -> None:
     """Check if the abundance table and the groups have the same samples.
+
+    Args:
+        abundance_df: Abundance table as a pandas DataFrame.
+        groups: Sample groups as a pandas Series.
 
     Raises:
         DataInputError: If the samples in the abundance table and the groups are different.
     """
-    if input_data.groups is None:
-        return
-    abund_samples = set(input_data.abundance_table.index)
-    groups_samples = set(input_data.groups.index)
+    abund_samples = set(abundance_df.index)
+    groups_samples = set(groups.index)
     if abund_samples != groups_samples:
         samples_in_abund_not_in_groups = abund_samples - groups_samples
         samples_in_groups_not_in_abund = groups_samples - abund_samples
@@ -349,19 +299,25 @@ def same_samples_in_abundance_and_groups(input_data: GlyTraitInputData) -> None:
         raise DataInputError(msg)
 
 
-@InputDataValidator.add_validator
-def all_glycans_have_structures_or_compositions(input_data: GlyTraitInputData) -> None:
+def check_all_glycans_have_struct_or_comp(
+    abundance_df: AbundanceTable,
+    glycans: CompositionDict | StructureDict,
+) -> None:
     """Check if all glycans in the abundance table have structures or compositions.
 
     Glycans in the structure or composition dict that are not in the abundance table
     are not checked.
 
+    Args:
+        abundance_df: Abundance table as a pandas DataFrame.
+        glycans: Glycans, either a dict of `Structure` objects or a dict of `Composition` objects.
+
     Raises:
         DataInputError: If any glycan in the abundance table does not
             have a structure or composition.
     """
-    abund_glycans = set(input_data.abundance_table.columns)
-    glycans = set(input_data.glycans.keys())
+    abund_glycans = set(abundance_df.columns)
+    glycans = set(glycans.keys())
     if diff := abund_glycans - glycans:
         msg = (
             f"The following glycans in the abundance table do not have structures or "
@@ -370,64 +326,38 @@ def all_glycans_have_structures_or_compositions(input_data: GlyTraitInputData) -
         raise DataInputError(msg)
 
 
-# ===== The low-level API =====
-def load_input_data(
+def load_data(
+    abundance_df: pd.DataFrame,
+    glycan_df: pd.DataFrame,
+    group_df: Optional[pd.DataFrame] = None,
     *,
-    abundance_loader: AbundanceLoaderProto,
-    glycan_loader: GlycanLoaderProto,
-    group_loader: Optional[GroupsLoaderProto] = None,
-    validator: ValidatorType = InputDataValidator(),
+    mode: Literal["structure", "composition"] = "structure",
 ) -> GlyTraitInputData:
     """Load all the input data for GlyTrait.
 
     Args:
-        abundance_loader: Loader for the abundance table.
-        glycan_loader: Loader for the glycans.
-        group_loader: Loader for the groups. Optional.
-        mode: Either "structure" or "composition".
-        validator: Validator for the input data.
+        abundance_df: Abundance table as a pandas DataFrame.
+        glycan_df: Glycan structures or compositions as a pandas DataFrame.
+        group_df: Sample groups as a pandas DataFrame. Optional.
+        mode: Mode of the glycan data, either "structure" or "composition".
 
     Returns:
-        GlyTraitInputData: Input data for GlyTrait.
+        A `GlyTraitInputData` object.
+
+    Raises:
+        DataInputError: If the input data is not valid.
     """
-    abundance_table = abundance_loader.load()
-    glycans = glycan_loader.load()
-    groups = group_loader.load() if group_loader else None
+    abundance_loader = AbundanceLoader()
+    structure_loader = GlycanLoader(mode=mode)
+    group_loader = GroupsLoader()
+
+    abundance_table = abundance_loader.load(abundance_df)
+    glycans = structure_loader.load(glycan_df)
+    groups = group_loader.load(group_df) if group_df is not None else None
 
     input_data = GlyTraitInputData(
         abundance_table=abundance_table,
         glycans=glycans,
         groups=groups,
     )
-
-    validator(input_data)
     return input_data
-
-
-# ===== The high-level API =====
-def load_input_data_from_csv(
-    *,
-    abundance_file: str,
-    glycan_file: str,
-    group_file: Optional[str] = None,
-    mode: Literal["structure", "composition"],
-) -> GlyTraitInputData:
-    """Load all the input data for GlyTrait from csv files.
-
-    Args:
-        abundance_file: Path to the abundance table csv file.
-        glycan_file: Path to the glycans csv file.
-        group_file: Path to the groups csv file. Optional.
-        mode: Either "structure" or "composition".
-
-    Returns:
-        GlyTraitInputData: Input data for GlyTrait.
-    """
-    abundance_loader = AbundanceCSVLoader(filepath=abundance_file)
-    glycan_loader = GlycanCSVLoader(filepath=glycan_file, mode=mode)
-    group_loader = GroupsCSVLoader(filepath=group_file) if group_file else None
-    return load_input_data(
-        abundance_loader=abundance_loader,
-        glycan_loader=glycan_loader,
-        group_loader=group_loader,
-    )
