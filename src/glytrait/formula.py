@@ -31,7 +31,7 @@ from glytrait.data_type import AbundanceTable, MetaPropertyTable
 
 __all__ = [
     "TraitFormula",
-    "load_formulas",
+    "load_formulas_from_file",
     "load_default_formulas",
     "save_builtin_formula",
 ]
@@ -44,10 +44,6 @@ default_comp_formula_file = files("glytrait.resources").joinpath("comp_formula.t
 
 class FormulaError(GlyTraitError):
     """Raised if a formula is invalid."""
-
-
-class FormulaFileError(GlyTraitError):
-    """Raised if a formula file is in wrong format."""
 
 
 class FormulaParseError(FormulaError):
@@ -711,58 +707,6 @@ class FormulaParser:
         raise FormulaTermParseError(expr, "Does not belong to any term class.")
 
 
-@define
-class FormulaFileParser:
-    """Parser for a formula file."""
-
-    expr_parser: FormulaParserType = field(kw_only=True, default=FormulaParser())
-
-    def parse(self, filepath: str) -> Iterator[TraitFormula]:
-        """Parse the formula file and return a list of `TraitFormula` objects."""
-        for description, expression in self._deconvolute_formula_file(filepath):
-            yield TraitFormula.from_expr(expression, parser=self.expr_parser)
-
-    @staticmethod
-    def _deconvolute_formula_file(formula_file: str) -> Iterator[tuple[str, str]]:
-        """A generator that yields the formula description and the formula expression.
-
-        Args:
-            formula_file (str): The path of the formula file.
-
-        Yields:
-            tuple[str, str]: The formula description and the formula expression.
-
-        Raises:
-            FormulaFileError: If the formula file is in a wrong format.
-        """
-        with open(formula_file, "r", encoding="utf8") as f:
-            description, expression = None, None
-
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-
-                if line.startswith("@"):
-                    if description is not None:
-                        msg = f"No expression follows description '{description}'."
-                        raise FormulaFileError(msg)
-                    description = line[1:].strip()
-
-                elif line.startswith("$"):
-                    expression = line[1:].strip()
-                    if description is None:
-                        msg = f"No description before expression '{expression}'."
-                        raise FormulaFileError(msg)
-                    yield description, expression
-                    description, expression = None, None
-
-        if description is not None:
-            raise FormulaFileError(
-                f"No expression follows description '{description}'."
-            )
-
-
 # ===== High-level functions =====
 def parse_formulas(exprs: Iterable[str]) -> list[TraitFormula]:
     """Parse formula expressions.
@@ -794,7 +738,7 @@ def parse_formulas(exprs: Iterable[str]) -> list[TraitFormula]:
     return formulas
 
 
-def load_formulas(
+def load_formulas_from_file(
     file: str,
     sia_linkage: bool = False,
 ) -> list[TraitFormula]:
@@ -809,13 +753,23 @@ def load_formulas(
         list[TraitFormula]: The formulas.
 
     Raises:
-        FormulaFileError: If the formula file is in a wrong format.
         FormulaParseError: If a formula string cannot be parsed.
     """
-    formulas = [f for f in FormulaFileParser().parse(file)]
+    exprs = list(_get_formula_exprs_from_file(file))
+    formulas = parse_formulas(exprs)
     if not sia_linkage:
         formulas = [f for f in formulas if not f.sia_linkage]
     return formulas
+
+
+def _get_formula_exprs_from_file(file: str) -> Iterator[str]:
+    """Get all the formula expressions from a formula file."""
+    with open(file, encoding="utf8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            yield line
 
 
 def load_default_formulas(
@@ -839,7 +793,7 @@ def load_default_formulas(
     else:
         raise ValueError("Invalid formula type.")
     with as_file(file_traversable) as file:
-        return load_formulas(str(file), sia_linkage=sia_linkage)
+        return load_formulas_from_file(str(file), sia_linkage=sia_linkage)
 
 
 def save_builtin_formula(dirpath: str | Path) -> None:

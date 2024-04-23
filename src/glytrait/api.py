@@ -5,7 +5,11 @@ from attrs import define, field
 
 from glytrait.data_export import export_all
 from glytrait.data_type import MetaPropertyTable, DerivedTraitTable, GroupSeries
-from glytrait.formula import TraitFormula, load_formulas, load_default_formulas
+from glytrait.formula import (
+    TraitFormula,
+    load_formulas_from_file,
+    load_default_formulas,
+)
 from glytrait.load_data import GlyTraitInputData, load_data
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
@@ -62,7 +66,7 @@ class GlyTrait:
 
     def _init_formulas(self) -> list[TraitFormula]:
         if self._config.custom_formula_file is not None:
-            return load_formulas(
+            return load_formulas_from_file(
                 self._config.custom_formula_file, self._config.sia_linkage
             )
         else:

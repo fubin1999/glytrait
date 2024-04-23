@@ -1,3 +1,6 @@
+import random
+from tempfile import TemporaryDirectory
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -529,31 +532,65 @@ class TestTraitFormula:
         parser.assert_called_once_with("expr")
 
 
+class TestGetFormulaExprsFromFile:
+
+    def test_static(self, tmp_path):
+        test_data = [
+            "# Comment line",
+            "Formula 1",
+            "",  # Blank line
+            "Formula 2",
+        ]
+        file = tmp_path / "formulas.txt"
+        file.write_text("\n".join(test_data))
+        result = list(fml._get_formula_exprs_from_file(file))
+        assert result == ["Formula 1", "Formula 2"]
+
+    @given(
+        # Valid expressions
+        exprs=st.lists(
+            st.text().filter(
+                lambda x: (x.strip() != "")
+                and (not x.startswith("#"))
+                and ("\r" not in x)
+                and ("\n" not in x)
+            )
+        ),
+        # Comment or blank lines
+        others=st.lists(
+            st.one_of(
+                st.text().filter(lambda x: x.startswith("#")),
+                st.just(""),
+            )
+        ),
+    )
+    def test_all_types(self, exprs, others):
+        with TemporaryDirectory() as tmpdir:
+            file = tmpdir + "/formulas.txt"
+            lines = exprs + others
+            random.shuffle(lines)
+            with open(file, "w") as f:
+                f.write("\n".join(lines))
+
+            result = list(fml._get_formula_exprs_from_file(file))
+            assert sorted(result) == sorted(expr.strip() for expr in exprs)
+
+
 @pytest.mark.parametrize(
     "sia_linkage, expected", [(False, ["F1"]), (True, ["F1", "F2"])]
 )
-def test_load_formulas(mocker, sia_linkage, expected):
+def test_load_formulas_from_file(mocker, sia_linkage, expected):
     @define
     class FakeFormula:
         name: str
         sia_linkage: bool
 
-    @define
-    class FakeParser:
-        def parse(self, file):
-            return [FakeFormula("F1", False), FakeFormula("F2", True)]
+    fake_formulas = [FakeFormula("F1", False), FakeFormula("F2", True)]
+    mocker.patch("glytrait.formula._get_formula_exprs_from_file")
+    mocker.patch("glytrait.formula.parse_formulas", return_value=fake_formulas)
 
-    mocker.patch("glytrait.formula.FormulaFileParser", return_value=FakeParser())
-    formulas = fml.load_formulas("file", sia_linkage=sia_linkage)
-    assert [f.name for f in formulas] == expected
-
-
-def test_load_default_formulas():
-    structure_formulas = list(fml.load_default_formulas("structure"))
-    composition_formulas = list(fml.load_default_formulas("composition"))
-    assert len(structure_formulas) > 0
-    assert len(composition_formulas) > 0
-    assert len(structure_formulas) != len(composition_formulas)
+    result = fml.load_formulas_from_file("file", sia_linkage)
+    assert [f.name for f in result] == expected
 
 
 def test_save_builtin_formula(clean_dir):
@@ -583,41 +620,3 @@ class TestParseFormulas:
         with pytest.raises(fml.FormulaParseError) as excinfo:
             fml.parse_formulas(["A", "B"])
         assert "'A', 'B'" in str(excinfo.value)
-
-
-class TestFormulaFileParser:
-
-    def test_parse(self, write_content):
-        file = write_content("@ Description\n$ Expression\n")
-        parser = fml.FormulaFileParser(expr_parser=lambda x: x)
-        assert list(parser.parse(file)) == ["Expression"]
-
-    def test_deconvolute_formula_file_basic(self, write_content):
-        file = write_content("@ Description\n$ Expression\n")
-        result = list(fml.FormulaFileParser._deconvolute_formula_file(file))
-        expected = [("Description", "Expression")]
-        assert result == expected
-
-    def test_first_line_not_description(self, write_content):
-        file = write_content("$ Expression\n@ Description\n")
-        with pytest.raises(fml.FormulaFileError) as excinfo:
-            list(fml.FormulaFileParser._deconvolute_formula_file(file))
-        assert "No description before expression 'Expression'" in str(excinfo.value)
-
-    def test_two_descriptions(self, write_content):
-        file = write_content("@ Description1\n@ Description2\n")
-        with pytest.raises(fml.FormulaFileError) as excinfo:
-            list(fml.FormulaFileParser._deconvolute_formula_file(file))
-        assert "No expression follows description 'Description1'." in str(excinfo.value)
-
-    def test_two_expressions(self, write_content):
-        file = write_content("@ Description\n$ Expression1\n$ Expression2")
-        with pytest.raises(fml.FormulaFileError) as excinfo:
-            list(fml.FormulaFileParser._deconvolute_formula_file(file))
-        assert "No description before expression 'Expression2'." in str(excinfo.value)
-
-    def test_no_last_expression(self, write_content):
-        file = write_content("@ Description1\n$ Expression1\n@Description2")
-        with pytest.raises(fml.FormulaFileError) as excinfo:
-            list(fml.FormulaFileParser._deconvolute_formula_file(file))
-        assert "No expression follows description 'Description2'." in str(excinfo.value)

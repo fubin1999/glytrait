@@ -178,7 +178,9 @@ class TestGlyTrait:
         ]
         glytrait_api.export_all.assert_called_once_with(to_export, output_path)
 
-        glytrait_api.load_formulas.assert_called_once_with("structure", None, False)
+        glytrait_api.load_formulas_from_file.assert_called_once_with(
+            "structure", None, False
+        )
         glytrait_api.load_input_data_from_csv.assert_called_once_with(
             abundance_file="abundance_file",
             glycan_file="glycan_file",
@@ -315,7 +317,7 @@ class TestGlyTrait:
             "group_file",
         )
 
-        glytrait_api.load_formulas.assert_called_once_with(
+        glytrait_api.load_formulas_from_file.assert_called_once_with(
             "structure", "custom_formula_file", False
         )
         glytrait_api.calcu_derived_trait.assert_called_once_with(

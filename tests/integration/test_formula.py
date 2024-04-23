@@ -1,6 +1,6 @@
 import pytest
 
-from glytrait.formula import FormulaParser
+import glytrait.formula as fml
 
 
 @pytest.mark.parametrize(
@@ -94,8 +94,16 @@ from glytrait.formula import FormulaParser
     ],
 )
 def test_parse_formula(expr, numerators, denominators):
-    parser = FormulaParser()
+    parser = fml.FormulaParser()
     result_f = parser.parse(expr)
     assert result_f.name == "T"
     assert set(t.expr for t in result_f.numerators) == numerators
     assert set(t.expr for t in result_f.denominators) == denominators
+
+
+def test_load_default_formulas():
+    structure_formulas = list(fml.load_default_formulas("structure"))
+    composition_formulas = list(fml.load_default_formulas("composition"))
+    assert len(structure_formulas) > 0
+    assert len(composition_formulas) > 0
+    assert len(structure_formulas) != len(composition_formulas)
