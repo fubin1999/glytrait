@@ -240,11 +240,11 @@ class GlyTraitInputData:
         return AbundanceTable(self._abundance_table.copy())
 
     @abundance_table.setter
-    def abundance_table(self, value: AbundanceTable) -> None:
+    def abundance_table(self, value: pd.DataFrame) -> None:
         if self._groups is not None:
             check_same_samples_in_abund_and_groups(value, self._groups)
         check_all_glycans_have_struct_or_comp(value, self._glycans)
-        self._abundance_table = value
+        self._abundance_table = AbundanceTable(value)
 
     @property
     def glycans(self) -> GlycanDict:
@@ -262,15 +262,15 @@ class GlyTraitInputData:
         return GroupSeries(self._groups.copy()) if self._groups is not None else None
 
     @groups.setter
-    def groups(self, value: GroupSeries | None) -> None:
+    def groups(self, value: pd.Series | None) -> None:
         if value is not None:
             check_same_samples_in_abund_and_groups(self._abundance_table, value)
-        self._groups = value
+        self._groups = GroupSeries(value) if value is not None else None
 
 
 def check_same_samples_in_abund_and_groups(
-    abundance_df: AbundanceTable,
-    groups: GroupSeries,
+    abundance_df: pd.DataFrame,
+    groups: pd.Series,
 ) -> None:
     """Check if the abundance table and the groups have the same samples.
 
@@ -301,7 +301,7 @@ def check_same_samples_in_abund_and_groups(
 
 
 def check_all_glycans_have_struct_or_comp(
-    abundance_df: AbundanceTable,
+    abundance_df: pd.DataFrame,
     glycans: GlycanDict,
 ) -> None:
     """Check if all glycans in the abundance table have structures or compositions.
@@ -318,8 +318,8 @@ def check_all_glycans_have_struct_or_comp(
             have a structure or composition.
     """
     abund_glycans = set(abundance_df.columns)
-    glycans = set(glycans.keys())
-    if diff := abund_glycans - glycans:
+    glycan_names = set(glycans.keys())
+    if diff := abund_glycans - glycan_names:
         msg = (
             f"The following glycans in the abundance table do not have structures or "
             f"compositions: {', '.join(diff)}."

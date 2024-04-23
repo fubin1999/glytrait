@@ -5,7 +5,12 @@ import pandas as pd
 from attrs import define, field
 
 from glytrait.data_export import export_all
-from glytrait.data_type import MetaPropertyTable, DerivedTraitTable, GroupSeries
+from glytrait.data_type import (
+    MetaPropertyTable,
+    DerivedTraitTable,
+    GroupSeries,
+    AbundanceTable,
+)
 from glytrait.exception import GlyTraitError
 from glytrait.formula import (
     TraitFormula,
@@ -19,6 +24,7 @@ from glytrait.post_filtering import post_filter
 from glytrait.preprocessing import preprocess
 from glytrait.trait import calcu_derived_trait
 from glytrait.stat import t_test, anova
+from glytrait.glycan import Structure, Composition
 
 
 class GlyTrait:
@@ -324,7 +330,7 @@ class _Workflow:
     # `_data_dict` is the data keys each method will generate.
     _data_dict: ClassVar[dict[str, list[str]]] = dict()
 
-    _data = field(init=False, factory=dict)
+    _data: dict[str, Any] = field(init=False, factory=dict)
     _current_step: str = field(init=False, default="__START__")
 
     def __attrs_post_init__(self) -> None:
@@ -431,6 +437,9 @@ def _step(func):
     return wrapper
 
 
+GlycanDict = dict[str, Structure] | dict[str, Composition]
+
+
 @define
 class Experiment(_Workflow):
     """GlyTrait experiment.
@@ -530,31 +539,31 @@ class Experiment(_Workflow):
 
     @abundance_table.setter
     def abundance_table(self, value: pd.DataFrame) -> None:
-        self.input_data.abundance_table = value
+        self.input_data.abundance_table = value  # type: ignore
         self.reset()
 
     @property
-    def glycans(self) -> dict[str, str]:
+    def glycans(self) -> GlycanDict:
         """The glycans."""
         return self.input_data.glycans
 
     @glycans.setter
-    def glycans(self, value: dict[str, str]) -> None:
+    def glycans(self, value: GlycanDict) -> None:
         self.input_data.glycans = value
         self.reset()
 
     @property
-    def groups(self) -> GroupSeries:
+    def groups(self) -> GroupSeries | None:
         """The groups."""
         return self.input_data.groups
 
     @groups.setter
-    def groups(self, value: pd.Series) -> None:
-        self.input_data.groups = value
+    def groups(self, value: pd.Series | None) -> None:
+        self.input_data.groups = value  # type: ignore
         self.reset()
 
     @property
-    def processed_abundance_table(self) -> pd.DataFrame:
+    def processed_abundance_table(self) -> AbundanceTable:
         """The processed abundance table."""
         return self.get_data("processed_abundance_table")
 
@@ -609,7 +618,7 @@ class Experiment(_Workflow):
             filter_max_na=filter_max_na,
             impute_method=impute_method,
         )
-        return {"processed_abundance_table": processed}  # type: ignore
+        return {"processed_abundance_table": AbundanceTable(processed)}  # type: ignore
 
     @_step
     def extract_meta_properties(self) -> None:
@@ -617,8 +626,8 @@ class Experiment(_Workflow):
 
         Calling this method will make the `meta_property_table` attribute available.
         """
-        glycans = self.processed_abundance_table.columns.tolist()
-        glycan_dict = {g: self.input_data.glycans[g] for g in glycans}
+        glycans: list[str] = self.processed_abundance_table.columns.tolist()
+        glycan_dict = cast(GlycanDict, {g: self.input_data.glycans[g] for g in glycans})
         mp_table = build_meta_property_table(glycan_dict, self.mode, self.sia_linkage)
         return {"meta_property_table": mp_table}  # type: ignore
 
