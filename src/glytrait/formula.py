@@ -17,7 +17,7 @@ from __future__ import annotations
 import functools
 import itertools
 import re
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Iterable
 from importlib.resources import files, as_file
 from pathlib import Path
 from typing import Literal, Optional, Type, Protocol
@@ -761,6 +761,37 @@ class FormulaFileParser:
             raise FormulaFileError(
                 f"No expression follows description '{description}'."
             )
+
+
+# ===== High-level functions =====
+def parse_formulas(exprs: Iterable[str]) -> list[TraitFormula]:
+    """Parse formula expressions.
+
+    Args:
+        exprs: The formula expressions.
+
+    Returns:
+        list[TraitFormula]: The formulas.
+
+    Raises:
+        FormulaParseError: If any expression is invalid.
+            All the invalid expressions will be reported in the error message.
+    """
+    formulas: list[TraitFormula] = []
+    failed_exprs: list[str] = []
+    parser = FormulaParser()
+    for expr in exprs:
+        try:
+            formula = parser.parse(expr)
+        except FormulaParseError:
+            failed_exprs.append(expr)
+        else:
+            formulas.append(formula)
+    if failed_exprs:
+        failed_exprs_str = ", ".join(f"'{expr}'" for expr in failed_exprs)
+        msg = "Failed to parse the following expressions: " + failed_exprs_str
+        raise FormulaParseError(msg)
+    return formulas
 
 
 def load_formulas(

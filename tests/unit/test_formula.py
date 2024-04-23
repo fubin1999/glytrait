@@ -564,6 +564,27 @@ def test_save_builtin_formula(clean_dir):
     assert comp_file.exists()
 
 
+class TestParseFormulas:
+
+    def test_basic(self, mocker):
+        mock_parser = mocker.Mock()
+        mock_parser.parse.side_effect = lambda x: x
+        mocker.patch("glytrait.formula.FormulaParser", return_value=mock_parser)
+
+        formulas = fml.parse_formulas(["A", "B"])
+        assert formulas == ["A", "B"]
+        assert mock_parser.parse.call_count == 2
+
+    def test_parsing_failed(self, mocker):
+        mock_parser = mocker.Mock()
+        mock_parser.parse.side_effect = fml.FormulaParseError("error")
+        mocker.patch("glytrait.formula.FormulaParser", return_value=mock_parser)
+
+        with pytest.raises(fml.FormulaParseError) as excinfo:
+            fml.parse_formulas(["A", "B"])
+        assert "'A', 'B'" in str(excinfo.value)
+
+
 class TestFormulaFileParser:
 
     def test_parse(self, write_content):
