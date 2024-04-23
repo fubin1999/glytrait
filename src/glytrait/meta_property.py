@@ -31,13 +31,15 @@ from glypy import Monosaccharide  # type: ignore
 
 from glytrait.data_type import MetaPropertyTable
 from glytrait.exception import SiaLinkageError
-from glytrait.glycan import Structure, Composition, get_mono_str, GlycanDict
+from glytrait.glycan import Structure, Composition, get_mono_str
 
 __all__ = [
     "build_meta_property_table",
     "available_meta_properties",
     "get_meta_property",
 ]
+
+GlycanDict = dict[str, Structure] | dict[str, Composition]
 
 
 def build_meta_property_table(

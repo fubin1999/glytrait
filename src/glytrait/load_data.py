@@ -26,17 +26,14 @@ from glytrait.data_type import (
     GroupSeries,
 )
 from glytrait.exception import DataInputError
-from glytrait.glycan import (
-    parse_structures,
-    parse_compositions,
-    StructureDict,
-    CompositionDict,
-)
+from glytrait.glycan import parse_structures, parse_compositions, Structure, Composition
 
 __all__ = [
     "load_data",
     "GlyTraitInputData",
 ]
+
+GlycanDict = dict[str, Structure] | dict[str, Composition]
 
 
 @define
@@ -160,9 +157,7 @@ class GroupsLoader(DataLoader):
         return GroupSeries(df.set_index("Sample")["Group"])
 
 
-GlycanParserType = Callable[
-    [Iterable[tuple[str, str]]], StructureDict | CompositionDict
-]
+GlycanParserType = Callable[[Iterable[tuple[str, str]]], GlycanDict]
 
 
 @define
@@ -196,7 +191,7 @@ class GlycanLoader(DataLoader):
         validator = self._validator_factory(self.mode)
         validator(df)
 
-    def _load_data(self, df: pd.DataFrame) -> CompositionDict | StructureDict:
+    def _load_data(self, df: pd.DataFrame) -> GlycanDict:
         ids = df["GlycanID"].to_list()
         glycan_col = self.mode.capitalize()
         strings = df[glycan_col].to_list()
@@ -225,7 +220,7 @@ class GlyTraitInputData:
     """
 
     _abundance_table: AbundanceTable
-    _glycans: StructureDict | CompositionDict
+    _glycans: GlycanDict
     _groups: Optional[GroupSeries] = None
 
     def __attrs_post_init__(self):
@@ -246,12 +241,12 @@ class GlyTraitInputData:
         self._abundance_table = value
 
     @property
-    def glycans(self) -> CompositionDict | StructureDict:
+    def glycans(self) -> GlycanDict:
         """The glycans as a dict of `Structure` or `Composition` objects."""
         return self._glycans
 
     @glycans.setter
-    def glycans(self, value: CompositionDict | StructureDict) -> None:
+    def glycans(self, value: GlycanDict) -> None:
         check_all_glycans_have_struct_or_comp(self._abundance_table, value)
         self._glycans = value
 
@@ -301,7 +296,7 @@ def check_same_samples_in_abund_and_groups(
 
 def check_all_glycans_have_struct_or_comp(
     abundance_df: AbundanceTable,
-    glycans: CompositionDict | StructureDict,
+    glycans: GlycanDict,
 ) -> None:
     """Check if all glycans in the abundance table have structures or compositions.
 

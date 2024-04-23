@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Generator, Mapping, Iterator, Callable
-from typing import Literal, Iterable, Optional, Final, Union, TypeVar, NewType
+from typing import Literal, Iterable, Optional, Final, Union, TypeVar
 
 from attrs import frozen, field
 from glypy.io.glycoct import loads as glycoct_loads, GlycoCTError  # type: ignore
@@ -31,9 +31,6 @@ from glytrait.exception import (
 )
 
 __all__ = [
-    "StructureDict",
-    "CompositionDict",
-    "GlycanDict",
     "parse_structures",
     "parse_compositions",
     "Structure",
@@ -41,24 +38,8 @@ __all__ = [
     "get_mono_str",
 ]
 
-StructureDict = NewType("StructureDict", dict[str, "Structure"])
-"""A type hint for a dictionary of `Structure` instances.
-The keys are the names of the structures, and the values are the structures.
-"""
 
-CompositionDict = NewType("CompositionDict", dict[str, "Composition"])
-"""A type hint for a dictionary of `Composition` instances.
-The keys are the names of the compositions, and the values are the compositions.
-"""
-
-GlycanDict = Union[StructureDict, CompositionDict]
-"""A type hint for a dictionary of `Structure` or `Composition` instances.
-The keys are the names of the structures or compositions, 
-and the values are the structures or compositions.
-"""
-
-
-def parse_structures(__iter: Iterable[tuple[str, str]]) -> StructureDict:
+def parse_structures(__iter: Iterable[tuple[str, str]]) -> dict[str, Structure]:
     """Parse glycan structures from a list of structure strings.
 
     Args:
@@ -77,10 +58,10 @@ def parse_structures(__iter: Iterable[tuple[str, str]]) -> StructureDict:
     except GlycanParseError as exc:
         raise StructureParseError(f"Could not parse structures for: {exc}.")
     else:
-        return StructureDict(result)
+        return result
 
 
-def parse_compositions(__iter: Iterable[tuple[str, str]]) -> CompositionDict:
+def parse_compositions(__iter: Iterable[tuple[str, str]]) -> dict[str, Composition]:
     """Parse glycan compositions from a list of composition strings.
 
     Args:
@@ -99,7 +80,7 @@ def parse_compositions(__iter: Iterable[tuple[str, str]]) -> CompositionDict:
     except GlycanParseError as exc:
         raise CompositionParseError(f"Could not parse compositions for: {exc}.")
     else:
-        return CompositionDict(result)
+        return result
 
 
 Glycan = TypeVar("Glycan", bound=Union["Structure", "Composition"])

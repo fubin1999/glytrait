@@ -1,4 +1,3 @@
-from collections import namedtuple
 from typing import Any
 
 import pandas as pd
@@ -16,7 +15,7 @@ from glytrait.load_data import (
     GroupsLoader,
     GlycanLoader,
     DFValidator,
-    GlyTraitInputData, load_data,
+    GlyTraitInputData,
 )
 
 
@@ -105,29 +104,29 @@ class TestAbundanceLoader:
         df = pd.DataFrame(
             {
                 "Sample": ["S1", "S2", "S3"],
-                "G1": [1., 2., 3.],
-                "G2": [4., 5., 6.],
-                "G3": [7., 8., 9.],
+                "G1": [1.0, 2.0, 3.0],
+                "G2": [4.0, 5.0, 6.0],
+                "G3": [7.0, 8.0, 9.0],
             }
         )
         loader = AbundanceLoader()
         result = loader.load(df)
         expected = pd.DataFrame(
             {
-                "G1": [1., 2., 3.],
-                "G2": [4., 5., 6.],
-                "G3": [7., 8., 9.],
+                "G1": [1.0, 2.0, 3.0],
+                "G2": [4.0, 5.0, 6.0],
+                "G3": [7.0, 8.0, 9.0],
             },
-            index=pd.Index(["S1", "S2", "S3"], name="Sample")
+            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
         )
         pd.testing.assert_frame_equal(result, expected)
 
     def test_no_sample_col(self):
         df = pd.DataFrame(
             {
-                "G1": [1., 2., 3.],
-                "G2": [4., 5., 6.],
-                "G3": [7., 8., 9.],
+                "G1": [1.0, 2.0, 3.0],
+                "G2": [4.0, 5.0, 6.0],
+                "G3": [7.0, 8.0, 9.0],
             }
         )
         loader = AbundanceLoader()
@@ -138,9 +137,9 @@ class TestAbundanceLoader:
         df = pd.DataFrame(
             {
                 "Sample": ["S1", "S1", "S3"],
-                "G1": [1., 2., 3.],
-                "G2": [4., 5., 6.],
-                "G3": [7., 8., 9.],
+                "G1": [1.0, 2.0, 3.0],
+                "G2": [4.0, 5.0, 6.0],
+                "G3": [7.0, 8.0, 9.0],
             }
         )
         loader = AbundanceLoader()
@@ -152,8 +151,8 @@ class TestAbundanceLoader:
             {
                 "Sample": ["S1", "S2", "S3"],
                 "G1": ["A", "B", "C"],
-                "G2": [4., 5., 6.],
-                "G3": [7., 8., 9.],
+                "G2": [4.0, 5.0, 6.0],
+                "G3": [7.0, 8.0, 9.0],
             }
         )
         loader = AbundanceLoader()
@@ -162,11 +161,7 @@ class TestAbundanceLoader:
 
     @pytest.mark.skip("Not implemented")
     def test_only_sample_col(self):
-        df = pd.DataFrame(
-            {
-                "Sample": ["S1", "S2", "S3"]
-            }
-        )
+        df = pd.DataFrame({"Sample": ["S1", "S2", "S3"]})
         loader = AbundanceLoader()
         with pytest.raises(DataInputError):
             loader.load(df)
@@ -242,7 +237,7 @@ class TestGlycanLoader:
         [
             ("structure", parse_structures),
             ("composition", parse_compositions),
-        ]
+        ],
     )
     def test_glycan_parser_factory(self, mode, expected):
         result = GlycanLoader._glycan_parser_factory(mode)
@@ -359,11 +354,15 @@ class TestGlyTraitInputData:
     def test_abundance_table_setter(self, input_data):
         input_data.abundance_table = "new_abundance"
         assert input_data.abundance_table == "new_abundance"
-        assert glytrait.load_data.check_same_samples_in_abund_and_groups.called_once_with(
-            "new_abundance", "groups"
+        assert (
+            glytrait.load_data.check_same_samples_in_abund_and_groups.called_once_with(
+                "new_abundance", "groups"
+            )
         )
-        assert glytrait.load_data.check_all_glycans_have_struct_or_comp.called_once_with(
-            "new_abundance", "glycans"
+        assert (
+            glytrait.load_data.check_all_glycans_have_struct_or_comp.called_once_with(
+                "new_abundance", "glycans"
+            )
         )
 
     def test_glycans_getter(self, input_data):
@@ -372,8 +371,10 @@ class TestGlyTraitInputData:
     def test_glycans_setter(self, input_data):
         input_data.glycans = "new_glycans"
         assert input_data.glycans == "new_glycans"
-        assert glytrait.load_data.check_all_glycans_have_struct_or_comp.called_once_with(
-            "abundance", "new_glycans"
+        assert (
+            glytrait.load_data.check_all_glycans_have_struct_or_comp.called_once_with(
+                "abundance", "new_glycans"
+            )
         )
 
     def test_groups_getter(self, input_data):
@@ -382,6 +383,8 @@ class TestGlyTraitInputData:
     def test_groups_setter(self, input_data):
         input_data.groups = "new_groups"
         assert input_data.groups == "new_groups"
-        assert glytrait.load_data.check_same_samples_in_abund_and_groups.callec_once_with(
-            "abundance", "new_groups"
+        assert (
+            glytrait.load_data.check_same_samples_in_abund_and_groups.callec_once_with(
+                "abundance", "new_groups"
+            )
         )
