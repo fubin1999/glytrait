@@ -341,50 +341,76 @@ class TestGlyTraitInputData:
         mocker.patch("glytrait.load_data.check_all_glycans_have_struct_or_comp")
 
     @pytest.fixture
-    def input_data(self):
-        return GlyTraitInputData(
-            abundance_table="abundance",
-            glycans="glycans",
-            groups="groups",
+    def abundance_table(self):
+        return pd.DataFrame(
+            {
+                "G1": [1.0, 2.0, 3.0],
+                "G2": [4.0, 5.0, 6.0],
+            },
+            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
         )
 
-    def test_abundance_table_getter(self, input_data):
-        assert input_data.abundance_table == "abundance"
+    @pytest.fixture
+    def glycans(self):
+        return {
+            "G1": "glycan1",
+            "G2": "glycan2",
+        }
+
+    @pytest.fixture
+    def groups(self):
+        return pd.Series(
+            ["A", "B", "A"],
+            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
+            name="Group",
+        )
+
+    @pytest.fixture
+    def input_data(self, abundance_table, glycans, groups):
+        return GlyTraitInputData(
+            abundance_table=abundance_table,
+            glycans=glycans,
+            groups=groups,
+        )
+
+    def test_abundance_table_getter(self, input_data, abundance_table):
+        # Test if the getter returns the correct value
+        assert input_data.abundance_table.equals(abundance_table)
+
+        # Test if a copy is returned
+        input_data.abundance_table["New"] = 1  # Try to modify the returned value
+        assert input_data.abundance_table.equals(
+            abundance_table
+        )  # Check if the original value is not modified
 
     def test_abundance_table_setter(self, input_data):
-        input_data.abundance_table = "new_abundance"
-        assert input_data.abundance_table == "new_abundance"
-        assert (
-            glytrait.load_data.check_same_samples_in_abund_and_groups.called_once_with(
-                "new_abundance", "groups"
-            )
-        )
-        assert (
-            glytrait.load_data.check_all_glycans_have_struct_or_comp.called_once_with(
-                "new_abundance", "glycans"
-            )
-        )
+        input_data.abundance_table = pd.DataFrame()
+        assert input_data.abundance_table.empty
+        assert glytrait.load_data.check_same_samples_in_abund_and_groups.called_once()
+        assert glytrait.load_data.check_all_glycans_have_struct_or_comp.called_once()
 
-    def test_glycans_getter(self, input_data):
-        assert input_data.glycans == "glycans"
+    def test_glycans_getter(self, input_data, glycans):
+        # Test if the getter returns the correct value
+        assert input_data.glycans == glycans
+
+        # Test if a copy is returned
+        input_data.glycans["G3"] = "glycan3"
+        assert input_data.glycans == glycans
 
     def test_glycans_setter(self, input_data):
-        input_data.glycans = "new_glycans"
-        assert input_data.glycans == "new_glycans"
-        assert (
-            glytrait.load_data.check_all_glycans_have_struct_or_comp.called_once_with(
-                "abundance", "new_glycans"
-            )
-        )
+        input_data.glycans = {}
+        assert input_data.glycans == {}
+        assert glytrait.load_data.check_all_glycans_have_struct_or_comp.called_once()
 
-    def test_groups_getter(self, input_data):
-        assert input_data.groups == "groups"
+    def test_groups_getter(self, input_data, groups):
+        # Test if the getter returns the correct value
+        assert input_data.groups.equals(groups)
+
+        # Test if a copy is returned
+        input_data.groups["S4"] = "C"
+        assert input_data.groups.equals(groups)
 
     def test_groups_setter(self, input_data):
-        input_data.groups = "new_groups"
-        assert input_data.groups == "new_groups"
-        assert (
-            glytrait.load_data.check_same_samples_in_abund_and_groups.callec_once_with(
-                "abundance", "new_groups"
-            )
-        )
+        input_data.groups = pd.Series()
+        assert input_data.groups.empty
+        assert glytrait.load_data.check_same_samples_in_abund_and_groups.called_once()

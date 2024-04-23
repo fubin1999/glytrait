@@ -214,6 +214,12 @@ class GlyTraitInputData:
         The samples in the abundance table should have the same names as the
         samples in the groups.
 
+        Accessing the attributes will return a copy of the data.
+        This prevents the original data from being modified in place,
+        which will bypass the validation checks.
+        If you need to modify the data, you should set the attributes
+        with the new data.
+
     Raises:
         DataInputError: If the abundance table has different samples as the groups,
             or if the glycan dict has different glycans as the abundance table.
@@ -231,7 +237,7 @@ class GlyTraitInputData:
     @property
     def abundance_table(self) -> AbundanceTable:
         """The abundance table as a pandas DataFrame."""
-        return self._abundance_table
+        return AbundanceTable(self._abundance_table.copy())
 
     @abundance_table.setter
     def abundance_table(self, value: AbundanceTable) -> None:
@@ -243,7 +249,7 @@ class GlyTraitInputData:
     @property
     def glycans(self) -> GlycanDict:
         """The glycans as a dict of `Structure` or `Composition` objects."""
-        return self._glycans
+        return self._glycans.copy()
 
     @glycans.setter
     def glycans(self, value: GlycanDict) -> None:
@@ -253,7 +259,7 @@ class GlyTraitInputData:
     @property
     def groups(self) -> GroupSeries | None:
         """The sample groups as a pandas Series."""
-        return self._groups
+        return GroupSeries(self._groups.copy()) if self._groups is not None else None
 
     @groups.setter
     def groups(self, value: GroupSeries | None) -> None:
