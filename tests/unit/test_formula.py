@@ -551,7 +551,7 @@ class TestGetFormulaExprsFromFile:
         exprs=st.lists(
             st.text().filter(
                 lambda x: (x.strip() != "")
-                and (not x.startswith("#"))
+                and (not x.strip().startswith("#"))
                 and ("\r" not in x)
                 and ("\n" not in x)
             )
