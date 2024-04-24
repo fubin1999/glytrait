@@ -280,8 +280,7 @@ class TestExperiment:
 
     @pytest.fixture
     def patch_for_diff_analysis(self, mocker):
-        mocker.patch("glytrait.api.t_test", return_value="t_test_result")
-        mocker.patch("glytrait.api.anova", return_value="anova_result")
+        mocker.patch("glytrait.api.auto_test", return_value="t_test_result")
 
     @pytest.fixture
     def exp_for_diff_analysis(self, exp):
@@ -290,7 +289,13 @@ class TestExperiment:
         return exp
 
     @pytest.mark.usefixtures("patch_for_diff_analysis")
-    def test_diff_analysis(self, exp_for_diff_analysis):
+    def test_diff_analysis_no_group(self, exp_for_diff_analysis):
         exp_for_diff_analysis.input_data.groups = None
         with pytest.raises(api.MissingDataError):
             exp_for_diff_analysis.diff_analysis()
+
+    @pytest.mark.usefixtures("patch_for_diff_analysis")
+    def test_diff_analysis(self, exp_for_diff_analysis):
+        exp_for_diff_analysis.diff_analysis()
+        assert exp_for_diff_analysis.diff_results == "t_test_result"
+        api.auto_test.assert_called_once()

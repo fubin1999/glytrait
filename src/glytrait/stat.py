@@ -5,7 +5,36 @@ import pingouin as pg
 
 from glytrait.data_type import DerivedTraitTable, GroupSeries
 
-__all__ = ["t_test", "anova"]
+__all__ = ["auto_test", "t_test", "anova"]
+
+
+def auto_test(
+    trait_df: DerivedTraitTable, groups: GroupSeries
+) -> dict[str, pd.DataFrame]:
+    """Perform statistical tests for the trait data.
+
+    If the number of groups is 2, perform t-test.
+    If the number of groups is more than 2, perform ANOVA, followed by post-hoc test.
+
+    Args:
+        trait_df (DerivedTraitTable): Dataframe containing the trait data.
+        groups (GroupSeries): Series containing the group information.
+
+    Returns:
+        dict[str, pd.DataFrame]: Dictionary containing the test results.
+            If the number of groups is 2, the key is "t_test".
+            If the number of groups is more than 2, the keys are "anova" and "post_hoc".
+
+    Raises:
+        ValueError: If only one group is provided.
+    """
+    if len(groups.unique()) == 1:
+        raise ValueError("Only one group is provided.")
+    elif len(groups.unique()) == 2:
+        return {"t_test": t_test(trait_df, groups)}
+    else:
+        anova_result, post_hoc_result = anova(trait_df, groups)
+        return {"anova": anova_result, "post_hoc": post_hoc_result}
 
 
 def t_test(trait_df: DerivedTraitTable, groups: GroupSeries) -> pd.DataFrame:

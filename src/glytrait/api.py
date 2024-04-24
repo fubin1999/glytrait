@@ -17,7 +17,7 @@ from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
 from glytrait.preprocessing import preprocess
 from glytrait.trait import calcu_derived_trait
-from glytrait.stat import t_test, anova
+from glytrait.stat import auto_test
 from glytrait.glycan import Structure, Composition
 
 
@@ -428,9 +428,5 @@ class Experiment(_Workflow):
             raise MissingDataError(
                 "Group information is required for differential analysis."
             )
-        if groups.unique().size == 2:
-            result = {"t_test": t_test(trait_table, groups)}
-        else:  # groups size > 2
-            anova_df, post_hoc_df = anova(trait_table, groups)
-            result = {"anova": anova_df, "post_hoc": post_hoc_df}
+        result = auto_test(trait_table, groups)
         return {"diff_results": result}  # type: ignore
