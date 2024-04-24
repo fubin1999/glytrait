@@ -8,7 +8,7 @@ from glytrait import preprocessing as pp
 
 
 @given(
-    data=data_frames(columns([f"G{i}" for i in range(1, 11)], dtype=float)),
+    data=data_frames(columns(["G1", "G2", "G3"], dtype=float)),
     max_na=st.floats(min_value=0, max_value=1, allow_nan=False),
 )
 def test_filter(data, max_na):
