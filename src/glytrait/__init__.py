@@ -1,6 +1,6 @@
 """GlyTrait"""
 
-from glytrait.api import GlyTrait
+from glytrait.api import Experiment
 
 
 __version__ = "0.1.1"
