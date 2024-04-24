@@ -9,7 +9,7 @@ import pandas as pd
 from attrs import define
 
 from glytrait.exception import GlyTraitError
-from glytrait.load_data import load_data
+from glytrait.data_input import load_data
 from glytrait.api import Experiment, MissingDataError
 from glytrait.formula import save_builtin_formula, load_formulas_from_file
 from glytrait.data_export import export_all

@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 
-from glytrait.load_data import load_data
+from glytrait.data_input import load_data
 from glytrait.api import Experiment
 
 

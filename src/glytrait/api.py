@@ -12,7 +12,7 @@ from glytrait.data_type import (
 )
 from glytrait.exception import GlyTraitError
 from glytrait.formula import load_default_formulas, TraitFormula
-from glytrait.load_data import GlyTraitInputData
+from glytrait.data_input import GlyTraitInputData
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
 from glytrait.preprocessing import preprocess
