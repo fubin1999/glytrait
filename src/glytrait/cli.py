@@ -7,9 +7,10 @@ import click
 import emoji
 import pandas as pd
 
+from glytrait.exception import GlyTraitError
 from glytrait.load_data import load_data
 from glytrait.api import Experiment, MissingDataError
-from glytrait.formula import save_builtin_formula
+from glytrait.formula import save_builtin_formula, load_formulas_from_file
 from glytrait.data_export import export_all
 
 UNDIFINED = "__UNDEFINED__"
@@ -135,25 +136,32 @@ def cli(
         _show_welcome_msg()
         return
 
+    if not filter and group_file is not None:
+        click.echo("Warning: differential analysis will be disabled when --no-filter is used.")
+
     if output_dir is None:
         output_dir = _default_output_dir(abundance_file)
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     mode = "composition" if mode.lower() in ["c", "composition"] else "structure"
-    input_data = _make_input_data(abundance_file, glycan_file, group_file, mode)
-    exp = Experiment(input_data, sia_linkage=sia_linkage, mode=mode)
-
-    exp.preprocess(filter_glycan_ratio, impute_method)
-    exp.extract_meta_properties()
-    exp.derive_traits()
-    if filter:
-        exp.post_filter(corr_threshold)
-        if group_file:
-            exp.diff_analysis()
-
-    output_data = _prepare_output(exp)
-    export_all(output_data, output_dir)
-
+    run_workflow_kwargs = {
+        "abundance_file": abundance_file,
+        "glycan_file": glycan_file,
+        "group_file": group_file,
+        "mode": mode,
+        "sia_linkage": sia_linkage,
+        "filter_glycan_ratio": filter_glycan_ratio,
+        "impute_method": impute_method,
+        "formula_file": formula_file,
+        "filter": filter,
+        "corr_threshold": corr_threshold,
+        "output_dir": output_dir,
+    }
+    try:
+        _run_workflow(**run_workflow_kwargs)
+    except GlyTraitError as e:
+        click.echo(f"Error: {e}")
+        return
     success_msg = f"Done :thumbs_up:! Output written to {output_dir}."
     click.echo(emoji.emojize(success_msg))
 
@@ -211,6 +219,40 @@ def _prepare_output(exp: Experiment) -> list[tuple[str, Any]]:
             result["anova.csv"] = diff_results["anova"]
             result["post_hoc.csv"] = diff_results["post_hoc"]
     return list(result.items())
+
+
+def _run_workflow(
+    abundance_file: str,
+    glycan_file: str,
+    group_file: str | None,
+    mode: Literal["structure", "composition"],
+    sia_linkage: bool,
+    filter_glycan_ratio: float,
+    impute_method: Literal["zero", "min", "lod", "mean", "median"],
+    formula_file: str | None,
+    filter: bool,
+    corr_threshold: float,
+    output_dir: str,
+):
+    input_data = _make_input_data(abundance_file, glycan_file, group_file, mode)
+    exp = Experiment(input_data, sia_linkage=sia_linkage, mode=mode)
+
+    exp.preprocess(filter_glycan_ratio, impute_method)
+    exp.extract_meta_properties()
+
+    if formula_file:
+        formulas = load_formulas_from_file(formula_file, sia_linkage)
+        exp.derive_traits(formulas)
+    else:
+        exp.derive_traits()
+
+    if filter:
+        exp.post_filter(corr_threshold)
+        if group_file:
+            exp.diff_analysis()
+
+    output_data = _prepare_output(exp)
+    export_all(output_data, output_dir)
 
 
 if __name__ == "__main__":

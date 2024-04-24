@@ -228,7 +228,6 @@ class TestExperiment:
     @pytest.fixture
     def patch_for_derive_traits(self, mocker):
         mocker.patch("glytrait.api.load_default_formulas", return_value="formulas")
-        mocker.patch("glytrait.api.parse_formulas")
         mocker.patch("glytrait.api.calcu_derived_trait", return_value="trait_table")
 
     @pytest.fixture
@@ -243,15 +242,13 @@ class TestExperiment:
         exp_for_derive_traits.derive_traits()
         assert exp_for_derive_traits.derived_trait_table == "trait_table"
         assert exp_for_derive_traits.get_data("formulas") == "formulas"
-        api.parse_formulas.assert_not_called()
         api.calcu_derived_trait.assert_called_once()
 
     @pytest.mark.usefixtures("patch_for_derive_traits")
     def test_derive_traits_with_provided_formulas(self, mocker, exp_for_derive_traits):
         FakeFormula = namedtuple("FakeFormula", "name sia_linkage")
         fake_formulas = [FakeFormula("F1", False), FakeFormula("F2", False)]
-        mocker.patch("glytrait.api.parse_formulas", return_value=fake_formulas)
-        exp_for_derive_traits.derive_traits(["expr1", "expr2"])
+        exp_for_derive_traits.derive_traits(fake_formulas)
         assert exp_for_derive_traits.derived_trait_table == "trait_table"
         assert exp_for_derive_traits.get_data("formulas") == fake_formulas
         api.load_default_formulas.assert_not_called()
@@ -263,9 +260,8 @@ class TestExperiment:
     ):
         FakeFormula = namedtuple("FakeFormula", "name sia_linkage")
         fake_formulas = [FakeFormula("F1", True), FakeFormula("F2", False)]
-        mocker.patch("glytrait.api.parse_formulas", return_value=fake_formulas)
         with pytest.raises(ValueError):
-            exp_for_derive_traits.derive_traits(["expr1", "expr2"])
+            exp_for_derive_traits.derive_traits(fake_formulas)
 
     @pytest.mark.parametrize("corr_threshold", [1.0, 0.5])
     def test_post_filter(self, mocker, exp, corr_threshold):

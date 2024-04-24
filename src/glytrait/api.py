@@ -11,7 +11,7 @@ from glytrait.data_type import (
     AbundanceTable,
 )
 from glytrait.exception import GlyTraitError
-from glytrait.formula import load_default_formulas, parse_formulas
+from glytrait.formula import load_default_formulas, TraitFormula
 from glytrait.load_data import GlyTraitInputData, load_data
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
@@ -208,10 +208,6 @@ class Experiment(_Workflow):
     to perform differential analysis.
     The result is stored as the `diff_results` attribute.
 
-    Besides, there is a `derive_one_trait` method to try a single trait formula.
-    It returns a Series instead of storing the result.
-    This method is useful to test custom trait formulas.
-
     Methods:
         preprocess: Preprocess the data.
         extract_meta_properties: Extract meta properties.
@@ -374,20 +370,19 @@ class Experiment(_Workflow):
         return {"meta_property_table": mp_table}  # type: ignore
 
     @_step
-    def derive_traits(self, exprs: Optional[list[str]] = None) -> None:
+    def derive_traits(self, formulas: Optional[list[TraitFormula]] = None) -> None:
         """Calculate derived traits.
 
         Calling this method will make the `derived_trait_table` attribute available.
 
         Args:
-            exprs: If provided, these formula expressions will be used to calculate
-                the derived traits.
-                Otherwise, the default formulas will be used.
+            formulas: The formulas to calculate the derived traits.
+                If not provided, the default formulas will be used.
+                Default: None.
         """
-        if exprs is None:
+        if formulas is None:
             formulas = load_default_formulas(self.mode, self.sia_linkage)
         else:
-            formulas = parse_formulas(exprs)
             if not self.sia_linkage and any(f.sia_linkage for f in formulas):
                 raise ValueError(
                     "Could not use SIA linkage formulas with current settings. "
