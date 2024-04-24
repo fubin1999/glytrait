@@ -31,6 +31,7 @@ from glytrait.data_type import AbundanceTable, MetaPropertyTable
 
 __all__ = [
     "TraitFormula",
+    "parse_formulas",
     "load_formulas_from_file",
     "load_default_formulas",
     "save_builtin_formula",
