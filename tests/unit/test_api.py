@@ -299,3 +299,50 @@ class TestExperiment:
         exp_for_diff_analysis.diff_analysis()
         assert exp_for_diff_analysis.diff_results == "t_test_result"
         api.auto_test.assert_called_once()
+
+    @pytest.fixture
+    def patch_for_run_workflow(self, mocker):
+        mocker.patch("glytrait.api.Experiment.preprocess")
+        mocker.patch("glytrait.api.Experiment.extract_meta_properties")
+        mocker.patch("glytrait.api.Experiment.derive_traits")
+        mocker.patch("glytrait.api.Experiment.post_filter")
+        mocker.patch("glytrait.api.Experiment.diff_analysis")
+
+    @pytest.mark.usefixtures("patch_for_run_workflow")
+    def test_run_workflow_with_groups_no_args(self, input_data):
+        exp = api.Experiment(input_data)
+        exp.run_workflow()
+
+        exp.preprocess.assert_called_once_with(1.0, "zero")
+        exp.extract_meta_properties.assert_called_once()
+        exp.derive_traits.assert_called_once_with(None)
+        exp.post_filter.assert_called_once_with(1.0)
+        exp.diff_analysis.assert_called_once()
+
+    @pytest.mark.usefixtures("patch_for_run_workflow")
+    def test_run_workflow_with_args(self, input_data):
+        exp = api.Experiment(input_data)
+        exp.run_workflow(
+            filter_max_na=0.5,
+            impute_method="min",
+            corr_threshold=0.5,
+            formulas=["F1", "F2"],
+        )
+
+        exp.preprocess.assert_called_once_with(0.5, "min")
+        exp.extract_meta_properties.assert_called_once()
+        exp.derive_traits.assert_called_once_with(["F1", "F2"])
+        exp.post_filter.assert_called_once_with(0.5)
+        exp.diff_analysis.assert_called_once()
+
+    @pytest.mark.usefixtures("patch_for_run_workflow")
+    def test_run_workflow_without_groups(self, input_data):
+        input_data.groups = None
+        exp = api.Experiment(input_data)
+        exp.run_workflow()
+
+        exp.preprocess.assert_called_once_with(1.0, "zero")
+        exp.extract_meta_properties.assert_called_once()
+        exp.derive_traits.assert_called_once_with(None)
+        exp.post_filter.assert_called_once_with(1.0)
+        exp.diff_analysis.assert_not_called()

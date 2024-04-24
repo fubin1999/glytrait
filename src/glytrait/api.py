@@ -233,7 +233,7 @@ class Experiment(_Workflow):
 
     Examples:
         >>> from glytrait.api import Experiment
-        >>> from glytrait.load_data import load_data
+        >>> from glytrait.data_input import load_data
         # This is the safe way to load data.
         # It ensures all data are in correct formats.
         >>> input_data = load_data(
@@ -430,3 +430,48 @@ class Experiment(_Workflow):
             )
         result = auto_test(trait_table, groups)
         return {"diff_results": result}  # type: ignore
+
+    def run_workflow(
+        self,
+        *,
+        filter_max_na: float = 1.0,
+        impute_method: Literal["zero", "min", "lod", "mean", "median"] = "zero",
+        formulas: Optional[list[TraitFormula]] = None,
+        corr_threshold: float = 1.0,
+    ) -> None:
+        """Run the entire workflow.
+
+        Call the `preprocess`, `extract_meta_properties`, `derive_traits`,
+        `post_filter`, and `diff_analysis` methods sequentially.
+        `diff_analysis` will be skipped if group information is not provided.
+
+        Args:
+            filter_max_na: The maximum ratio of missing values in a sample.
+                Range: [0, 1].
+                If the ratio of missing values in a sample is greater than this value,
+                the sample will be removed.
+                Setting to 1.0 means no filtering.
+                Setting to 0.0 means only keeping glycans with no missing values.
+                Default: 1.0.
+            impute_method: The method to impute missing values.
+                "zero": fill with 0.
+                "min": fill with the minimum value of the glycan.
+                "lod": fill with the limit of detection of the glycan.
+                "mean": fill with the mean value of the glycan.
+                "median": fill with the median value of the glycan.
+                Default: "zero".
+            formulas: The formulas to calculate the derived traits.
+                If not provided, the default formulas will be used.
+                Default: None.
+            corr_threshold: The correlation threshold for post filtering.
+                If the correlation between two traits is greater than this value,
+                one of them will be removed.
+                Setting to -1.0 means no correlation filtering.
+                Default: 1.0.
+        """
+        self.preprocess(filter_max_na, impute_method)
+        self.extract_meta_properties()
+        self.derive_traits(formulas)
+        self.post_filter(corr_threshold)
+        if self.input_data.groups is not None:
+            self.diff_analysis()
