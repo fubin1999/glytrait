@@ -6,6 +6,7 @@ from typing import Literal, Any
 import click
 import emoji
 import pandas as pd
+from attrs import define
 
 from glytrait.exception import GlyTraitError
 from glytrait.load_data import load_data
@@ -136,34 +137,44 @@ def cli(
         _show_welcome_msg()
         return
 
-    if not filter and group_file is not None:
-        click.echo("Warning: differential analysis will be disabled when --no-filter is used.")
+    _warn_about_filtering(filter, group_file)
+    output_dir = _set_output_dir(output_dir, abundance_file)
+    mode = _determine_mode(mode)
 
-    if output_dir is None:
-        output_dir = _default_output_dir(abundance_file)
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-
-    mode = "composition" if mode.lower() in ["c", "composition"] else "structure"
-    run_workflow_kwargs = {
-        "abundance_file": abundance_file,
-        "glycan_file": glycan_file,
-        "group_file": group_file,
-        "mode": mode,
-        "sia_linkage": sia_linkage,
-        "filter_glycan_ratio": filter_glycan_ratio,
-        "impute_method": impute_method,
-        "formula_file": formula_file,
-        "filter": filter,
-        "corr_threshold": corr_threshold,
-        "output_dir": output_dir,
-    }
+    config = WorkflowConfig(
+        mode=mode,
+        sia_linkage=sia_linkage,
+        filter_glycan_ratio=filter_glycan_ratio,
+        impute_method=impute_method,
+        filter=filter,
+        corr_threshold=corr_threshold,
+    )
     try:
-        _run_workflow(**run_workflow_kwargs)
+        _run_workflow(
+            abundance_file,
+            glycan_file,
+            group_file,
+            formula_file,
+            config,
+            output_dir,
+        )
     except GlyTraitError as e:
         click.echo(f"Error: {e}")
         return
     success_msg = f"Done :thumbs_up:! Output written to {output_dir}."
     click.echo(emoji.emojize(success_msg))
+
+
+@define(kw_only=True)
+class WorkflowConfig:
+    """Configuration for the glyTrait workflow."""
+
+    mode: Literal["structure", "composition"]
+    sia_linkage: bool
+    filter_glycan_ratio: float
+    impute_method: Literal["zero", "min", "lod", "mean", "median"]
+    filter: bool
+    corr_threshold: float
 
 
 def _show_welcome_msg() -> None:
@@ -184,9 +195,26 @@ def _show_welcome_msg() -> None:
     click.echo(msg)
 
 
-def _default_output_dir(abundance_file) -> str:
-    dirpath = Path(abundance_file).with_name(Path(abundance_file).stem + "_glytrait")
-    return str(dirpath)
+def _warn_about_filtering(filter: bool, group_file: str) -> None:
+    if not filter and group_file is not None:
+        click.echo(
+            "Warning: differential analysis will be disabled when --no-filter is used."
+        )
+
+
+def _set_output_dir(output_dir: str | None, abundance_file: str) -> str:
+    if output_dir is None:
+        output_dir_path = Path(abundance_file).with_name(
+            Path(abundance_file).stem + "_glytrait"
+        )
+    else:
+        output_dir_path = Path(output_dir)
+    output_dir_path.mkdir(parents=True, exist_ok=True)
+    return str(output_dir_path)
+
+
+def _determine_mode(mode: str) -> Literal["structure", "composition"]:
+    return "composition" if mode.lower() in ["c", "composition"] else "structure"
 
 
 def _make_input_data(
@@ -225,34 +253,35 @@ def _run_workflow(
     abundance_file: str,
     glycan_file: str,
     group_file: str | None,
-    mode: Literal["structure", "composition"],
-    sia_linkage: bool,
-    filter_glycan_ratio: float,
-    impute_method: Literal["zero", "min", "lod", "mean", "median"],
     formula_file: str | None,
-    filter: bool,
-    corr_threshold: float,
+    config: WorkflowConfig,
     output_dir: str,
 ):
-    input_data = _make_input_data(abundance_file, glycan_file, group_file, mode)
-    exp = Experiment(input_data, sia_linkage=sia_linkage, mode=mode)
+    input_data = _make_input_data(abundance_file, glycan_file, group_file, config.mode)
+    exp = Experiment(input_data, sia_linkage=config.sia_linkage, mode=config.mode)
+    _process_exp(exp, formula_file, config)
+    output_data = _prepare_output(exp)
+    export_all(output_data, output_dir)
 
-    exp.preprocess(filter_glycan_ratio, impute_method)
+
+def _process_exp(
+    exp: Experiment,
+    formula_file: str | None,
+    config: WorkflowConfig,
+) -> None:
+    exp.preprocess(config.filter_glycan_ratio, config.impute_method)
     exp.extract_meta_properties()
 
     if formula_file:
-        formulas = load_formulas_from_file(formula_file, sia_linkage)
+        formulas = load_formulas_from_file(formula_file, config.sia_linkage)
         exp.derive_traits(formulas)
     else:
         exp.derive_traits()
 
-    if filter:
-        exp.post_filter(corr_threshold)
-        if group_file:
+    if config.filter:
+        exp.post_filter(config.corr_threshold)
+        if exp.input_data.groups:
             exp.diff_analysis()
-
-    output_data = _prepare_output(exp)
-    export_all(output_data, output_dir)
 
 
 if __name__ == "__main__":

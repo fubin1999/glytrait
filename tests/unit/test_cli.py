@@ -1,7 +1,4 @@
 import pytest
-from click.testing import CliRunner
-
-from glytrait import cli
 
 
 @pytest.fixture
