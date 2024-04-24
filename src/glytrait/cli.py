@@ -232,10 +232,15 @@ def _make_input_data(
 def _prepare_output(exp: Experiment) -> list[tuple[str, Any]]:
     result = {
         "derived_traits.csv": exp.derived_trait_table,
-        "derived_traits_filtered.csv": exp.filtered_derived_trait_table,
         "glycan_abundance_processed.csv": exp.processed_abundance_table,
         "meta_properties.csv": exp.meta_property_table,
     }
+
+    try:
+        result["derived_traits_filtered.csv"] = exp.filtered_derived_trait_table
+    except MissingDataError:
+        pass
+
     try:
         diff_results = exp.diff_results
     except MissingDataError:
