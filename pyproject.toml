@@ -28,6 +28,7 @@ optional = true
 streamlit = "^1.25.0"
 plotly = "^5.16.0"
 dash-bio = "^1.0.2"
+watchdog = "^4.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"
