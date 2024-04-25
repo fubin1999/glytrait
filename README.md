@@ -42,6 +42,7 @@ saving my time and energy for more interesting analysis?*
     - [Preprocessing](#preprocessing)
     - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
     - [Post-filtering](#post-filtering)
+    - [Custom formulas](#custom-formula)
 - [License](#license)
 
 ## Web app
@@ -50,8 +51,11 @@ saving my time and energy for more interesting analysis?*
 > 
 > -- my colleagues
 
-A web app version of GlyTrait is on its way here...
-Ready to say goodbye to the command line?
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://glytrait.streamlit.app)
+
+Click the badge above and try the GlyTrait web app!
+The web app is self-documented, but in case you need help,
+please refer to the [Usage](#usage) section below.
 
 ## Installation
 
@@ -346,6 +350,13 @@ To turn off postfiltering all together, use the "--no-filtering" option:
 ```shell
 glytrait abundance.csv structure.csv --no-filtering
 ```
+
+### Custom Formulas
+
+Coming soon...
+
+(The functionallity has been implemented, but the documentation is not ready yet.
+After publishing the GlyTrait paper, we will update the documentation.)
 
 ## License
 
