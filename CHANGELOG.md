@@ -1,7 +1,14 @@
 # Changelog
 
-Currently GlyTrait is in development and no stable version has been released yet. 
+Currently, GlyTrait is in development and no stable version has been released yet. 
 The following is a list of changes that have been made to the project.
+
+## v0.1.3
+
+**Added:**
+
+- The Streamlit app!
+- A new method for the `Experiment` class: `Experiment.run_workflow()`.
 
 ## v0.1.2
 
