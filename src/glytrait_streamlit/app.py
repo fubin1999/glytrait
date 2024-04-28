@@ -2,6 +2,7 @@ import tempfile
 import zipfile
 from io import BytesIO
 from pathlib import Path
+from contextlib import contextmanager
 
 import pandas as pd
 import streamlit as st
@@ -10,7 +11,7 @@ from glytrait.data_input import AbundanceLoader, GlycanLoader, GroupsLoader, Gly
 from glytrait.exception import GlyTraitError
 from glytrait import Experiment
 
-
+# region
 BADGES = """[![PyPI - Version](https://img.shields.io/pypi/v/glytrait)](https://pypi.org/project/glytrait/) 
 [![GitHub License](https://img.shields.io/github/license/fubin1999/glytrait)](https://github.com/fubin1999/glytrait/blob/main/LICENSE)
 """
@@ -79,6 +80,21 @@ or just use "1.0" to filter only traits with a perfect collinearity.
 """
 
 
+@contextmanager
+def capture_glytrait_error():
+    """Capture GlyTraitError, show it in the streamlit app, and stop the app.
+
+    Examples:
+        >>> with capture_glytrait_error():
+        ...     some_func_that_may_raise_glytrait_error()
+    """
+    try:
+        yield
+    except GlyTraitError as e:
+        st.error(str(e))
+        st.stop()
+
+
 # ========== S I D E B A R ==========
 with st.sidebar:
     st.image("img/logo.png")
@@ -90,52 +106,43 @@ with st.sidebar:
 # ========== T I T L E ==========
 st.title("GlyTrait")
 
+
 # ========== I N P U T ==========
+def get_df_from_file(file, loader):
+    """Get a DataFrame from a file uploaded by the user."""
+    if file:
+        with capture_glytrait_error():
+            return loader.load(pd.read_csv(file))
+    else:
+        return None
+
+
 st.header("Input")
 st.write(INPUT_WELCOME)
 input_c = st.container()
 mode = input_c.selectbox("Mode", ["structure", "composition"], help=MODE_HELP)
 
 abundance_file = input_c.file_uploader("Abundance File", help=ABUNDANCE_FILE_HELP, type="csv")
-if abundance_file:
-    try:
-        abundance_df = AbundanceLoader().load(pd.read_csv(abundance_file))
-    except GlyTraitError as e:
-        st.error(str(e))
-        st.stop()
-else:
-    abundance_df = None
+abundance_df = get_df_from_file(abundance_file, AbundanceLoader())
 
 glycan_file = input_c.file_uploader(
     "Structure (Composition) File", help=GLYCAN_FILE_HELP, type="csv"
 )
-if glycan_file:
-    try:
-        glycans = GlycanLoader(mode=mode).load(pd.read_csv(glycan_file))
-    except GlyTraitError as e:
-        st.error(str(e))
-        st.stop()
-else:
-    glycans = None
+glycans = get_df_from_file(glycan_file, GlycanLoader(mode=mode))
 
 group_file = input_c.file_uploader("Group File (optional)", help=GROUP_FILE_HELP, type="csv")
-if group_file:
-    try:
-        groups = GroupsLoader().load(pd.read_csv(group_file))
-    except GlyTraitError as e:
-        st.error(str(e))
-        st.stop()
-else:
-    groups = None
+groups = get_df_from_file(group_file, GroupsLoader())
 
 if abundance_df is None or glycans is None:
     st.stop()
 
-input_data = GlyTraitInputData(
-    abundance_table=abundance_df,
-    glycans=glycans,
-    groups=groups,
-)
+with capture_glytrait_error():
+    input_data = GlyTraitInputData(
+        abundance_table=abundance_df,
+        glycans=glycans,
+        groups=groups,
+    )
+
 
 # ========== C O N F I G ==========
 st.header("Configuration")
@@ -179,44 +186,42 @@ def make_zipfile(dirpath):
     return s
 
 
+def prepare_zip(exp):
+    """Save the results to a temporary directory and return the zip file as bytes."""
+    save_df_as_csv(exp.derived_trait_table, "derived_traits.csv", tmp_dir)
+    save_df_as_csv(
+        exp.filtered_derived_trait_table, "filtered_derived_traits.csv", tmp_dir
+    )
+    save_df_as_csv(exp.processed_abundance_table, "processed_abundance.csv", tmp_dir)
+    save_df_as_csv(exp.meta_property_table, "meta_properties.csv", tmp_dir)
+    if exp.groups is not None:
+        if len(exp.groups.unique()) == 2:
+            t_test_result = exp.diff_results["t_test"]
+            save_df_as_csv(t_test_result, "t_test_result.csv", tmp_dir)
+        else:
+            anova_result = exp.diff_results["anova"]
+            post_hoc_result = exp.diff_results["post_hoc"]
+            save_df_as_csv(anova_result, "anova_result.csv", tmp_dir)
+            save_df_as_csv(post_hoc_result, "post_hoc_result.csv", tmp_dir)
+    zip_bytes = make_zipfile(tmp_dir)
+    return zip_bytes
+
+
 st.markdown("---")
 if st.button("Run GlyTrait"):
     exp = Experiment(input_data)
-    try:
+    with capture_glytrait_error():
         exp.run_workflow(
             filter_max_na=glycan_filter_threshold,
             impute_method=impute_method,
             corr_threshold=post_filter_threshold,
         )
-    except GlyTraitError as e:
-        st.error(str(e))
-        st.stop()
-    else:
-        st.success("Succeed! Click the button below to download the results.")
-else:
-    exp = None
-
-if exp:
+    st.success("Succeed! Click the button below to download the results.")
     with tempfile.TemporaryDirectory() as tmp_dir:
-        save_df_as_csv(exp.derived_trait_table, "derived_traits.csv", tmp_dir)
-        save_df_as_csv(
-            exp.filtered_derived_trait_table, "filtered_derived_traits.csv", tmp_dir
-        )
-        save_df_as_csv(exp.processed_abundance_table, "processed_abundance.csv", tmp_dir)
-        save_df_as_csv(exp.meta_property_table, "meta_properties.csv", tmp_dir)
-        if groups:
-            if len(exp.groups.unique()) == 2:
-                t_test_result = exp.diff_results["t_test"]
-                save_df_as_csv(t_test_result, "t_test_result.csv", tmp_dir)
-            else:
-                anova_result = exp.diff_results["anova"]
-                post_hoc_result = exp.diff_results["post_hoc"]
-                save_df_as_csv(anova_result, "anova_result.csv", tmp_dir)
-                save_df_as_csv(post_hoc_result, "post_hoc_result.csv", tmp_dir)
-        zip_bytes = make_zipfile(tmp_dir)
-        st.download_button(
-            "Download Results",
-            data=zip_bytes,
-            file_name="GlyTrait_results.zip",
-            mime="application/zip",
-        )
+        zip_bytes = prepare_zip(exp)
+    st.download_button(
+        "Download Results",
+        data=zip_bytes,
+        file_name="GlyTrait_results.zip",
+        mime="application/zip",
+    )
