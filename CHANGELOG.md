@@ -3,6 +3,17 @@
 Currently, GlyTrait is in development and no stable version has been released yet. 
 The following is a list of changes that have been made to the project.
 
+## v0.1.4
+
+**Added:**
+
+- Sialic acid linkage configuration in the Streamlit app.
+- A spinner is shown now when the Streamlit app is running.
+
+**Fixed:**
+
+- Fix the bug that the "mode" configuration was ignored by the Streamlit app.
+
 ## v0.1.3
 
 **Added:**
