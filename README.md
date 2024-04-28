@@ -242,6 +242,17 @@ In the "composition" mode, the second column should be "Composition" instead of 
 and the composition strings should be used instead of the structure strings.
 Condensed format ("H3N4F1S1") is supported.
 
+The names of the abundance file and the structure (composition) file is not important, 
+i.e., it doesn't have to be "abundance.csv" and "structures.csv". 
+You could use any name you want, as long as the two files are passed in order,
+e.g.: 
+
+```shell
+glytrait experiment_1_15.csv serum_structures.csv
+#        ~~~~~~~~~~~~~~~~~~~ ~~~~~~~~~~~~~~~~~~~~
+#        the abundance file   the structure file
+```
+
 ### Specify the output path
 
 You might have noticed before that GlyTrait saves the output file to the same directory 
