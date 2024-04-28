@@ -7,7 +7,12 @@ from contextlib import contextmanager
 import pandas as pd
 import streamlit as st
 
-from glytrait.data_input import AbundanceLoader, GlycanLoader, GroupsLoader, GlyTraitInputData
+from glytrait.data_input import (
+    AbundanceLoader,
+    GlycanLoader,
+    GroupsLoader,
+    GlyTraitInputData,
+)
 from glytrait.exception import GlyTraitError
 from glytrait import Experiment
 
@@ -125,7 +130,9 @@ st.write(INPUT_WELCOME)
 input_c = st.container()
 mode = input_c.selectbox("Mode", ["structure", "composition"], help=MODE_HELP)
 
-abundance_file = input_c.file_uploader("Abundance File", help=ABUNDANCE_FILE_HELP, type="csv")
+abundance_file = input_c.file_uploader(
+    "Abundance File", help=ABUNDANCE_FILE_HELP, type="csv"
+)
 abundance_df = get_df_from_file(abundance_file, AbundanceLoader())
 
 glycan_file = input_c.file_uploader(
@@ -133,7 +140,9 @@ glycan_file = input_c.file_uploader(
 )
 glycans = get_df_from_file(glycan_file, GlycanLoader(mode=mode))
 
-group_file = input_c.file_uploader("Group File (optional)", help=GROUP_FILE_HELP, type="csv")
+group_file = input_c.file_uploader(
+    "Group File (optional)", help=GROUP_FILE_HELP, type="csv"
+)
 groups = get_df_from_file(group_file, GroupsLoader())
 
 if abundance_df is None or glycans is None:
@@ -152,10 +161,10 @@ st.header("Configuration")
 col1, col2 = st.columns(2)
 glycan_filter_threshold = col1.number_input(
     "Glycan Filter Threshold",
-    min_value=0.,
-    max_value=1.,
+    min_value=0.0,
+    max_value=1.0,
     step=0.1,
-    value=1.,
+    value=1.0,
     help=GLYCAN_FILTER_HELP,
 )
 impute_method = col2.selectbox(
@@ -165,10 +174,10 @@ impute_method = col2.selectbox(
 )
 post_filter_threshold = col1.number_input(
     "Post-filtering Threshold",
-    min_value=0.,
-    max_value=1.,
+    min_value=0.0,
+    max_value=1.0,
     step=0.1,
-    value=1.,
+    value=1.0,
     help=POST_FILTERING_HELP,
 )
 sia_linkage = col2.selectbox(
@@ -188,8 +197,8 @@ def save_df_as_csv(df, filename, dirpath):
 def make_zipfile(dirpath):
     """将指定目录下的文件压缩成zip文件，并返回对应的BytesIO对象"""
     s = BytesIO()
-    with zipfile.ZipFile(s, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        for file in Path(dirpath).glob('*'):
+    with zipfile.ZipFile(s, "w", zipfile.ZIP_DEFLATED) as zipf:
+        for file in Path(dirpath).glob("*"):
             zipf.write(file, arcname=file.name)
     s.seek(0)
     return s
