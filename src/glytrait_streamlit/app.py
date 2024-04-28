@@ -78,6 +78,9 @@ Refer to [README](https://github.com/fubin1999/glytrait/blob/main/README.md#post
 for details,
 or just use "1.0" to filter only traits with a perfect collinearity.
 """
+SIA_LINKAGE_HELP = """If True, the linkage of sialic acid will be considered.
+Note that in this case all sialic acid residues should have linkage information.
+"""
 
 
 @contextmanager
@@ -168,6 +171,12 @@ post_filter_threshold = col1.number_input(
     value=1.,
     help=POST_FILTERING_HELP,
 )
+sia_linkage = col2.selectbox(
+    "Consider Sialic Acid Linkage",
+    [True, False],
+    index=1,
+    help=SIA_LINKAGE_HELP,
+)
 
 
 # ========== R U N ==========
@@ -209,7 +218,7 @@ def prepare_zip(exp):
 
 st.markdown("---")
 if st.button("Run GlyTrait"):
-    exp = Experiment(input_data, mode=mode)
+    exp = Experiment(input_data, mode=mode, sia_linkage=sia_linkage)
     with capture_glytrait_error():
         exp.run_workflow(
             filter_max_na=glycan_filter_threshold,
