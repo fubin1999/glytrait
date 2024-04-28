@@ -218,13 +218,14 @@ def prepare_zip(exp):
 
 st.markdown("---")
 if st.button("Run GlyTrait"):
-    exp = Experiment(input_data, mode=mode, sia_linkage=sia_linkage)
-    with capture_glytrait_error():
-        exp.run_workflow(
-            filter_max_na=glycan_filter_threshold,
-            impute_method=impute_method,
-            corr_threshold=post_filter_threshold,
-        )
+    with st.spinner("Running..."):
+        exp = Experiment(input_data, mode=mode, sia_linkage=sia_linkage)
+        with capture_glytrait_error():
+            exp.run_workflow(
+                filter_max_na=glycan_filter_threshold,
+                impute_method=impute_method,
+                corr_threshold=post_filter_threshold,
+            )
     st.success("Succeed! Click the button below to download the results.")
     with tempfile.TemporaryDirectory() as tmp_dir:
         zip_bytes = prepare_zip(exp)
