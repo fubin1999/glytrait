@@ -43,7 +43,9 @@ A: You bet!
 """
 INPUT_WELCOME = """Upload an abundance file and a structure (or composition) file to start.
 See [README](https://github.com/fubin1999/glytrait/blob/main/README.md#input-file-format) 
-for details."""
+for details.
+Or use our example files below to have a quick start.
+"""
 MODE_HELP = """If you have structural information of the glycans, 
 choose "structure" (recommended).
 Otherwise, choose "composition"."""
@@ -89,6 +91,19 @@ Note that in this case all sialic acid residues should have linkage information.
 """
 
 
+@st.cache_resource
+def read_example_file(filename):
+    """Read an example file from the data folder."""
+    return pd.read_csv(filename)
+
+
+# Load example files
+abundance_example = read_example_file("example_data/abundance.csv")
+structures_example = read_example_file("example_data/structures.csv")
+compositions_example = read_example_file("example_data/compositions.csv")
+groups_example = read_example_file("example_data/groups.csv")
+
+
 @contextmanager
 def capture_glytrait_error():
     """Capture GlyTraitError, show it in the streamlit app, and stop the app.
@@ -131,19 +146,50 @@ st.write(INPUT_WELCOME)
 input_c = st.container()
 mode = input_c.selectbox("Mode", ["structure", "composition"], help=MODE_HELP)
 
+# Upload the abundance file
+input_c.markdown("**Abundance File**")
 abundance_file = input_c.file_uploader(
-    "Abundance File", help=ABUNDANCE_FILE_HELP, type="csv"
+    "Choose a file", help=ABUNDANCE_FILE_HELP, type="csv"
 )
+with input_c.expander("Example Abundance File"):
+    st.dataframe(abundance_example, hide_index=True)
+    st.download_button(
+        "Download Example Abundance File",
+        data=abundance_example.to_csv(index=False).encode(),
+        file_name="example_abundance.csv",
+        mime="text/csv",
+    )
 abundance_df = get_df_from_file(abundance_file, AbundanceLoader())
 
+# Upload the structure (composition) file
+input_c.markdown(f"**{mode.capitalize()} File**")
 glycan_file = input_c.file_uploader(
-    "Structure (Composition) File", help=GLYCAN_FILE_HELP, type="csv"
+    "Choose a file", help=GLYCAN_FILE_HELP, type="csv"
 )
+with input_c.expander(f"Example {mode.capitalize()} File"):
+    example_df = structures_example if mode == "structure" else compositions_example
+    st.dataframe(example_df, hide_index=True)
+    st.download_button(
+        f"Download Example {mode.capitalize()} File",
+        data=example_df.to_csv(index=False).encode(),
+        file_name=f"example_{mode}.csv",
+        mime="text/csv",
+    )
 glycans = get_df_from_file(glycan_file, GlycanLoader(mode=mode))
 
+# Upload the group file
+input_c.markdown("**Group File (optional)**")
 group_file = input_c.file_uploader(
-    "Group File (optional)", help=GROUP_FILE_HELP, type="csv"
+    "Choose a file", help=GROUP_FILE_HELP, type="csv"
 )
+with input_c.expander("Example Group File"):
+    st.dataframe(groups_example, hide_index=True)
+    st.download_button(
+        "Download Example Group File",
+        data=groups_example.to_csv(index=False).encode(),
+        file_name="example_groups.csv",
+        mime="text/csv",
+    )
 groups = get_df_from_file(group_file, GroupsLoader())
 
 if abundance_df is None or glycans is None:
