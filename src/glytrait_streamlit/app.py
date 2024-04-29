@@ -19,6 +19,7 @@ from glytrait import Experiment
 # region
 BADGES = """[![PyPI - Version](https://img.shields.io/pypi/v/glytrait)](https://pypi.org/project/glytrait/) 
 [![GitHub License](https://img.shields.io/github/license/fubin1999/glytrait)](https://github.com/fubin1999/glytrait/blob/main/LICENSE)
+[![Static Badge](https://img.shields.io/badge/Github-grey?logo=github)](https://github.com/fubin1999/glytrait)
 """
 SIDEBAR_TEXT = """
 Q: What is GlyTrait?
