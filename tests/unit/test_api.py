@@ -344,3 +344,49 @@ class TestExperiment:
         exp.derive_traits.assert_called_once_with(None)
         exp.post_filter.assert_called_once_with(1.0)
         exp.diff_analysis.assert_not_called()
+
+    def test_try_formulas_one(self, mocker, exp_for_derive_traits):
+        trait_table = pd.DataFrame(
+            {"F1": [1, 2, 3]},
+            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
+        )
+        mocker.patch("glytrait.api.calcu_derived_trait", return_value=trait_table)
+        mocker.patch("glytrait.api.parse_formulas", return_value=["F1"])
+        result = exp_for_derive_traits.try_formulas("F1")
+        expected = pd.Series(
+            [1, 2, 3], index=pd.Index(["S1", "S2", "S3"], name="Sample"), name="F1"
+        )
+        pd.testing.assert_series_equal(result, expected)
+        api.calcu_derived_trait.assert_called_once()
+        api.parse_formulas.assert_called_once_with(["F1"])
+
+    def test_try_formulas_one_no_squeeze(self, mocker, exp_for_derive_traits):
+        trait_table = pd.DataFrame(
+            {"F1": [1, 2, 3]},
+            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
+        )
+        mocker.patch("glytrait.api.calcu_derived_trait", return_value=trait_table)
+        mocker.patch("glytrait.api.parse_formulas", return_value=["F1"])
+        result = exp_for_derive_traits.try_formulas("F1", squeeze=False)
+        pd.testing.assert_frame_equal(result, trait_table)
+        api.calcu_derived_trait.assert_called_once()
+        api.parse_formulas.assert_called_once_with(["F1"])
+
+    def test_try_formulas_multiple(self, mocker, exp_for_derive_traits):
+        trait_table = pd.DataFrame(
+            {
+                "F1": [1, 2, 3],
+                "F2": [4, 5, 6],
+            },
+            index=pd.Index(["S1", "S2", "S3"], name="Sample"),
+        )
+        mocker.patch("glytrait.api.calcu_derived_trait", return_value=trait_table)
+        mocker.patch("glytrait.api.parse_formulas", return_value=["F1", "F2"])
+        result = exp_for_derive_traits.try_formulas(["F1", "F2"])
+        pd.testing.assert_frame_equal(result, trait_table)
+        api.calcu_derived_trait.assert_called_once()
+        api.parse_formulas.assert_called_once_with(["F1", "F2"])
+
+    def test_try_formulas_no_preprocess(self, exp):
+        with pytest.raises(api.InvalidOperationOrderError):
+            exp.try_formulas("F1")

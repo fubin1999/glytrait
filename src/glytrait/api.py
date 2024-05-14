@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from functools import wraps
 from typing import cast, Literal, Optional, ClassVar, Any
 
@@ -11,7 +12,7 @@ from glytrait.data_type import (
     AbundanceTable,
 )
 from glytrait.exception import GlyTraitError
-from glytrait.formula import load_default_formulas, TraitFormula
+from glytrait.formula import load_default_formulas, TraitFormula, parse_formulas
 from glytrait.data_input import GlyTraitInputData
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
@@ -208,6 +209,10 @@ class Experiment(_Workflow):
     The result is stored as the `diff_results` attribute.
 
     Alternatively, you can call the `run_workflow` method to run the entire workflow.
+
+    If you want to try new formula expressions, use the `try_formulas` method.
+    Instead of saving the result as an attribute,
+    this method returns the result DataFrame or Series directly.
 
     Methods:
         preprocess: Preprocess the data.
@@ -476,3 +481,53 @@ class Experiment(_Workflow):
         self.post_filter(corr_threshold)
         if self.input_data.groups is not None:
             self.diff_analysis()
+
+    def try_formulas(
+        self, __expr: Iterable[str] | str, /, squeeze: bool = True
+    ) -> pd.DataFrame | pd.Series:
+        """Calculate derived traits with the given formulas
+
+        Args:
+            __expr: The formulas to calculate the derived traits.
+                Could be a list of formula expressions (str)
+                or a single formula expression (str).
+            squeeze: Whether to squeeze the result if only one formula is provided.
+                Default: True.
+
+        Returns:
+            If `squeeze=True` and only one formula is provided, return a Series.
+            Otherwise, return a DataFrame with derived trait names as columns.
+            Index of the DataFrame or Series is the sample names
+            (same as the processed abundance table).
+
+        Raises:
+            FormulaParseError: If any formula expression is invalid.
+
+        Examples:
+            >>> exp = Experiment(input_data)
+            >>> exp.preprocess()
+            >>> exp.try_formulas("TC = [type == 'complex'] / [1]")
+            pd.Series(...)
+            >>> exp.try_formulas(["TC = [type == 'complex'] / [1]", "TS = [nS > 0] / [1]"])
+            pd.DataFrame(...)
+        """
+
+        if self._current_step == "__START__":
+            raise InvalidOperationOrderError("Call `preprocess` first.")
+
+        if isinstance(__expr, str):
+            exprs = [__expr]
+        else:
+            exprs = list(__expr)
+        formulas = parse_formulas(exprs)
+
+        trait_table = calcu_derived_trait(
+            abund_df=self.processed_abundance_table,
+            meta_prop_df=self.meta_property_table,
+            formulas=formulas,
+        )
+
+        if squeeze and len(formulas) == 1:
+            return trait_table.iloc[:, 0]
+        else:
+            return trait_table
