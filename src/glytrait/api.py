@@ -186,21 +186,20 @@ GlycanDict = dict[str, Structure] | dict[str, Composition]
 class Experiment(_Workflow):
     """GlyTrait experiment.
 
-    Create an instance of this class with an abundance table and a structure series
+    Create an instance of this class with an GlyTraitInputData instance
     to perform all the steps in the GlyTrait workflow.
 
     Firstly, call the `preprocessed` method to filter glycans, impute missing values,
     and normalize the abundance.
-    Calling this method makes the `processed_abundance_table` attribute available.
+    Calling this method makes the `processed_abundance_table` and
+    `meta_property_table` attributes available.
+    The latter is a table of structural or compositional properties of glycans,
+    which is used to calculate derived traits.
 
-    Secondly, call the `extract_meta_properties` method.
-    This method generates a table of meta-properties for each glycan,
-    stored as the `meta_property_table` attribute.
-
-    Thirdly, call the `derive_traits` method to calculate all the derived traits.
+    Secondly, call the `derive_traits` method to calculate all the derived traits.
     The result table is stored as the `derived_trait_table` attribute.
 
-    Fourthly, call the `post_filter` method
+    Thirdly, call the `post_filter` method
     to remove invalid traits and highly correlated traits.
     The result table is stored as the `filtered_derived_trait_table` attribute.
 
@@ -208,9 +207,10 @@ class Experiment(_Workflow):
     to perform differential analysis.
     The result is stored as the `diff_results` attribute.
 
+    Alternatively, you can call the `run_workflow` method to run the entire workflow.
+
     Methods:
         preprocess: Preprocess the data.
-        extract_meta_properties: Extract meta properties.
         derive_traits: Calculate derived traits.
         post_filter: Post-filter the derived traits.
         diff_analysis: Perform differential analysis.
@@ -245,7 +245,6 @@ class Experiment(_Workflow):
         # `input_data` is a GlyTraitInputData instance.
         >>> experiment = Experiment(input_data)
         >>> experiment.preprocess(filter_max_na=0.5, impute_method="min")
-        >>> experiment.extract_meta_properties()
         >>> experiment.derive_traits()  # with default formulas
         >>> experiment.post_filter(corr_threshold=0.9)
         >>> experiment.diff_analysis()
@@ -253,14 +252,12 @@ class Experiment(_Workflow):
 
     _all_steps = [
         "preprocess",
-        "extract_meta_properties",
         "derive_traits",
         "post_filter",
         "diff_analysis",
     ]
     _data_dict = {
-        "preprocess": ["processed_abundance_table"],
-        "extract_meta_properties": ["meta_property_table"],
+        "preprocess": ["processed_abundance_table", "meta_property_table"],
         "derive_traits": ["derived_trait_table", "formulas"],
         "post_filter": ["filtered_derived_trait_table"],
         "diff_analysis": ["diff_results"],
@@ -333,7 +330,8 @@ class Experiment(_Workflow):
     ) -> None:
         """Preprocess the data.
 
-        Calling this method will make the `processed_abundance_table` attribute available.
+        Calling this method will make the `processed_abundance_table` and
+        `meta_property_table` attributes available.
 
         Args:
             filter_max_na (float): The maximum ratio of missing values in a sample.
@@ -356,18 +354,21 @@ class Experiment(_Workflow):
             filter_max_na=filter_max_na,
             impute_method=impute_method,
         )
-        return {"processed_abundance_table": AbundanceTable(processed)}  # type: ignore
+        mp_table = self._extract_meta_properties(processed)
+        return {  # type: ignore
+            "processed_abundance_table": AbundanceTable(processed),
+            "meta_property_table": mp_table,
+        }
 
-    @_step
-    def extract_meta_properties(self) -> None:
+    def _extract_meta_properties(self, processed_abund_df: AbundanceTable) -> MetaPropertyTable:
         """Extract meta-properties.
 
         Calling this method will make the `meta_property_table` attribute available.
         """
-        glycans: list[str] = self.processed_abundance_table.columns.tolist()
+        glycans: list[str] = processed_abund_df.columns.tolist()
         glycan_dict = cast(GlycanDict, {g: self.input_data.glycans[g] for g in glycans})
         mp_table = build_meta_property_table(glycan_dict, self.mode, self.sia_linkage)
-        return {"meta_property_table": mp_table}  # type: ignore
+        return mp_table
 
     @_step
     def derive_traits(self, formulas: Optional[list[TraitFormula]] = None) -> None:
@@ -441,9 +442,8 @@ class Experiment(_Workflow):
     ) -> None:
         """Run the entire workflow.
 
-        Call the `preprocess`, `extract_meta_properties`, `derive_traits`,
-        `post_filter`, and `diff_analysis` methods sequentially.
-        `diff_analysis` will be skipped if group information is not provided.
+        Call `preprocess`, `derive_traits`, and `post_filter` sequentially.
+        If group information is provided, call `diff_analysis` at the end.
 
         Args:
             filter_max_na: The maximum ratio of missing values in a sample.
@@ -470,7 +470,6 @@ class Experiment(_Workflow):
                 Default: 1.0.
         """
         self.preprocess(filter_max_na, impute_method)
-        self.extract_meta_properties()
         self.derive_traits(formulas)
         self.post_filter(corr_threshold)
         if self.input_data.groups is not None:

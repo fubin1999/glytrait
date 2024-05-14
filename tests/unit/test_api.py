@@ -205,9 +205,11 @@ class TestExperiment:
         self, mocker, input_data, abundance_table, filter, impute_method
     ):
         mocker.patch("glytrait.api.preprocess", return_value="result")
+        mocker.patch("glytrait.api.Experiment._extract_meta_properties", return_value="mp_table")
         exp = api.Experiment(input_data)
         exp.preprocess(filter, impute_method)
         assert exp.processed_abundance_table == "result"
+        assert exp.meta_property_table == "mp_table"
         called_args = api.preprocess.call_args.kwargs
         assert called_args["data"].equals(abundance_table)
         assert called_args["filter_max_na"] == filter
@@ -217,10 +219,8 @@ class TestExperiment:
         mocker.patch("glytrait.api.build_meta_property_table", return_value="result")
         input_data.glycans["G4"] = "Glycan4"
         exp = api.Experiment(input_data)
-        exp._data["processed_abundance_table"] = abundance_table
-        exp._current_step = "preprocess"
-        exp.extract_meta_properties()
-        assert exp.meta_property_table == "result"
+        result = exp._extract_meta_properties(abundance_table)
+        assert result == "result"
         api.build_meta_property_table.assert_called_once_with(
             {"G1": "Glycan1", "G2": "Glycan2", "G3": "Glycan3"}, "structure", False
         )
@@ -234,7 +234,7 @@ class TestExperiment:
     def exp_for_derive_traits(self, exp):
         exp._data["processed_abundance_table"] = "abund_table"
         exp._data["meta_property_table"] = "mp_table"
-        exp._current_step = "extract_meta_properties"
+        exp._current_step = "preprocess"
         return exp
 
     @pytest.mark.usefixtures("patch_for_derive_traits")
@@ -303,7 +303,6 @@ class TestExperiment:
     @pytest.fixture
     def patch_for_run_workflow(self, mocker):
         mocker.patch("glytrait.api.Experiment.preprocess")
-        mocker.patch("glytrait.api.Experiment.extract_meta_properties")
         mocker.patch("glytrait.api.Experiment.derive_traits")
         mocker.patch("glytrait.api.Experiment.post_filter")
         mocker.patch("glytrait.api.Experiment.diff_analysis")
@@ -314,7 +313,6 @@ class TestExperiment:
         exp.run_workflow()
 
         exp.preprocess.assert_called_once_with(1.0, "zero")
-        exp.extract_meta_properties.assert_called_once()
         exp.derive_traits.assert_called_once_with(None)
         exp.post_filter.assert_called_once_with(1.0)
         exp.diff_analysis.assert_called_once()
@@ -330,7 +328,6 @@ class TestExperiment:
         )
 
         exp.preprocess.assert_called_once_with(0.5, "min")
-        exp.extract_meta_properties.assert_called_once()
         exp.derive_traits.assert_called_once_with(["F1", "F2"])
         exp.post_filter.assert_called_once_with(0.5)
         exp.diff_analysis.assert_called_once()
@@ -342,7 +339,6 @@ class TestExperiment:
         exp.run_workflow()
 
         exp.preprocess.assert_called_once_with(1.0, "zero")
-        exp.extract_meta_properties.assert_called_once()
         exp.derive_traits.assert_called_once_with(None)
         exp.post_filter.assert_called_once_with(1.0)
         exp.diff_analysis.assert_not_called()

@@ -20,7 +20,6 @@ class TestExperiment:
 
     def test_whole_workflow(self, experiment):
         experiment.preprocess()
-        experiment.extract_meta_properties()
         experiment.derive_traits()
         experiment.post_filter()
         experiment.diff_analysis()
