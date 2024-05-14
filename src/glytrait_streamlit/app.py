@@ -163,9 +163,7 @@ abundance_df = get_df_from_file(abundance_file, AbundanceLoader())
 
 # Upload the structure (composition) file
 input_c.markdown(f"**{mode.capitalize()} File**")
-glycan_file = input_c.file_uploader(
-    "Choose a file", help=GLYCAN_FILE_HELP, type="csv"
-)
+glycan_file = input_c.file_uploader("Choose a file", help=GLYCAN_FILE_HELP, type="csv")
 with input_c.expander(f"Example {mode.capitalize()} File"):
     example_df = structures_example if mode == "structure" else compositions_example
     st.dataframe(example_df, hide_index=True)
@@ -179,9 +177,7 @@ glycans = get_df_from_file(glycan_file, GlycanLoader(mode=mode))
 
 # Upload the group file
 input_c.markdown("**Group File (optional)**")
-group_file = input_c.file_uploader(
-    "Choose a file", help=GROUP_FILE_HELP, type="csv"
-)
+group_file = input_c.file_uploader("Choose a file", help=GROUP_FILE_HELP, type="csv")
 with input_c.expander("Example Group File"):
     st.dataframe(groups_example, hide_index=True)
     st.download_button(

@@ -205,7 +205,9 @@ class TestExperiment:
         self, mocker, input_data, abundance_table, filter, impute_method
     ):
         mocker.patch("glytrait.api.preprocess", return_value="result")
-        mocker.patch("glytrait.api.Experiment._extract_meta_properties", return_value="mp_table")
+        mocker.patch(
+            "glytrait.api.Experiment._extract_meta_properties", return_value="mp_table"
+        )
         exp = api.Experiment(input_data)
         exp.preprocess(filter, impute_method)
         assert exp.processed_abundance_table == "result"

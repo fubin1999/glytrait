@@ -360,7 +360,9 @@ class Experiment(_Workflow):
             "meta_property_table": mp_table,
         }
 
-    def _extract_meta_properties(self, processed_abund_df: AbundanceTable) -> MetaPropertyTable:
+    def _extract_meta_properties(
+        self, processed_abund_df: AbundanceTable
+    ) -> MetaPropertyTable:
         """Extract meta-properties.
 
         Calling this method will make the `meta_property_table` attribute available.
