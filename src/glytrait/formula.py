@@ -7,8 +7,9 @@ Classes:
     TraitFormula: The trait formula.
 
 Functions:
-    load_formulas: Load all trait formulas from default formula files and custom formulas files.
-    save_trait_formulas_tepmlate: Save a template of trait formulas to a file.
+    parse_formulas: Parse formula expressions.
+    load_formulas_from_file: Load formulas from a formula file.
+    load_default_formulas: Load the default formulas.
     save_builtin_formula: Save a built-in trait formulas to a file.
 """
 
