@@ -3,6 +3,21 @@
 Currently, GlyTrait is in development and no stable version has been released yet. 
 The following is a list of changes that have been made to the project.
 
+## v0.1.5
+
+**Added:**
+
+- A new `try_formulas` method for `Experiment`. 
+  This method returned the calculated derived trait DataFrame directly based on 
+  given formula expressions.
+  It might be useful for glycomics EDA.
+- Example data are added to the Streamlit app.
+
+**Changed:**
+
+- `Experiment.extract_meta_properties` method was removed for less confusion to users.
+  Calling `Experiment.preprocess` will automatically extract meta properties.
+
 ## v0.1.4
 
 **Added:**
