@@ -147,12 +147,10 @@ input_c = st.container()
 mode = input_c.selectbox("Mode", ["structure", "composition"], help=MODE_HELP)
 
 # Upload the abundance file
-input_c.markdown("**Abundance File**")
-abundance_file = input_c.file_uploader(
-    "Choose a file", help=ABUNDANCE_FILE_HELP, type="csv"
-)
-with input_c.expander("Example Abundance File"):
-    st.dataframe(abundance_example, hide_index=True)
+abundance_file = input_c.file_uploader("Abundance file", type="csv")
+with input_c.expander("File format instructions"):
+    st.markdown(ABUNDANCE_FILE_HELP)
+    st.dataframe(abundance_example.head(5), hide_index=True)
     st.download_button(
         "Download Example Abundance File",
         data=abundance_example.to_csv(index=False).encode(),
@@ -162,11 +160,11 @@ with input_c.expander("Example Abundance File"):
 abundance_df = get_df_from_file(abundance_file, AbundanceLoader())
 
 # Upload the structure (composition) file
-input_c.markdown(f"**{mode.capitalize()} File**")
-glycan_file = input_c.file_uploader("Choose a file", help=GLYCAN_FILE_HELP, type="csv")
-with input_c.expander(f"Example {mode.capitalize()} File"):
+glycan_file = input_c.file_uploader("Glycan file", type="csv")
+with input_c.expander(f"File format instructions"):
+    st.markdown(GLYCAN_FILE_HELP)
     example_df = structures_example if mode == "structure" else compositions_example
-    st.dataframe(example_df, hide_index=True)
+    st.dataframe(example_df.head(5), hide_index=True)
     st.download_button(
         f"Download Example {mode.capitalize()} File",
         data=example_df.to_csv(index=False).encode(),
@@ -176,10 +174,10 @@ with input_c.expander(f"Example {mode.capitalize()} File"):
 glycans = get_df_from_file(glycan_file, GlycanLoader(mode=mode))
 
 # Upload the group file
-input_c.markdown("**Group File (optional)**")
-group_file = input_c.file_uploader("Choose a file", help=GROUP_FILE_HELP, type="csv")
-with input_c.expander("Example Group File"):
-    st.dataframe(groups_example, hide_index=True)
+group_file = input_c.file_uploader("Group file", type="csv")
+with input_c.expander("File format instructions"):
+    st.markdown(GROUP_FILE_HELP)
+    st.dataframe(groups_example.head(5), hide_index=True)
     st.download_button(
         "Download Example Group File",
         data=groups_example.to_csv(index=False).encode(),
