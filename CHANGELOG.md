@@ -3,6 +3,15 @@
 Currently, GlyTrait is in development and no stable version has been released yet. 
 The following is a list of changes that have been made to the project.
 
+## v0.1.6
+
+**Changed:**
+
+- The `Experiment` class now can be initialized from file paths directly.
+  The old way of initializing from a `GlyTraitInputData` instance could be done
+  by the keyword argument: `Experiment(input_data=input_data)`.
+- The file format instructions in the Streamlit app are updated to be more clear.
+
 ## v0.1.5
 
 **Added:**
