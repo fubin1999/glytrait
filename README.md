@@ -42,7 +42,8 @@ saving my time and energy for more interesting analysis?*
     - [Preprocessing](#preprocessing)
     - [Sialic-acid-linkage traits](#sialic-acid-linkage-traits)
     - [Post-filtering](#post-filtering)
-    - [Custom formulas](#custom-formula)
+    - [Custom formulas](#custom-formulas)
+- [Reproduction Instructions](#reproduction-instructions)
 - [License](#license)
 
 ## Web app
@@ -368,6 +369,17 @@ Coming soon...
 
 (The functionallity has been implemented, but the documentation is not ready yet.
 After publishing the GlyTrait paper, we will update the documentation.)
+
+## Reproduction Instructions
+
+To reproduce the results in our paper 
+"GlyTrait: A versatile bioinformatics tool for Glycomics Analysis",
+please download the Supplementary Data files.
+There are three such files, corresponding to different datasets mentioned in the paper.
+Each Supplementary Data file has several sheets with the prefix of "Input -".
+These are the input data for GlyTrait.
+Please reformat the data according to the [Input file format](#input-file-format) section,
+and run GlyTrait with the same options as in the paper.
 
 ## License
 
