@@ -1,22 +1,19 @@
 import pytest
 import pandas as pd
 
-from glytrait.data_input import load_data
 from glytrait.api import Experiment
 
 
 class TestExperiment:
 
     @pytest.fixture
-    def input_data(self):
-        abund_df = pd.read_csv("tests/integration/data/abundance.csv")
-        glycan_df = pd.read_csv("tests/integration/data/structures.csv")
-        group_df = pd.read_csv("tests/integration/data/groups.csv")
-        return load_data(abund_df, glycan_df, group_df, mode="structure")
-
-    @pytest.fixture
-    def experiment(self, input_data):
-        return Experiment(input_data)
+    def experiment(self):
+        return Experiment(
+            abundance_file="tests/integration/data/abundance.csv",
+            glycan_file="tests/integration/data/structures.csv",
+            group_file="tests/integration/data/groups.csv",
+            mode="structure",
+        )
 
     def test_run_workflow(self, experiment):
         experiment.run_workflow()

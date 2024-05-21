@@ -13,7 +13,7 @@ from glytrait.data_type import (
 )
 from glytrait.exception import GlyTraitError
 from glytrait.formula import load_default_formulas, TraitFormula, parse_formulas
-from glytrait.data_input import GlyTraitInputData
+from glytrait.data_input import GlyTraitInputData, load_data
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
 from glytrait.preprocessing import preprocess
@@ -187,14 +187,13 @@ GlycanDict = dict[str, Structure] | dict[str, Composition]
 class Experiment(_Workflow):
     """GlyTrait experiment.
 
-    Create an instance of this class with an GlyTraitInputData instance
-    to perform all the steps in the GlyTrait workflow.
+    Create an instance of this class to perform all the steps in the GlyTrait workflow.
 
     Firstly, call the `preprocessed` method to filter glycans, impute missing values,
     and normalize the abundance.
     Calling this method makes the `processed_abundance_table` and
     `meta_property_table` attributes available.
-    The latter is a table of structural or compositional properties of glycans,
+    The latter is a table of structural or compositional properties,
     which is used to calculate derived traits.
 
     Secondly, call the `derive_traits` method to calculate all the derived traits.
@@ -224,6 +223,9 @@ class Experiment(_Workflow):
         get_data: Get the data by name.
 
     Attributes:
+        abundance_file: The path to the abundance file.
+        glycan_file: The path to the glycan file.
+        group_file: The path to the group file.
         mode: "structure" or "composition".
         sia_linkage: Whether to consider the linkage of sialic acid.
         input_data: The input data (a `GlyTraitInputData` instance).
@@ -238,17 +240,12 @@ class Experiment(_Workflow):
 
     Examples:
         >>> from glytrait.api import Experiment
-        >>> from glytrait.data_input import load_data
-        # This is the safe way to load data.
-        # It ensures all data are in correct formats.
-        >>> input_data = load_data(
-        ...    abundance_df=pd.read_csv("glycan_abundance.csv"),
-        ...    glycan_df=pd.read_csv("glycan_structure.csv"),
-        ...    group_df=pd.read_csv("group.csv"),
+        >>> experiment = Experiment(
+        ...    abundance_file="glycan_abundance.csv",
+        ...    glycan_file="glycan_structure.csv",
+        ...    group_file="group.csv",
         ...    mode="structure",
-        )
-        # `input_data` is a GlyTraitInputData instance.
-        >>> experiment = Experiment(input_data)
+        ... )
         >>> experiment.preprocess(filter_max_na=0.5, impute_method="min")
         >>> experiment.derive_traits()  # with default formulas
         >>> experiment.post_filter(corr_threshold=0.9)
@@ -268,9 +265,36 @@ class Experiment(_Workflow):
         "diff_analysis": ["diff_results"],
     }
 
-    input_data: GlyTraitInputData
+    abundance_file: Optional[str] = field(default=None, kw_only=True, repr=False)
+    glycan_file: Optional[str] = field(default=None, kw_only=True, repr=False)
+    group_file: Optional[str] = field(default=None, kw_only=True, repr=False)
+    input_data: GlyTraitInputData = field(default=None, kw_only=True)
     mode: Literal["structure", "composition"] = field(default="structure", kw_only=True)
     sia_linkage: bool = field(default=False, kw_only=True)
+
+    def __attrs_post_init__(self):
+        if self.abundance_file is None and self.glycan_file is None:
+            if self.input_data is None:
+                msg = "Either `input_data` or `abundance_file` and `glycan_file` are required."
+                raise ValueError(msg)
+        if self.abundance_file and self.glycan_file is None:
+            raise ValueError(
+                "`glycan_file` is required if `abundance_file` is provided."
+            )
+        if self.abundance_file is None and self.glycan_file:
+            raise ValueError(
+                "`abundance_file` is required if `glycan_file` is provided."
+            )
+        if self.input_data and (self.abundance_file or self.glycan_file):
+            raise ValueError("Do not provide both `input_data` and files.")
+
+        if self.input_data is None:
+            self.input_data = load_data(
+                abundance_df=pd.read_csv(self.abundance_file),
+                glycan_df=pd.read_csv(self.glycan_file),
+                group_df=pd.read_csv(self.group_file) if self.group_file else None,
+                mode=self.mode,
+            )
 
     @property
     def abundance_table(self) -> pd.DataFrame:

@@ -271,7 +271,7 @@ def prepare_zip(exp):
 st.markdown("---")
 if st.button("Run GlyTrait"):
     with st.spinner("Running..."):
-        exp = Experiment(input_data, mode=mode, sia_linkage=sia_linkage)
+        exp = Experiment(input_data=input_data, mode=mode, sia_linkage=sia_linkage)
         with capture_glytrait_error():
             exp.run_workflow(
                 filter_max_na=glycan_filter_threshold,

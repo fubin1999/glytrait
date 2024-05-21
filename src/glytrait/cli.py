@@ -5,11 +5,9 @@ from typing import Literal, Any
 
 import click
 import emoji
-import pandas as pd
 from attrs import define
 
 from glytrait.exception import GlyTraitError
-from glytrait.data_input import load_data
 from glytrait.api import Experiment, MissingDataError
 from glytrait.formula import save_builtin_formula, load_formulas_from_file
 from glytrait.data_export import export_all
@@ -217,18 +215,6 @@ def _determine_mode(mode: str) -> Literal["structure", "composition"]:
     return "composition" if mode.lower() in ["c", "composition"] else "structure"
 
 
-def _make_input_data(
-    abundance_file: str,
-    glycan_file: str,
-    group_file: str | None,
-    mode: Literal["structure", "composition"],
-):
-    abundance_df = pd.read_csv(abundance_file)
-    glycan_df = pd.read_csv(glycan_file)
-    group_df = pd.read_csv(group_file) if group_file else None
-    return load_data(abundance_df, glycan_df, group_df, mode=mode)
-
-
 def _prepare_output(exp: Experiment) -> list[tuple[str, Any]]:
     result = {
         "derived_traits.csv": exp.derived_trait_table,
@@ -262,8 +248,13 @@ def _run_workflow(
     config: WorkflowConfig,
     output_dir: str,
 ):
-    input_data = _make_input_data(abundance_file, glycan_file, group_file, config.mode)
-    exp = Experiment(input_data, sia_linkage=config.sia_linkage, mode=config.mode)
+    exp = Experiment(
+        abundance_file=abundance_file,
+        glycan_file=glycan_file,
+        group_file=group_file,
+        sia_linkage=config.sia_linkage,
+        mode=config.mode,
+    )
     _process_exp(exp, formula_file, config)
     output_data = _prepare_output(exp)
     export_all(output_data, output_dir)

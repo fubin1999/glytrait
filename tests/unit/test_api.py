@@ -173,7 +173,65 @@ class TestExperiment:
     @pytest.fixture
     def exp(self, mocker, input_data):
         mocker.patch("glytrait.api.Experiment.reset")
-        return api.Experiment(input_data)
+        return api.Experiment(input_data=input_data)
+
+    def test_init_with_input_data(self, input_data):
+        exp = api.Experiment(input_data=input_data)
+        assert exp.abundance_table.equals(input_data.abundance_table)
+        assert exp.glycans == input_data.glycans
+        assert exp.groups.equals(input_data.groups)
+
+    def test_init_with_files(self, abundance_table, glycans, groups, tmp_path, mocker):
+        abundance_file = tmp_path / "abundance.csv"
+        glycans_file = tmp_path / "glycans.csv"
+        groups_file = tmp_path / "groups.csv"
+
+        abund_df = abundance_table.reset_index()
+        glycan_df = pd.DataFrame(glycans.items(), columns=["GlycanID", "Structure"])
+        group_df = groups.reset_index()
+
+        abund_df.to_csv(abundance_file, index=False)
+        glycan_df.to_csv(glycans_file, index=False)
+        group_df.to_csv(groups_file, index=False)
+
+        mocker.patch("glytrait.api.load_data", return_value="data")
+
+        exp = api.Experiment(
+            abundance_file=abundance_file,
+            glycan_file=glycans_file,
+            group_file=groups_file,
+            mode="structure",
+            sia_linkage=False,
+        )
+
+        called_args = api.load_data.call_args.kwargs
+        pd.testing.assert_frame_equal(called_args["abundance_df"], abund_df)
+        pd.testing.assert_frame_equal(called_args["glycan_df"], glycan_df)
+        pd.testing.assert_frame_equal(called_args["group_df"], group_df)
+        assert called_args["mode"] == "structure"
+        assert exp.input_data == "data"
+
+    def test_init_both_file_and_data(self):
+        with pytest.raises(ValueError):
+            api.Experiment(abundance_file="path", input_data="data")
+
+        with pytest.raises(ValueError):
+            api.Experiment(glycan_file="path", input_data="data")
+
+        with pytest.raises(ValueError):
+            api.Experiment(abundance_file="path", glycan_file="path", input_data="data")
+
+    def test_init_with_no_file_and_no_data(self):
+        with pytest.raises(ValueError):
+            api.Experiment()
+
+    def test_init_with_abundance_file_but_no_glycan_file(self):
+        with pytest.raises(ValueError):
+            api.Experiment(abundance_file="path")
+
+    def test_init_with_glycan_file_but_no_abundance_file(self):
+        with pytest.raises(ValueError):
+            api.Experiment(glycan_file="path")
 
     def test_abundance_table_getter(self, exp, abundance_table):
         assert exp.abundance_table.equals(abundance_table)
@@ -208,7 +266,7 @@ class TestExperiment:
         mocker.patch(
             "glytrait.api.Experiment._extract_meta_properties", return_value="mp_table"
         )
-        exp = api.Experiment(input_data)
+        exp = api.Experiment(input_data=input_data)
         exp.preprocess(filter, impute_method)
         assert exp.processed_abundance_table == "result"
         assert exp.meta_property_table == "mp_table"
@@ -220,7 +278,7 @@ class TestExperiment:
     def test_extract_meta_properties(self, mocker, input_data, abundance_table):
         mocker.patch("glytrait.api.build_meta_property_table", return_value="result")
         input_data.glycans["G4"] = "Glycan4"
-        exp = api.Experiment(input_data)
+        exp = api.Experiment(input_data=input_data)
         result = exp._extract_meta_properties(abundance_table)
         assert result == "result"
         api.build_meta_property_table.assert_called_once_with(
@@ -247,7 +305,7 @@ class TestExperiment:
         api.calcu_derived_trait.assert_called_once()
 
     @pytest.mark.usefixtures("patch_for_derive_traits")
-    def test_derive_traits_with_provided_formulas(self, mocker, exp_for_derive_traits):
+    def test_derive_traits_with_provided_formulas(self, exp_for_derive_traits):
         FakeFormula = namedtuple("FakeFormula", "name sia_linkage")
         fake_formulas = [FakeFormula("F1", False), FakeFormula("F2", False)]
         exp_for_derive_traits.derive_traits(fake_formulas)
@@ -258,7 +316,7 @@ class TestExperiment:
 
     @pytest.mark.usefixtures("patch_for_derive_traits")
     def test_derive_traits_with_provided_sia_formulas_no_sia_mode(
-        self, mocker, exp_for_derive_traits
+        self, exp_for_derive_traits
     ):
         FakeFormula = namedtuple("FakeFormula", "name sia_linkage")
         fake_formulas = [FakeFormula("F1", True), FakeFormula("F2", False)]
@@ -311,7 +369,7 @@ class TestExperiment:
 
     @pytest.mark.usefixtures("patch_for_run_workflow")
     def test_run_workflow_with_groups_no_args(self, input_data):
-        exp = api.Experiment(input_data)
+        exp = api.Experiment(input_data=input_data)
         exp.run_workflow()
 
         exp.preprocess.assert_called_once_with(1.0, "zero")
@@ -321,7 +379,7 @@ class TestExperiment:
 
     @pytest.mark.usefixtures("patch_for_run_workflow")
     def test_run_workflow_with_args(self, input_data):
-        exp = api.Experiment(input_data)
+        exp = api.Experiment(input_data=input_data)
         exp.run_workflow(
             filter_max_na=0.5,
             impute_method="min",
@@ -337,7 +395,7 @@ class TestExperiment:
     @pytest.mark.usefixtures("patch_for_run_workflow")
     def test_run_workflow_without_groups(self, input_data):
         input_data.groups = None
-        exp = api.Experiment(input_data)
+        exp = api.Experiment(input_data=input_data)
         exp.run_workflow()
 
         exp.preprocess.assert_called_once_with(1.0, "zero")
