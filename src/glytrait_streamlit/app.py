@@ -161,7 +161,7 @@ abundance_df = get_df_from_file(abundance_file, AbundanceLoader())
 
 # Upload the structure (composition) file
 glycan_file = input_c.file_uploader("Glycan file", type="csv")
-with input_c.expander(f"File format instructions"):
+with input_c.expander("File format instructions"):
     st.markdown(GLYCAN_FILE_HELP)
     example_df = structures_example if mode == "structure" else compositions_example
     st.dataframe(example_df.head(5), hide_index=True)
