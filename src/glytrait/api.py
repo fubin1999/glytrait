@@ -1,3 +1,4 @@
+from collections import defaultdict
 from collections.abc import Iterable
 from functools import wraps
 from typing import cast, Literal, Optional, ClassVar, Any
@@ -288,9 +289,11 @@ class Experiment(_Workflow):
         if self.input_data and (self.abundance_file or self.glycan_file):
             raise ValueError("Do not provide both `input_data` and files.")
 
+        abundance_type = defaultdict(lambda: "float64")
+        abundance_type.update({"Sample": "O"})
         if self.input_data is None:
             self.input_data = load_data(
-                abundance_df=pd.read_csv(self.abundance_file),
+                abundance_df=pd.read_csv(self.abundance_file, dtype=abundance_type),
                 glycan_df=pd.read_csv(self.glycan_file),
                 group_df=pd.read_csv(self.group_file) if self.group_file else None,
                 mode=self.mode,
