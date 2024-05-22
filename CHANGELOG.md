@@ -3,6 +3,12 @@
 Currently, GlyTrait is in development and no stable version has been released yet. 
 The following is a list of changes that have been made to the project.
 
+## v0.1.7
+
+**Fixed:**
+
+- Fix the bug that type checks failed when the abundance data type is integer.
+
 ## v0.1.6
 
 **Changed:**
