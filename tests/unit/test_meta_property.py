@@ -4,7 +4,7 @@ from attrs import define
 
 from glytrait import meta_property as mp
 from glytrait.meta_property import Glycan
-from . import glycoct as ct
+from .. import glycoct as ct
 
 
 def test_build_meta_property_table(mocker):

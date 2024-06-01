@@ -2,7 +2,7 @@ import pytest
 
 from glytrait import glycan as glyc
 import glytrait.exception as exc
-from . import glycoct as ct
+from .. import glycoct as ct
 
 
 class TestLoadStructures:
