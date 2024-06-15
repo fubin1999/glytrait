@@ -20,7 +20,7 @@ import pandas as pd
 from attrs import define, field
 from numpy import dtype
 
-from glytrait.data_type import AbundanceTable, GroupSeries
+from glytrait.data_type import AbundanceTable, GroupSeries, MetaPropertyTable
 from glytrait.exception import DataInputError
 from glytrait.glycan import parse_structures, parse_compositions, Structure, Composition
 
@@ -147,6 +147,17 @@ def load_glycans(
     glycan_col = mode.capitalize()
     strings = df[glycan_col].to_list()
     return parser(zip(ids, strings))
+
+
+def load_meta_property(df: pd.DataFrame) -> MetaPropertyTable:
+    """Load meta-property table from a DataFrame."""
+    validator = DFValidator(
+        must_have=["GlycanID"],
+        unique=["GlycanID"],
+        types={"GlycanID": "object"}
+    )
+    validator(df)
+    return MetaPropertyTable(df.set_index("GlycanID"))
 
 
 # ===== Input data =====

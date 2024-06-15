@@ -206,6 +206,37 @@ class TestLoadGlycans:
         assert result == expected
 
 
+class TestLoadMetaProperties:
+
+    def test_basic(self):
+        df = pd.DataFrame(
+            {
+                "GlycanID": ["G1", "G2", "G3"],
+                "MP1": [1, 2, 3],
+                "MP2": ["A", "B", "A"],
+            }
+        )
+        result = di.load_meta_property(df)
+        expected = pd.DataFrame(
+            {
+                "MP1": [1, 2, 3],
+                "MP2": ["A", "B", "A"],
+            },
+            index=pd.Index(["G1", "G2", "G3"], name="GlycanID")
+        )
+        pd.testing.assert_frame_equal(result, expected)
+
+    def test_missing_glycan_id_col(self):
+        df = pd.DataFrame(
+            {
+                "MP1": [1, 2, 3],
+                "MP2": ["A", "B", "A"],
+            }
+        )
+        with pytest.raises(DataInputError):
+            di.load_meta_property(df)
+
+
 class TestSameSamplesInAbundanceAndGroups:
 
     @staticmethod
