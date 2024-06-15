@@ -13,18 +13,14 @@ Functions:
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from collections.abc import Iterable, Callable
-from typing import Optional, Literal, Any, cast
+from typing import Optional, Literal
 
 import pandas as pd
 from attrs import define, field
 from numpy import dtype
 
-from glytrait.data_type import (
-    AbundanceTable,
-    GroupSeries,
-)
+from glytrait.data_type import AbundanceTable, GroupSeries
 from glytrait.exception import DataInputError
 from glytrait.glycan import parse_structures, parse_compositions, Structure, Composition
 
@@ -105,97 +101,52 @@ class DFValidator:
             raise DataInputError(msg)
 
 
-class DataLoader(ABC):
-    """Base class for a data loader."""
-
-    def load(self, df: pd.DataFrame) -> Any:
-        """Load data from the DataFrame."""
-        self._validate_data(df)
-        return self._load_data(df)
-
-    @abstractmethod
-    def _validate_data(self, df: pd.DataFrame) -> None:
-        """Validate the DataFrame."""
-        raise NotImplementedError
-
-    @abstractmethod
-    def _load_data(self, df: pd.DataFrame) -> Any:
-        """Load data from the DataFrame."""
-        raise NotImplementedError
+def load_abundance(df: pd.DataFrame) -> AbundanceTable:
+    """Load abundance table from a DataFrame."""
+    validator = DFValidator(
+        must_have=["Sample"],
+        unique=["Sample"],
+        types={"Sample": "object"},
+        default_type=dtype("float64"),
+    )
+    validator(df)
+    return AbundanceTable(df.set_index("Sample"))
 
 
-@define
-class AbundanceLoader(DataLoader):
-    """Loader of the abundance table."""
-
-    def _validate_data(self, df: pd.DataFrame) -> None:
-        validator = DFValidator(
-            must_have=["Sample"],
-            unique=["Sample"],
-            types={"Sample": "object"},
-            default_type=dtype("float64"),
-        )
-        validator(df)
-
-    def _load_data(self, df: pd.DataFrame) -> AbundanceTable:
-        return AbundanceTable(df.set_index("Sample"))
-
-
-@define
-class GroupsLoader(DataLoader):
-    """Loader of the group series."""
-
-    def _validate_data(self, df: pd.DataFrame) -> None:
-        validator = DFValidator(
-            must_have=["Group", "Sample"],
-            unique=["Sample"],
-            types={"Sample": "object"},
-        )
-        validator(df)
-
-    def _load_data(self, df: pd.DataFrame) -> GroupSeries:
-        return GroupSeries(df.set_index("Sample")["Group"])
+def load_groups(df: pd.DataFrame) -> GroupSeries:
+    """Load groups from a DataFrame."""
+    validator = DFValidator(
+        must_have=["Group", "Sample"],
+        unique=["Sample"],
+        types={"Sample": "object"},
+    )
+    validator(df)
+    return GroupSeries(df.set_index("Sample")["Group"])
 
 
 GlycanParserType = Callable[[Iterable[tuple[str, str]]], GlycanDict]
 
 
-@define
-class GlycanLoader(DataLoader):
-    """Loader for structures or compositions from a csv file."""
-
-    mode: Literal["structure", "composition"] = field(kw_only=True)
-    parser: GlycanParserType = field(kw_only=True, default=None)
-
-    def __attrs_post_init__(self):
-        if self.parser is None:
-            self.parser = self._glycan_parser_factory(self.mode)
-
-    @staticmethod
-    def _glycan_parser_factory(
-        mode: Literal["structure", "composition"]
-    ) -> GlycanParserType:
+def load_glycans(
+    df: pd.DataFrame,
+    *,
+    mode: Literal["structure", "composition"],
+    parser: Optional[GlycanParserType] = None,
+) -> GlycanDict:
+    """Load glycans from a DataFrame."""
+    if parser is None:
         parser = parse_structures if mode == "structure" else parse_compositions
-        return cast(GlycanParserType, parser)
-
-    @staticmethod
-    def _validator_factory(mode: Literal["structure", "composition"]) -> DFValidator:
-        glycan_col = "Structure" if mode == "structure" else "Composition"
-        return DFValidator(
-            must_have=["GlycanID", glycan_col],
-            unique=["GlycanID", glycan_col],
-            types={"GlycanID": "object", glycan_col: "object"},
-        )
-
-    def _validate_data(self, df: pd.DataFrame) -> None:
-        validator = self._validator_factory(self.mode)
-        validator(df)
-
-    def _load_data(self, df: pd.DataFrame) -> GlycanDict:
-        ids = df["GlycanID"].to_list()
-        glycan_col = self.mode.capitalize()
-        strings = df[glycan_col].to_list()
-        return self.parser(zip(ids, strings))
+    glycan_col = "Structure" if mode == "structure" else "Composition"
+    validator = DFValidator(
+        must_have=["GlycanID", glycan_col],
+        unique=["GlycanID", glycan_col],
+        types={"GlycanID": "object", glycan_col: "object"},
+    )
+    validator(df)
+    ids = df["GlycanID"].to_list()
+    glycan_col = mode.capitalize()
+    strings = df[glycan_col].to_list()
+    return parser(zip(ids, strings))
 
 
 # ===== Input data =====
@@ -348,13 +299,9 @@ def load_data(
     Raises:
         DataInputError: If the input data is not valid.
     """
-    abundance_loader = AbundanceLoader()
-    structure_loader = GlycanLoader(mode=mode)
-    group_loader = GroupsLoader()
-
-    abundance_table = abundance_loader.load(abundance_df)
-    glycans = structure_loader.load(glycan_df)
-    groups = group_loader.load(group_df) if group_df is not None else None
+    abundance_table = load_abundance(abundance_df)
+    glycans = load_glycans(glycan_df, mode=mode)
+    groups = load_groups(group_df) if group_df is not None else None
 
     input_data = GlyTraitInputData(
         abundance_table=abundance_table,

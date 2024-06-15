@@ -8,9 +8,9 @@ import pandas as pd
 import streamlit as st
 
 from glytrait.data_input import (
-    AbundanceLoader,
-    GlycanLoader,
-    GroupsLoader,
+    load_abundance,
+    load_glycans,
+    load_groups,
     GlyTraitInputData,
 )
 from glytrait.exception import GlyTraitError
@@ -136,7 +136,7 @@ def get_df_from_file(file, loader):
     """Get a DataFrame from a file uploaded by the user."""
     if file:
         with capture_glytrait_error():
-            return loader.load(pd.read_csv(file))
+            return loader(pd.read_csv(file))
     else:
         return None
 
@@ -157,7 +157,7 @@ with input_c.expander("File format instructions"):
         file_name="example_abundance.csv",
         mime="text/csv",
     )
-abundance_df = get_df_from_file(abundance_file, AbundanceLoader())
+abundance_df = get_df_from_file(abundance_file, load_abundance)
 
 # Upload the structure (composition) file
 glycan_file = input_c.file_uploader("Glycan file", type="csv")
@@ -171,7 +171,7 @@ with input_c.expander("File format instructions"):
         file_name=f"example_{mode}.csv",
         mime="text/csv",
     )
-glycans = get_df_from_file(glycan_file, GlycanLoader(mode=mode))
+glycans = get_df_from_file(glycan_file, lambda df: load_glycans(df, mode=mode))
 
 # Upload the group file
 group_file = input_c.file_uploader("Group file", type="csv")
@@ -184,7 +184,7 @@ with input_c.expander("File format instructions"):
         file_name="example_groups.csv",
         mime="text/csv",
     )
-groups = get_df_from_file(group_file, GroupsLoader())
+groups = get_df_from_file(group_file, load_groups)
 
 if abundance_df is None or glycans is None:
     st.stop()

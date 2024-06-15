@@ -1,11 +1,8 @@
-from typing import Any
-
 import pandas as pd
 import pytest
 from numpy import dtype
 
 from glytrait.exception import DataInputError
-from glytrait.glycan import parse_structures, parse_compositions
 import glytrait.data_input as di
 
 
@@ -71,24 +68,7 @@ class TestDFValidator:
         assert msg in str(excinfo.value)
 
 
-def test_data_loader_base_class(mocker):
-    class TestDataLoader(di.DataLoader):
-        def _validate_data(self, df: pd.DataFrame) -> None:
-            pass
-
-        def _load_data(self, df: pd.DataFrame) -> Any:
-            pass
-
-    df = mocker.Mock()
-    loader = TestDataLoader()
-    loader._validate_data = mocker.Mock()
-    loader._load_data = mocker.Mock(return_value="loaded")
-    assert loader.load(df) == "loaded"
-    loader._validate_data.assert_called_once_with(df)
-    loader._load_data.assert_called_once_with(df)
-
-
-class TestAbundanceLoader:
+class TestLoadAbundance:
 
     def test_basic(self):
         df = pd.DataFrame(
@@ -99,8 +79,7 @@ class TestAbundanceLoader:
                 "G3": [7.0, 8.0, 9.0],
             }
         )
-        loader = di.AbundanceLoader()
-        result = loader.load(df)
+        result = di.load_abundance(df)
         expected = pd.DataFrame(
             {
                 "G1": [1.0, 2.0, 3.0],
@@ -119,9 +98,8 @@ class TestAbundanceLoader:
                 "G3": [7.0, 8.0, 9.0],
             }
         )
-        loader = di.AbundanceLoader()
         with pytest.raises(DataInputError):
-            loader.load(df)
+            di.load_abundance(df)
 
     def test_duplicate_samples(self):
         df = pd.DataFrame(
@@ -132,9 +110,8 @@ class TestAbundanceLoader:
                 "G3": [7.0, 8.0, 9.0],
             }
         )
-        loader = di.AbundanceLoader()
         with pytest.raises(DataInputError):
-            loader.load(df)
+            di.load_abundance(df)
 
     def test_wrong_type(self):
         df = pd.DataFrame(
@@ -145,19 +122,17 @@ class TestAbundanceLoader:
                 "G3": [7.0, 8.0, 9.0],
             }
         )
-        loader = di.AbundanceLoader()
         with pytest.raises(DataInputError):
-            loader.load(df)
+            di.load_abundance(df)
 
     @pytest.mark.skip("Not implemented")
     def test_only_sample_col(self):
         df = pd.DataFrame({"Sample": ["S1", "S2", "S3"]})
-        loader = di.AbundanceLoader()
         with pytest.raises(DataInputError):
-            loader.load(df)
+            di.load_abundance(df)
 
 
-class TestGroupsLoader:
+class TestLoadGroups:
 
     def test_basic(self):
         df = pd.DataFrame(
@@ -166,8 +141,7 @@ class TestGroupsLoader:
                 "Group": ["G1", "G2", "G3"],
             }
         )
-        loader = di.GroupsLoader()
-        result = loader.load(df)
+        result = di.load_groups(df)
         expected = pd.Series(
             ["G1", "G2", "G3"],
             index=pd.Index(["S1", "S2", "S3"], name="Sample"),
@@ -184,9 +158,8 @@ class TestGroupsLoader:
                 "Extra": [1, 2, 3],
             }
         )
-        loader = di.GroupsLoader()
         with pytest.raises(DataInputError):
-            loader.load(df)
+            di.load_groups(df)
 
     def test_missing_sample_col(self):
         df = pd.DataFrame(
@@ -194,9 +167,8 @@ class TestGroupsLoader:
                 "Group": ["G1", "G2", "G3"],
             }
         )
-        loader = di.GroupsLoader()
         with pytest.raises(DataInputError):
-            loader.load(df)
+            di.load_groups(df)
 
     def test_missing_group_col(self):
         df = pd.DataFrame(
@@ -204,9 +176,8 @@ class TestGroupsLoader:
                 "Sample": ["S1", "S2", "S3"],
             }
         )
-        loader = di.GroupsLoader()
         with pytest.raises(DataInputError):
-            loader.load(df)
+            di.load_groups(df)
 
     def test_duplicate_samples(self):
         df = pd.DataFrame(
@@ -215,23 +186,11 @@ class TestGroupsLoader:
                 "Group": ["G1", "G2", "G3"],
             }
         )
-        loader = di.GroupsLoader()
         with pytest.raises(DataInputError):
-            loader.load(df)
+            di.load_groups(df)
 
 
-class TestGlycanLoader:
-
-    @pytest.mark.parametrize(
-        "mode, expected",
-        [
-            ("structure", parse_structures),
-            ("composition", parse_compositions),
-        ],
-    )
-    def test_glycan_parser_factory(self, mode, expected):
-        result = di.GlycanLoader._glycan_parser_factory(mode)
-        assert result == expected
+class TestLoadGlycans:
 
     def test_basic(self):
         df = pd.DataFrame(
@@ -240,10 +199,9 @@ class TestGlycanLoader:
                 "Structure": ["A", "B", "C"],
             }
         )
-        loader = di.GlycanLoader(
-            mode="structure", parser=lambda x: {k: v for k, v in x}
+        result = di.load_glycans(
+            df, mode="structure", parser=lambda x: {k: v for k, v in x}
         )
-        result = loader.load(df)
         expected = {"G1": "A", "G2": "B", "G3": "C"}
         assert result == expected
 
