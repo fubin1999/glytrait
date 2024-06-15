@@ -285,21 +285,21 @@ class TestSameSamplesInAbundanceAndGroups:
         assert msg2 in str(excinfo.value)
 
 
-class TestAllGlycansHaveStructuresOrComposition:
+def make_abund_df(glycans: list[str]) -> pd.DataFrame:
+    """Helper function to create a simple abundance table with given glycan names."""
+    return pd.DataFrame({glycan: [1] for glycan in glycans}, index=["sample1"])
 
-    @staticmethod
-    def make_abund_df(glycans: list[str]) -> pd.DataFrame:
-        """Helper function to create a simple abundance table with given glycan names."""
-        return pd.DataFrame({glycan: [1] for glycan in glycans}, index=["sample1"])
+
+class TestAllGlycansHaveStructuresOrComposition:
 
     def test_all_have_structures(self):
         glycans = {"G1": "glycan1", "G2": "glycan2"}
-        abund_df = self.make_abund_df(glycans.keys())
+        abund_df = make_abund_df(glycans.keys())
         di.check_all_glycans_have_struct_or_comp(abund_df, glycans)
 
     def test_missing_structures(self):
         glycans = {"G1": "glycan1"}
-        abund_df = self.make_abund_df(["G1", "G2"])
+        abund_df = make_abund_df(["G1", "G2"])
         with pytest.raises(DataInputError) as excinfo:
             di.check_all_glycans_have_struct_or_comp(abund_df, glycans)
         msg = (
@@ -310,8 +310,40 @@ class TestAllGlycansHaveStructuresOrComposition:
 
     def test_glycans_in_structures_not_in_abundance(self):
         glycans = {"G1": "glycan1", "G2": "glycan2"}
-        abund_df = self.make_abund_df(["G1"])
+        abund_df = make_abund_df(["G1"])
         di.check_all_glycans_have_struct_or_comp(abund_df, glycans)
+
+
+def make_mp_df(glycans: list[str]) -> pd.DataFrame:
+    """Helper function to create a simple mp table with the given glycans names."""
+    return pd.DataFrame(
+        {
+            "MP1": [1] * len(glycans),
+            "MP2": ["a"] * len(glycans)
+        },
+        index=pd.Index(glycans, name="GlycanID")
+    )
+
+
+class TestAllGlycansHaveMP:
+
+    def test_all_have_structures(self):
+        abund_df = make_abund_df(["G1", "G2"])
+        mp_df = make_mp_df(["G1", "G2"])
+        di.check_all_glycans_have_mp(abund_df, mp_df)
+
+    def test_missing_structures(self):
+        abund_df = make_abund_df(["G1", "G2"])
+        mp_df = make_mp_df(["G1"])
+        with pytest.raises(DataInputError) as excinfo:
+            di.check_all_glycans_have_mp(abund_df, mp_df)
+        msg = "The following glycans in the abundance table do not have meta properties: G2."
+        assert msg in str(excinfo.value)
+
+    def test_glycans_in_structures_not_in_abundance(self):
+        abund_df = make_abund_df(["G1"])
+        mp_df = make_mp_df(["G1", "G2"])
+        di.check_all_glycans_have_mp(abund_df, mp_df)
 
 
 class TestGlyTraitInputData:

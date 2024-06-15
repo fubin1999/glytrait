@@ -268,7 +268,7 @@ def check_all_glycans_have_struct_or_comp(
 ) -> None:
     """Check if all glycans in the abundance table have structures or compositions.
 
-    Glycans in the structure or composition dict that are not in the abundance table
+    Glycans in the structure or composition dict but not in the abundance table
     are not checked.
 
     Args:
@@ -285,6 +285,28 @@ def check_all_glycans_have_struct_or_comp(
         msg = (
             f"The following glycans in the abundance table do not have structures or "
             f"compositions: {', '.join(diff)}."
+        )
+        raise DataInputError(msg)
+
+
+def check_all_glycans_have_mp(abundance_df: pd.DataFrame, mp_table: MetaPropertyTable) -> None:
+    """Check if all glycans in the abundance table have meta-properties.
+
+    Glycans in the MP table but not in the abundance table are not handled.
+
+    Args:
+        abundance_df: Abundance table as a DataFrame.
+        mp_table: The meta-property table as a DataFrame.
+
+    Raises:
+        DataInputError: If any glycans are missing in the MP table.
+    """
+    abund_glycans = set(abundance_df.columns)
+    mp_glycans = set(mp_table.index)
+    if diff := abund_glycans - mp_glycans:
+        msg = (
+            f"The following glycans in the abundance table do not have "
+            f"meta properties: {', '.join(diff)}."
         )
         raise DataInputError(msg)
 
