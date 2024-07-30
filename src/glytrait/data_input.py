@@ -25,9 +25,15 @@ from glytrait.exception import DataInputError
 from glytrait.glycan import parse_structures, parse_compositions, Structure, Composition
 
 __all__ = [
-    "load_data",
-    "GlyTraitInputData",
+    "load_abundance",
+    "load_groups",
+    "load_glycans",
+    "load_meta_property",
+    "check_all_glycans_have_mp",
+    "check_all_glycans_have_struct_or_comp",
+    "check_same_samples_in_abund_and_groups"
 ]
+
 
 GlycanDict = dict[str, Structure] | dict[str, Composition]
 
@@ -160,76 +166,6 @@ def load_meta_property(df: pd.DataFrame) -> MetaPropertyTable:
     return MetaPropertyTable(df.set_index("GlycanID"))
 
 
-# ===== Input data =====
-@define(kw_only=True)
-class GlyTraitInputData:
-    """GlyTrait input data.
-
-    Attributes:
-        abundance_table: Abundance table as a pandas DataFrame.
-        glycans: Glycans, either a dict of `Structure` objects or
-            a dict of `Composition` objects.
-        groups: Sample groups as a pandas Series.
-
-    Notes:
-        The glycan dict should have the same keys as the abundance table.
-        The samples in the abundance table should have the same names as the
-        samples in the groups.
-
-        Accessing the attributes will return a copy of the data.
-        This prevents the original data from being modified in place,
-        which will bypass the validation checks.
-        If you need to modify the data, you should set the attributes
-        with the new data.
-
-    Raises:
-        DataInputError: If the abundance table has different samples as the groups,
-            or if the glycan dict has different glycans as the abundance table.
-    """
-
-    _abundance_table: AbundanceTable
-    _glycans: GlycanDict
-    _groups: Optional[GroupSeries] = None
-
-    def __attrs_post_init__(self):
-        if self._groups is not None:
-            check_same_samples_in_abund_and_groups(self._abundance_table, self._groups)
-        check_all_glycans_have_struct_or_comp(self._abundance_table, self._glycans)
-
-    @property
-    def abundance_table(self) -> AbundanceTable:
-        """The abundance table as a pandas DataFrame."""
-        return AbundanceTable(self._abundance_table.copy())
-
-    @abundance_table.setter
-    def abundance_table(self, value: pd.DataFrame) -> None:
-        if self._groups is not None:
-            check_same_samples_in_abund_and_groups(value, self._groups)
-        check_all_glycans_have_struct_or_comp(value, self._glycans)
-        self._abundance_table = AbundanceTable(value)
-
-    @property
-    def glycans(self) -> GlycanDict:
-        """The glycans as a dict of `Structure` or `Composition` objects."""
-        return self._glycans.copy()
-
-    @glycans.setter
-    def glycans(self, value: GlycanDict) -> None:
-        check_all_glycans_have_struct_or_comp(self._abundance_table, value)
-        self._glycans = value
-
-    @property
-    def groups(self) -> GroupSeries | None:
-        """The sample groups as a pandas Series."""
-        return GroupSeries(self._groups.copy()) if self._groups is not None else None
-
-    @groups.setter
-    def groups(self, value: pd.Series | None) -> None:
-        if value is not None:
-            check_same_samples_in_abund_and_groups(self._abundance_table, value)
-        self._groups = GroupSeries(value) if value is not None else None
-
-
 def check_same_samples_in_abund_and_groups(
     abundance_df: pd.DataFrame,
     groups: pd.Series,
@@ -309,36 +245,3 @@ def check_all_glycans_have_mp(abundance_df: pd.DataFrame, mp_table: MetaProperty
             f"meta properties: {', '.join(diff)}."
         )
         raise DataInputError(msg)
-
-
-def load_data(
-    abundance_df: pd.DataFrame,
-    glycan_df: pd.DataFrame,
-    group_df: Optional[pd.DataFrame] = None,
-    *,
-    mode: Literal["structure", "composition"] = "structure",
-) -> GlyTraitInputData:
-    """Load all the input data for GlyTrait.
-
-    Args:
-        abundance_df: Abundance table as a pandas DataFrame.
-        glycan_df: Glycan structures or compositions as a pandas DataFrame.
-        group_df: Sample groups as a pandas DataFrame. Optional.
-        mode: Mode of the glycan data, either "structure" or "composition".
-
-    Returns:
-        A `GlyTraitInputData` object.
-
-    Raises:
-        DataInputError: If the input data is not valid.
-    """
-    abundance_table = load_abundance(abundance_df)
-    glycans = load_glycans(glycan_df, mode=mode)
-    groups = load_groups(group_df) if group_df is not None else None
-
-    input_data = GlyTraitInputData(
-        abundance_table=abundance_table,
-        glycans=glycans,
-        groups=groups,
-    )
-    return input_data

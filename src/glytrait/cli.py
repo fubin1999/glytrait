@@ -275,7 +275,7 @@ def _process_exp(
 
     if config.filter:
         exp.post_filter(config.corr_threshold)
-        if exp.input_data.groups is not None:
+        if exp.groups is not None:
             exp.diff_analysis()
 
 

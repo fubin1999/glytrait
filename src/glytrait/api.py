@@ -1,3 +1,4 @@
+import warnings
 from collections import defaultdict
 from collections.abc import Iterable
 from functools import wraps
@@ -14,7 +15,13 @@ from glytrait.data_type import (
 )
 from glytrait.exception import GlyTraitError
 from glytrait.formula import load_default_formulas, TraitFormula, parse_formulas
-from glytrait.data_input import GlyTraitInputData, load_data
+from glytrait.data_input import (
+    load_glycans,
+    load_groups,
+    load_abundance,
+    check_all_glycans_have_struct_or_comp,
+    check_same_samples_in_abund_and_groups,
+)
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
 from glytrait.preprocessing import preprocess
@@ -102,6 +109,10 @@ class _Workflow:
         for key in self._all_steps[self._all_steps.index(step_name) + 1 :]:
             for data_key in self._data_dict[key]:
                 self._data.pop(data_key, None)
+
+    def has_data(self, data_name: str) -> bool:
+        """Return if the data exists."""
+        return data_name in self._data
 
     def get_data(self, data_name: str) -> Any:
         """Get the data by name."""
@@ -266,78 +277,68 @@ class Experiment(_Workflow):
         "diff_analysis": ["diff_results"],
     }
 
-    abundance_file: Optional[str] = field(default=None, kw_only=True, repr=False)
+    abundance_file: Optional[str] = field(repr=False)
     glycan_file: Optional[str] = field(default=None, kw_only=True, repr=False)
     group_file: Optional[str] = field(default=None, kw_only=True, repr=False)
-    input_data: GlyTraitInputData = field(default=None, kw_only=True)
     mode: Literal["structure", "composition"] = field(default="structure", kw_only=True)
     sia_linkage: bool = field(default=False, kw_only=True)
 
     def __attrs_post_init__(self):
-        if self.abundance_file is None and self.glycan_file is None:
-            if self.input_data is None:
-                msg = "Either `input_data` or `abundance_file` and `glycan_file` are required."
-                raise ValueError(msg)
-        if self.abundance_file and self.glycan_file is None:
-            raise ValueError(
-                "`glycan_file` is required if `abundance_file` is provided."
-            )
-        if self.abundance_file is None and self.glycan_file:
-            raise ValueError(
-                "`abundance_file` is required if `glycan_file` is provided."
-            )
-        if self.input_data and (self.abundance_file or self.glycan_file):
-            raise ValueError("Do not provide both `input_data` and files.")
-
         abundance_type = defaultdict(lambda: "float64")
         abundance_type.update({"Sample": "O"})
-        if self.input_data is None:
-            self.input_data = load_data(
-                abundance_df=pd.read_csv(self.abundance_file, dtype=abundance_type),
-                glycan_df=pd.read_csv(self.glycan_file),
-                group_df=pd.read_csv(self.group_file) if self.group_file else None,
-                mode=self.mode,
-            )
+        abund_df = load_abundance(pd.read_csv(self.abundance_file, dtype=abundance_type))
+        self._data["abundance_table"] = abund_df
+
+        if self.glycan_file:
+            glycans = load_glycans(pd.read_csv(self.glycan_file), mode=self.mode)
+            check_all_glycans_have_struct_or_comp(abund_df, glycans)
+            self._data["glycans"] = glycans
+        if self.group_file:
+            groups = load_groups(pd.read_csv(self.group_file))
+            check_same_samples_in_abund_and_groups(abund_df, groups)
+            self._data["groups"] = groups
 
     @property
     def abundance_table(self) -> pd.DataFrame:
         """The original abundance table."""
-        return self.input_data.abundance_table
-
-    @abundance_table.setter
-    def abundance_table(self, value: pd.DataFrame) -> None:
-        self.input_data.abundance_table = value  # type: ignore
-        self.reset()
+        return self.get_data("abundance_table")
 
     @property
     def glycans(self) -> GlycanDict:
         """The glycans."""
-        return self.input_data.glycans
-
-    @glycans.setter
-    def glycans(self, value: GlycanDict) -> None:
-        self.input_data.glycans = value
-        self.reset()
-
-    @property
-    def groups(self) -> GroupSeries | None:
-        """The groups."""
-        return self.input_data.groups
-
-    @groups.setter
-    def groups(self, value: pd.Series | None) -> None:
-        self.input_data.groups = value  # type: ignore
-        self.reset()
-
-    @property
-    def processed_abundance_table(self) -> AbundanceTable:
-        """The processed abundance table."""
-        return self.get_data("processed_abundance_table")
+        try:
+            return self.get_data("glycans")
+        except KeyError as e:
+            if self.has_data("meta_property_table"):
+                msg = (
+                    "Glycan structures or compositions not provided. "
+                    "However, a 'meta_property_table' is available."
+                )
+                raise KeyError(msg) from e
 
     @property
     def meta_property_table(self) -> MetaPropertyTable:
         """The meta property table."""
         return self.get_data("meta_property_table")
+
+    @property
+    def groups(self) -> GroupSeries | None:
+        """The groups."""
+        try:
+            return self.get_data("groups")
+        except KeyError:
+            return None
+
+    @groups.setter
+    def groups(self, value: pd.Series | None) -> None:
+        if value is not None:
+            check_same_samples_in_abund_and_groups(self.abundance_table, value)
+        self._data["groups"] = value
+
+    @property
+    def processed_abundance_table(self) -> AbundanceTable:
+        """The processed abundance table."""
+        return self.get_data("processed_abundance_table")
 
     @property
     def derived_trait_table(self) -> DerivedTraitTable:
@@ -382,7 +383,7 @@ class Experiment(_Workflow):
                 Default: "zero".
         """
         processed = preprocess(
-            data=self.input_data.abundance_table,
+            data=self.abundance_table,
             filter_max_na=filter_max_na,
             impute_method=impute_method,
         )
@@ -400,7 +401,7 @@ class Experiment(_Workflow):
         Calling this method will make the `meta_property_table` attribute available.
         """
         glycans: list[str] = processed_abund_df.columns.tolist()
-        glycan_dict = cast(GlycanDict, {g: self.input_data.glycans[g] for g in glycans})
+        glycan_dict = cast(GlycanDict, {g: self.glycans[g] for g in glycans})
         mp_table = build_meta_property_table(glycan_dict, self.mode, self.sia_linkage)
         return mp_table
 
@@ -457,7 +458,7 @@ class Experiment(_Workflow):
 
         Calling this method will make the `diff_results` attribute available.
         """
-        groups = self.input_data.groups
+        groups = self.groups
         trait_table = self.filtered_derived_trait_table
         if groups is None:
             raise MissingDataError(
@@ -506,7 +507,7 @@ class Experiment(_Workflow):
         self.preprocess(filter_max_na, impute_method)
         self.derive_traits(formulas)
         self.post_filter(corr_threshold)
-        if self.input_data.groups is not None:
+        if self.groups is not None:
             self.diff_analysis()
 
     def try_formulas(

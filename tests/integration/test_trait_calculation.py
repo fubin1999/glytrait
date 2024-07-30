@@ -1,6 +1,6 @@
 import pandas as pd
 
-from glytrait import Experiment, load_data
+from glytrait import Experiment
 
 from .. import glycoct as ct
 
@@ -68,9 +68,13 @@ abundance_df = pd.DataFrame(
 )
 
 
-def test_calculate_traits():
-    input_data = load_data(abundance_df=abundance_df, glycan_df=glycan_df)
-    experiment = Experiment(input_data=input_data)
+def test_calculate_traits(tmp_path):
+    abundance_df.to_csv(tmp_path / "abundance.csv", index=False)
+    glycan_df.to_csv(tmp_path / "glycans.csv", index=False)
+    experiment = Experiment(
+        abundance_file=str(tmp_path / "abundance.csv"),
+        glycan_file=str(tmp_path / "glycans.csv"),
+    )
     experiment.preprocess()
 
     expressions = [

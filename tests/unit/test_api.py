@@ -164,126 +164,60 @@ class TestExperiment:
             name="Group",
         )
 
+    # The `Experiment` api needs files to be passed in as arguments.
+    # So, the following fixtures store the data in files and return the file paths.
     @pytest.fixture
-    def input_data(self, abundance_table, glycans, groups):
-        return FakeInputData(
-            abundance_table=abundance_table, glycans=glycans, groups=groups
-        )
+    def abundance_file(self, abundance_table, tmp_path):
+        file_path = tmp_path / "abundance.csv"
+        abundance_table.to_csv(file_path)
+        return str(file_path)
 
     @pytest.fixture
-    def exp(self, mocker, input_data):
+    def glycans_file(self, glycans, tmp_path):
+        file_path = tmp_path / "glycans.csv"
+        pd.DataFrame(glycans.items(), columns=["GlycanID", "Structure"]).to_csv(file_path)
+        return str(file_path)
+
+    @pytest.fixture
+    def groups_file(self, groups, tmp_path):
+        file_path = tmp_path / "groups.csv"
+        groups.reset_index().to_csv(file_path)
+        return str(file_path)
+
+    @pytest.fixture
+    def exp(self, mocker, abundance_file, groups_file, glycans_file, glycans):
         mocker.patch("glytrait.api.Experiment.reset")
-        return api.Experiment(input_data=input_data)
-
-    def test_init_with_input_data(self, input_data):
-        exp = api.Experiment(input_data=input_data)
-        assert exp.abundance_table.equals(input_data.abundance_table)
-        assert exp.glycans == input_data.glycans
-        assert exp.groups.equals(input_data.groups)
-
-    def test_init_with_files(self, abundance_table, glycans, groups, tmp_path, mocker):
-        abundance_file = tmp_path / "abundance.csv"
-        glycans_file = tmp_path / "glycans.csv"
-        groups_file = tmp_path / "groups.csv"
-
-        abund_df = abundance_table.reset_index()
-        glycan_df = pd.DataFrame(glycans.items(), columns=["GlycanID", "Structure"])
-        group_df = groups.reset_index()
-
-        abund_df.to_csv(abundance_file, index=False)
-        glycan_df.to_csv(glycans_file, index=False)
-        group_df.to_csv(groups_file, index=False)
-
-        mocker.patch("glytrait.api.load_data", return_value="data")
-
+        mocker.patch("glytrait.api.load_glycans", return_value=glycans)
         exp = api.Experiment(
             abundance_file=abundance_file,
             glycan_file=glycans_file,
             group_file=groups_file,
-            mode="structure",
-            sia_linkage=False,
         )
-
-        called_args = api.load_data.call_args.kwargs
-        pd.testing.assert_frame_equal(called_args["abundance_df"], abund_df)
-        pd.testing.assert_frame_equal(called_args["glycan_df"], glycan_df)
-        pd.testing.assert_frame_equal(called_args["group_df"], group_df)
-        assert called_args["mode"] == "structure"
-        assert exp.input_data == "data"
-
-    def test_init_both_file_and_data(self):
-        with pytest.raises(ValueError):
-            api.Experiment(abundance_file="path", input_data="data")
-
-        with pytest.raises(ValueError):
-            api.Experiment(glycan_file="path", input_data="data")
-
-        with pytest.raises(ValueError):
-            api.Experiment(abundance_file="path", glycan_file="path", input_data="data")
-
-    def test_init_with_no_file_and_no_data(self):
-        with pytest.raises(ValueError):
-            api.Experiment()
-
-    def test_init_with_abundance_file_but_no_glycan_file(self):
-        with pytest.raises(ValueError):
-            api.Experiment(abundance_file="path")
-
-    def test_init_with_glycan_file_but_no_abundance_file(self):
-        with pytest.raises(ValueError):
-            api.Experiment(glycan_file="path")
+        return exp
 
     def test_abundance_table_getter(self, exp, abundance_table):
         assert exp.abundance_table.equals(abundance_table)
 
-    def test_abundance_table_setter(self, exp):
-        exp.abundance_table = pd.DataFrame()
-        assert exp.abundance_table.empty
-        exp.reset.assert_called_once()
-
     def test_glycans_getter(self, exp, glycans):
         assert exp.glycans == glycans
-
-    def test_glycans_setter(self, exp):
-        exp.glycans = {}
-        assert exp.glycans == {}
-        exp.reset.assert_called_once()
 
     def test_groups_getter(self, exp, groups):
         assert exp.groups.equals(groups)
 
-    def test_groups_setter(self, exp):
-        exp.groups = pd.Series()
-        assert exp.groups.empty
-        exp.reset.assert_called_once()
-
     @pytest.mark.parametrize("filter", [0.0, 1.0])
     @pytest.mark.parametrize("impute_method", ["zero", "min"])
     def test_preprocess(
-        self, mocker, input_data, abundance_table, filter, impute_method
+        self, mocker, monkeypatch, abundance_table, filter, impute_method, exp
     ):
-        mocker.patch("glytrait.api.preprocess", return_value="result")
-        mocker.patch(
-            "glytrait.api.Experiment._extract_meta_properties", return_value="mp_table"
-        )
-        exp = api.Experiment(input_data=input_data)
+        mocker.patch("glytrait.api.build_meta_property_table", return_value="mp_table")
+        mocker.patch("glytrait.api.preprocess", return_value=abundance_table + 1)
         exp.preprocess(filter, impute_method)
-        assert exp.processed_abundance_table == "result"
+        assert exp.processed_abundance_table.equals(abundance_table + 1)
         assert exp.meta_property_table == "mp_table"
         called_args = api.preprocess.call_args.kwargs
         assert called_args["data"].equals(abundance_table)
         assert called_args["filter_max_na"] == filter
         assert called_args["impute_method"] == impute_method
-
-    def test_extract_meta_properties(self, mocker, input_data, abundance_table):
-        mocker.patch("glytrait.api.build_meta_property_table", return_value="result")
-        input_data.glycans["G4"] = "Glycan4"
-        exp = api.Experiment(input_data=input_data)
-        result = exp._extract_meta_properties(abundance_table)
-        assert result == "result"
-        api.build_meta_property_table.assert_called_once_with(
-            {"G1": "Glycan1", "G2": "Glycan2", "G3": "Glycan3"}, "structure", False
-        )
 
     @pytest.fixture
     def patch_for_derive_traits(self, mocker):
@@ -350,7 +284,7 @@ class TestExperiment:
 
     @pytest.mark.usefixtures("patch_for_diff_analysis")
     def test_diff_analysis_no_group(self, exp_for_diff_analysis):
-        exp_for_diff_analysis.input_data.groups = None
+        exp_for_diff_analysis.groups = None
         with pytest.raises(api.MissingDataError):
             exp_for_diff_analysis.diff_analysis()
 
@@ -368,8 +302,7 @@ class TestExperiment:
         mocker.patch("glytrait.api.Experiment.diff_analysis")
 
     @pytest.mark.usefixtures("patch_for_run_workflow")
-    def test_run_workflow_with_groups_no_args(self, input_data):
-        exp = api.Experiment(input_data=input_data)
+    def test_run_workflow_with_groups_no_args(self, exp):
         exp.run_workflow()
 
         exp.preprocess.assert_called_once_with(1.0, "zero")
@@ -378,8 +311,7 @@ class TestExperiment:
         exp.diff_analysis.assert_called_once()
 
     @pytest.mark.usefixtures("patch_for_run_workflow")
-    def test_run_workflow_with_args(self, input_data):
-        exp = api.Experiment(input_data=input_data)
+    def test_run_workflow_with_args(self, exp):
         exp.run_workflow(
             filter_max_na=0.5,
             impute_method="min",
@@ -393,9 +325,8 @@ class TestExperiment:
         exp.diff_analysis.assert_called_once()
 
     @pytest.mark.usefixtures("patch_for_run_workflow")
-    def test_run_workflow_without_groups(self, input_data):
-        input_data.groups = None
-        exp = api.Experiment(input_data=input_data)
+    def test_run_workflow_without_groups(self, exp):
+        exp.groups = None
         exp.run_workflow()
 
         exp.preprocess.assert_called_once_with(1.0, "zero")
