@@ -286,7 +286,9 @@ class Experiment(_Workflow):
     def __attrs_post_init__(self):
         abundance_type = defaultdict(lambda: "float64")
         abundance_type.update({"Sample": "O"})
-        abund_df = load_abundance(pd.read_csv(self.abundance_file, dtype=abundance_type))
+        abund_df = load_abundance(
+            pd.read_csv(self.abundance_file, dtype=abundance_type)
+        )
         self._data["abundance_table"] = abund_df
 
         if self.glycan_file:

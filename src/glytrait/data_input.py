@@ -31,7 +31,7 @@ __all__ = [
     "load_meta_property",
     "check_all_glycans_have_mp",
     "check_all_glycans_have_struct_or_comp",
-    "check_same_samples_in_abund_and_groups"
+    "check_same_samples_in_abund_and_groups",
 ]
 
 
@@ -158,9 +158,7 @@ def load_glycans(
 def load_meta_property(df: pd.DataFrame) -> MetaPropertyTable:
     """Load meta-property table from a DataFrame."""
     validator = DFValidator(
-        must_have=["GlycanID"],
-        unique=["GlycanID"],
-        types={"GlycanID": "object"}
+        must_have=["GlycanID"], unique=["GlycanID"], types={"GlycanID": "object"}
     )
     validator(df)
     return MetaPropertyTable(df.set_index("GlycanID"))
@@ -225,7 +223,9 @@ def check_all_glycans_have_struct_or_comp(
         raise DataInputError(msg)
 
 
-def check_all_glycans_have_mp(abundance_df: pd.DataFrame, mp_table: MetaPropertyTable) -> None:
+def check_all_glycans_have_mp(
+    abundance_df: pd.DataFrame, mp_table: MetaPropertyTable
+) -> None:
     """Check if all glycans in the abundance table have meta-properties.
 
     Glycans in the MP table but not in the abundance table are not handled.

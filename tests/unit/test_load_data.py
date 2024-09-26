@@ -222,7 +222,7 @@ class TestLoadMetaProperties:
                 "MP1": [1, 2, 3],
                 "MP2": ["A", "B", "A"],
             },
-            index=pd.Index(["G1", "G2", "G3"], name="GlycanID")
+            index=pd.Index(["G1", "G2", "G3"], name="GlycanID"),
         )
         pd.testing.assert_frame_equal(result, expected)
 
@@ -317,11 +317,8 @@ class TestAllGlycansHaveStructuresOrComposition:
 def make_mp_df(glycans: list[str]) -> pd.DataFrame:
     """Helper function to create a simple mp table with the given glycans names."""
     return pd.DataFrame(
-        {
-            "MP1": [1] * len(glycans),
-            "MP2": ["a"] * len(glycans)
-        },
-        index=pd.Index(glycans, name="GlycanID")
+        {"MP1": [1] * len(glycans), "MP2": ["a"] * len(glycans)},
+        index=pd.Index(glycans, name="GlycanID"),
     )
 
 

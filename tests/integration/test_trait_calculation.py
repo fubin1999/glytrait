@@ -87,13 +87,24 @@ def test_calculate_traits(tmp_path):
     ad = abundance_df
     expected = pd.DataFrame(
         {
-            "CS": ((ad["H5N4S2"] * 2 + ad["H5N5F1S1"] + ad["H6N6F1S1"] + ad["H4N4F3S1"]) /
-                   (ad["H5N4S2"] + ad["H5N5F1S1"] + ad["H6N6F1S1"] + ad["H4N4F3S1"])).values,
-            "CGS": ((ad["H5N4S2"] + ad["H5N5F1S1"] / 2 + ad["H6N6F1S1"] / 3 + ad["H4N4F3S1"]) /
-                    (ad["H5N4S2"] + ad["H5N5F1S1"] + ad["H6N6F1S1"] + ad["H4N4F3S1"])).values,
-            "A2Fc": ((ad["H5N5F1S1"] + ad["H4N4F3S1"]) /
-                     (ad["H5N5F1S1"] + ad["H4N4F3S1"] + ad["H5N4S2"])).values,
+            "CS": (
+                (ad["H5N4S2"] * 2 + ad["H5N5F1S1"] + ad["H6N6F1S1"] + ad["H4N4F3S1"])
+                / (ad["H5N4S2"] + ad["H5N5F1S1"] + ad["H6N6F1S1"] + ad["H4N4F3S1"])
+            ).values,
+            "CGS": (
+                (
+                    ad["H5N4S2"]
+                    + ad["H5N5F1S1"] / 2
+                    + ad["H6N6F1S1"] / 3
+                    + ad["H4N4F3S1"]
+                )
+                / (ad["H5N4S2"] + ad["H5N5F1S1"] + ad["H6N6F1S1"] + ad["H4N4F3S1"])
+            ).values,
+            "A2Fc": (
+                (ad["H5N5F1S1"] + ad["H4N4F3S1"])
+                / (ad["H5N5F1S1"] + ad["H4N4F3S1"] + ad["H5N4S2"])
+            ).values,
         },
-        index=pd.Index(["S1", "S2", "S3", "S4", "S5"], name="Sample")
+        index=pd.Index(["S1", "S2", "S3", "S4", "S5"], name="Sample"),
     )
     pd.testing.assert_frame_equal(result, expected)

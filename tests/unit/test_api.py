@@ -175,7 +175,9 @@ class TestExperiment:
     @pytest.fixture
     def glycans_file(self, glycans, tmp_path):
         file_path = tmp_path / "glycans.csv"
-        pd.DataFrame(glycans.items(), columns=["GlycanID", "Structure"]).to_csv(file_path)
+        pd.DataFrame(glycans.items(), columns=["GlycanID", "Structure"]).to_csv(
+            file_path
+        )
         return str(file_path)
 
     @pytest.fixture
