@@ -1,4 +1,3 @@
-import warnings
 from collections import defaultdict
 from collections.abc import Iterable
 from functools import wraps
@@ -301,7 +300,7 @@ class Experiment(_Workflow):
             self._data["groups"] = groups
 
     @property
-    def abundance_table(self) -> pd.DataFrame:
+    def abundance_table(self) -> AbundanceTable:
         """The original abundance table."""
         return self.get_data("abundance_table")
 
@@ -317,6 +316,8 @@ class Experiment(_Workflow):
                     "However, a 'meta_property_table' is available."
                 )
                 raise KeyError(msg) from e
+            else:
+                raise e
 
     @property
     def meta_property_table(self) -> MetaPropertyTable:
