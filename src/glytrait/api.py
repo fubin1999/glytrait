@@ -77,15 +77,10 @@ class Experiment:
     and normalize the abundance.
     Calling this method makes the `processed_abundance_table` attribute available.
 
-    Secondly, call the `extract_meta_properties` method to extract meta properties.
-    The result table is stored as the `meta_property_table` attribute.
-    Meta properties are properties of glycans that are used to calculate derived traits.
-    e.g. the number of sialic acids, the number of antennae, etc.
-
-    Thirdly, call the `derive_traits` method to calculate all the derived traits.
+    Secondly, call the `derive_traits` method to calculate all the derived traits.
     The result table is stored as the `derived_trait_table` attribute.
 
-    Fourthly, call the `post_filter` method
+    Thirdly, call the `post_filter` method
     to remove invalid traits and highly correlated traits.
     The result table is stored as the `filtered_derived_trait_table` attribute.
 
@@ -93,9 +88,15 @@ class Experiment:
     to perform differential analysis.
     The result is stored as the `diff_results` attribute.
 
+    Note that you could always re-run any workflow step to update the intermediate results
+    and clean up the following results.
+    For example, if you call `preprocess` after `derive_traits`,
+    the `processed_abundance_table` will be updated,
+    and the `derived_trait_table` will be cleared.
+    This is convenient when you want to try different parameters or formulas.
+
     This class also provides a method `try_formulas` to try new formula expressions.
-    First, call the `preprocess` and `extract_meta_properties` sequentially,
-    then call `try_formulas` with the formula expressions to try.
+    First, call the `preprocess`, then call `try_formulas` with the formula expressions to try.
     Instead of saving the result as an attribute,
     this method returns the result DataFrame or Series directly
     (depending on the number of formula expressions).
@@ -118,7 +119,8 @@ class Experiment:
         abundance_table: The original abundance table.
         groups: The group series. Available if `group_file` is provided.
         processed_abundance_table: The processed abundance table. Available after `preprocess`.
-        meta_property_table: The meta property table. Available after `extract_meta_properties`.
+        meta_property_table: The meta property table. Either provided or extracted from
+            `glycan_file`.
         derived_trait_table: The derived trait table. Available after `derive_traits`.
         filtered_derived_trait_table: The filtered derived trait table.
             Available after `post_filter`.
@@ -138,7 +140,6 @@ class Experiment:
 
         # Or run the workflow step by step
         >>> experiment.preprocess(filter_max_na=0.5, impute_method="min")
-        >>> experiment.extract_meta_properties()
         >>> experiment.derive_traits()  # with default formulas
         >>> experiment.post_filter(corr_threshold=0.9)
         >>> experiment.diff_analysis()
@@ -159,10 +160,9 @@ class Experiment:
 
     # The following attributes are generated during the workflow
     _abundance_table: AbundanceTable = field(init=False, default=None)
-    _glycans: GlycanDict = field(init=False, default=None)
     _groups: GroupSeries | None = field(init=False, default=None)
-    _processed_abundance_table: AbundanceTable = field(init=False, default=None)
     _meta_property_table: MetaPropertyTable = field(init=False, default=None)
+    _processed_abundance_table: AbundanceTable = field(init=False, default=None)
     _formulas: list[TraitFormula] = field(init=False, default=None)
     _derived_trait_table: DerivedTraitTable = field(init=False, default=None)
     _filtered_derived_trait_table: DerivedTraitTable = field(init=False, default=None)
@@ -178,12 +178,18 @@ class Experiment:
 
         glycans = load_glycans(pd.read_csv(self.glycan_file), mode=self.mode)
         check_all_glycans_have_struct_or_comp(abund_df, glycans)
-        self._glycans = glycans
+        self._meta_property_table = self._extract_meta_properties(glycans)
 
         if self.group_file:
             groups = load_groups(pd.read_csv(self.group_file))
             check_same_samples_in_abund_and_groups(abund_df, groups)
             self._groups = groups
+
+    def _extract_meta_properties(self, glycans: GlycanDict) -> MetaPropertyTable:
+        """Extract meta-properties from glycan structures or compositions."""
+        glycan_names: list[str] = self._abundance_table.columns.tolist()
+        glycan_dict = cast(GlycanDict, {g: glycans[g] for g in glycan_names})
+        return build_meta_property_table(glycan_dict, self.mode, self.sia_linkage)
 
     # ===== Properties of the data ===== START
     @property
@@ -283,21 +289,6 @@ class Experiment:
         self._clear_after("preprocess")
 
     # === STEP 2 ===
-    def extract_meta_properties(self) -> None:
-        """Extract meta-properties.
-
-        Calling this method will make the `meta_property_table` attribute available.
-        """
-        if self._processed_abundance_table is None:
-            raise InvalidOperationOrderError(
-                "Please call the `preprocess` method first."
-            )
-        self._meta_property_table = self._do_extract_meta_properties(
-            self._processed_abundance_table, self._glycans
-        )
-        self._clear_after("extract_meta_properties")
-
-    # === STEP 3 ===
     def derive_traits(self, formulas: Optional[list[TraitFormula]] = None) -> None:
         """Calculate derived traits.
 
@@ -320,7 +311,7 @@ class Experiment:
         )
         self._clear_after("derive_traits")
 
-    # === STEP 4 ===
+    # === STEP 3 ===
     def post_filter(self, corr_threshold: float = 1.0) -> None:
         """Post-filter the derived traits.
 
@@ -342,7 +333,7 @@ class Experiment:
         )
         self._clear_after("post_filter")
 
-    # === STEP 5 ===
+    # === STEP 4 ===
     def diff_analysis(self) -> None:
         """Perform differential analysis.
 
@@ -375,16 +366,6 @@ class Experiment:
             filter_max_na=filter_max_na,
             impute_method=impute_method,
         )
-
-    def _do_extract_meta_properties(
-        self,
-        processed_abundance: AbundanceTable,
-        glycans: GlycanDict,
-    ) -> MetaPropertyTable:
-        """Business logic for the extract_meta_properties method."""
-        glycan_names: list[str] = processed_abundance.columns.tolist()
-        glycan_dict = cast(GlycanDict, {g: glycans[g] for g in glycan_names})
-        return build_meta_property_table(glycan_dict, self.mode, self.sia_linkage)
 
     def _do_get_formulas(self, formulas: list[TraitFormula] | None):
         """Get the formulas to calculate the derived traits."""
@@ -432,7 +413,6 @@ class Experiment:
         # The values are the attributes generated by the methods
         method_outputs = {
             "preprocess": ["_processed_abundance_table"],
-            "extract_meta_properties": ["_meta_property_table"],
             "derive_traits": ["_formulas", "_derived_trait_table"],
             "post_filter": ["_filtered_derived_trait_table"],
             "diff_analysis": ["_diff_results"],
@@ -466,8 +446,7 @@ class Experiment:
     ) -> None:
         """Run the entire workflow.
 
-        Call `preprocess`, `extract_meta_properties`, `derive_traits`,
-        and `post_filter` sequentially.
+        Call `preprocess`, `derive_traits`, and `post_filter` sequentially.
         If group information is provided, call `diff_analysis` at the end.
 
         Args:
@@ -495,7 +474,6 @@ class Experiment:
                 Default: 1.0.
         """
         self.preprocess(filter_max_na, impute_method)
-        self.extract_meta_properties()
         self.derive_traits(formulas)
         self.post_filter(corr_threshold)
         if self.groups is not None:
@@ -525,7 +503,6 @@ class Experiment:
         Examples:
             >>> exp = Experiment(...)
             >>> exp.preprocess()
-            >>> exp.extract_meta_properties()
             >>> exp.try_formulas("TC = [type == 'complex'] / [1]")
             pd.Series(...)
             >>> exp.try_formulas(["TC = [type == 'complex'] / [1]", "TS = [nS > 0] / [1]"])

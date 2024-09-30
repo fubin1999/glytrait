@@ -266,7 +266,6 @@ def _process_exp(
     config: WorkflowConfig,
 ) -> None:
     exp.preprocess(config.filter_glycan_ratio, config.impute_method)
-    exp.extract_meta_properties()
 
     if formula_file:
         formulas = load_formulas_from_file(formula_file, config.sia_linkage)

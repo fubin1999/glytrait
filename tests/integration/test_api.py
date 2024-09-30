@@ -29,10 +29,6 @@ class TestExperiment:
         experiment.preprocess()
         assert isinstance(experiment.processed_abundance_table, pd.DataFrame)
 
-        # 2. Extract meta properties
-        experiment.extract_meta_properties()
-        assert isinstance(experiment.meta_property_table, pd.DataFrame)
-
         # 2. Derive traits
         experiment.derive_traits()
         assert isinstance(experiment.derived_trait_table, pd.DataFrame)

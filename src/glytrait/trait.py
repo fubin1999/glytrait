@@ -31,8 +31,10 @@ def calcu_derived_trait(
     # The meta-property table the formulas use for initialization must have
     # the same order of index as the abundance table's columns (glycans).
     # `TraitFormula.calcu_trait` will raise an assertion error if the orders
-    # of the glycans are different.
-    # # (See `TraitFormula`)
+    # of the glycans are different (see `TraitFormula`).
+    # Also, because preprocessing of the abundance table may delete glycans,
+    # the meta-property table has to be updated accordingly.
+    # The `reindex` method ensures these two demands.
     meta_prop_df_ordered = MetaPropertyTable(meta_prop_df.reindex(abund_df.columns))
     trait_series: list[pd.Series] = []
     for formula in formulas:

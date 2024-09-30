@@ -76,7 +76,6 @@ def test_calculate_traits(tmp_path):
         glycan_file=str(tmp_path / "glycans.csv"),
     )
     experiment.preprocess()
-    experiment.extract_meta_properties()
 
     expressions = [
         "CS = [nS] // [type == 'complex']",
