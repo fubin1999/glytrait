@@ -186,7 +186,7 @@ def check_same_samples_in_abund_and_groups(
         if samples_in_abund_not_in_groups:
             msg += (
                 f"The following samples are in the abundance table but not in the groups: "
-                f"{', '.join(samples_in_abund_not_in_groups)}. "
+                f"{', '.join(samples_in_abund_not_in_groups)}."
             )
         if samples_in_groups_not_in_abund:
             msg += (

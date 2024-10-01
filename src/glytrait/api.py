@@ -101,6 +101,12 @@ class Experiment:
     this method returns the result DataFrame or Series directly
     (depending on the number of formula expressions).
 
+    All intermediate or final result attributes (including "abundance_table", "groups",
+    "processed_abundance_table", "meta_property_table", "derived_trait_table",
+    "filtered_derived_trait_table", and "diff_results") are protected by the
+    class from being modified in that a copy will be returned.
+    See the Examples section for more details.
+
     Methods:
         preprocess: Preprocess the data.
         derive_traits: Calculate derived traits.
@@ -150,6 +156,12 @@ class Experiment:
 
         # Try new formulas
         >>> experiment.try_formulas("TC = [type == 'complex'] / [1]")
+
+        # Any final or intermediate results are copies.
+        >>> abundance_df = experiment.abundance_table
+        >>> abundance_df.drop(index=["S1", "S2"], inplace=True)
+        >>> abundance_df.equals(experiment.abundance_table)
+        False
     """
 
     abundance_file: Optional[str] = field(repr=False)
@@ -206,7 +218,7 @@ class Experiment:
     def meta_property_table(self) -> MetaPropertyTable:
         """The meta property table."""
         if self._meta_property_table is not None:
-            return MetaPropertyTable(self._meta_property_table)
+            return MetaPropertyTable(self._meta_property_table.copy())
         msg = (
             "Meta property table is not available. "
             "Please call the `preprocess` method first."
@@ -214,26 +226,26 @@ class Experiment:
         raise MissingDataError(msg)
 
     @property
-    def processed_abundance_table(self) -> AbundanceTable:
+    def processed_abundance_table(self) -> pd.DataFrame:
         """The processed abundance table."""
         if self._processed_abundance_table is not None:
-            return self._processed_abundance_table
+            return self._processed_abundance_table.copy()
         msg = "Please call the `preprocess` method first."
         raise MissingDataError(msg)
 
     @property
-    def derived_trait_table(self) -> DerivedTraitTable:
+    def derived_trait_table(self) -> pd.DataFrame:
         """The derived trait table."""
         if self._derived_trait_table is not None:
-            return self._derived_trait_table
+            return self._derived_trait_table.copy()
         msg = "Please call the `derive_traits` method to get derived traits table."
         raise MissingDataError(msg)
 
     @property
-    def filtered_derived_trait_table(self) -> DerivedTraitTable:
+    def filtered_derived_trait_table(self) -> pd.DataFrame:
         """The filtered derived trait table."""
         if self._filtered_derived_trait_table is not None:
-            return self._filtered_derived_trait_table
+            return self._filtered_derived_trait_table.copy()
         msg = "Please call the `post_filter` method first."
         raise MissingDataError(msg)
 
@@ -241,7 +253,7 @@ class Experiment:
     def diff_results(self) -> dict[str, pd.DataFrame]:
         """The differential analysis results."""
         if self._diff_results is not None:
-            return self._diff_results
+            return self._diff_results.copy()
         if self.groups is None:
             msg = (
                 "Grouping information is missing. Please create a new `Experiment` "
@@ -301,9 +313,6 @@ class Experiment:
         """
         if self._processed_abundance_table is None:
             msg = "Please call the `preprocess` method first."
-            raise InvalidOperationOrderError(msg)
-        if self._meta_property_table is None:
-            msg = "Please call the `extract_meta_properties` method first."
             raise InvalidOperationOrderError(msg)
         self._formulas = self._do_get_formulas(formulas)
         self._derived_trait_table = self._do_derive_traits(
@@ -522,8 +531,8 @@ class Experiment:
         formulas = parse_formulas(exprs)
 
         trait_table = calcu_derived_trait(
-            abund_df=self.processed_abundance_table,
-            meta_prop_df=self.meta_property_table,
+            abund_df=self._processed_abundance_table,
+            meta_prop_df=self._meta_property_table,
             formulas=formulas,
         )
 
