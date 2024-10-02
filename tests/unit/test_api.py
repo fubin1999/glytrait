@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 
-import glycoct as ct
+from .. import glycoct as ct
 
 from glytrait.api import Experiment, MissingDataError, InvalidOperationOrderError
 from glytrait.exception import DataInputError
