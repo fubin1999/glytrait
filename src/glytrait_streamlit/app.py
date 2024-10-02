@@ -7,12 +7,6 @@ from contextlib import contextmanager
 import pandas as pd
 import streamlit as st
 
-from glytrait.data_input import (
-    load_abundance,
-    load_glycans,
-    load_groups,
-    GlyTraitInputData,
-)
 from glytrait.exception import GlyTraitError
 from glytrait import Experiment
 
@@ -132,15 +126,6 @@ st.title("GlyTrait")
 
 
 # ========== I N P U T ==========
-def get_df_from_file(file, loader):
-    """Get a DataFrame from a file uploaded by the user."""
-    if file:
-        with capture_glytrait_error():
-            return loader(pd.read_csv(file))
-    else:
-        return None
-
-
 st.header("Input")
 st.write(INPUT_WELCOME)
 input_c = st.container()
@@ -157,7 +142,6 @@ with input_c.expander("File format instructions"):
         file_name="example_abundance.csv",
         mime="text/csv",
     )
-abundance_df = get_df_from_file(abundance_file, load_abundance)
 
 # Upload the structure (composition) file
 glycan_file = input_c.file_uploader("Glycan file", type="csv")
@@ -171,7 +155,6 @@ with input_c.expander("File format instructions"):
         file_name=f"example_{mode}.csv",
         mime="text/csv",
     )
-glycans = get_df_from_file(glycan_file, lambda df: load_glycans(df, mode=mode))
 
 # Upload the group file
 group_file = input_c.file_uploader("Group file", type="csv")
@@ -184,17 +167,9 @@ with input_c.expander("File format instructions"):
         file_name="example_groups.csv",
         mime="text/csv",
     )
-groups = get_df_from_file(group_file, load_groups)
 
-if abundance_df is None or glycans is None:
+if abundance_file is None or glycan_file is None:
     st.stop()
-
-with capture_glytrait_error():
-    input_data = GlyTraitInputData(
-        abundance_table=abundance_df,
-        glycans=glycans,
-        groups=groups,
-    )
 
 
 # ========== C O N F I G ==========
@@ -269,7 +244,13 @@ def prepare_zip(exp):
 st.markdown("---")
 if st.button("Run GlyTrait"):
     with st.spinner("Running..."):
-        exp = Experiment(input_data=input_data, mode=mode, sia_linkage=sia_linkage)
+        exp = Experiment(
+            abundance_file=abundance_file,
+            glycan_file=glycan_file,
+            group_file=group_file,
+            mode=mode,
+            sia_linkage=sia_linkage
+        )
         with capture_glytrait_error():
             exp.run_workflow(
                 filter_max_na=glycan_filter_threshold,
