@@ -3,6 +3,25 @@
 Currently, GlyTrait is in development and no stable version has been released yet. 
 The following is a list of changes that have been made to the project.
 
+## v2.0.0
+
+**Changed**:
+
+- `Experiment` class and CLI can accept a meta-property table instead of a 
+  glycan structure or composition file. 
+  This allows further cumstomization of the trait calculation.
+  To accommodate the change, the second argument of CLI ("glycan-file") is
+  now an option, and another "mp-file" option was added.
+  See README for details.
+
+**Removed**:
+
+- The `input_data` argument from `Experiment` was removed.
+- The `Experiment.extract_meta_properties` method was removed.
+  Meta-property table is extracted from glycan structures or compositions
+  automatically after `Experiment` initialization.
+- `load_data` and `GlyTraitInputData` were removed. 
+
 ## v0.1.7
 
 **Fixed:**
