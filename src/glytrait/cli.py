@@ -38,10 +38,15 @@ def save_builtin_formulas_callback(ctx, param, value):
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
     required=False,
 )
-@click.argument(
-    "glycan-file",
-    type=click.Path(exists=True, file_okay=True, dir_okay=True),
-    required=False,
+@click.option(
+    "--glycan-file",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    help="Glycan structure or composition file.",
+)
+@click.option(
+    "--mp-file",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    help="Meta-property file."
 )
 @click.option(
     "-g",
@@ -53,7 +58,7 @@ def save_builtin_formulas_callback(ctx, param, value):
     "-o",
     "--output-dir",
     type=click.Path(dir_okay=True, file_okay=False),
-    help="Output file path. Default is the input file name with '_glytrait.xlsx' "
+    help="Output directory path. Default is the input file name with '_glytrait' "
     "suffix.",
 )
 @click.option(
@@ -120,6 +125,7 @@ def save_builtin_formulas_callback(ctx, param, value):
 def cli(
     abundance_file,
     glycan_file,
+    mp_file,
     group_file,
     output_dir,
     mode,
@@ -151,6 +157,7 @@ def cli(
         _run_workflow(
             abundance_file,
             glycan_file,
+            mp_file,
             group_file,
             formula_file,
             config,
@@ -242,7 +249,8 @@ def _prepare_output(exp: Experiment) -> list[tuple[str, Any]]:
 
 def _run_workflow(
     abundance_file: str,
-    glycan_file: str,
+    glycan_file: str | None,
+    mp_file: str | None,
     group_file: str | None,
     formula_file: str | None,
     config: WorkflowConfig,
@@ -251,6 +259,7 @@ def _run_workflow(
     exp = Experiment(
         abundance_file=abundance_file,
         glycan_file=glycan_file,
+        meta_property_file=mp_file,
         group_file=group_file,
         sia_linkage=config.sia_linkage,
         mode=config.mode,
