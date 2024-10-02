@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "glytrait"
-version = "0.1.7"
+version = "0.2.0"
 description = "A tool for calculating derived traits for N-glycome"
 authors = ["fubin1999 <65430559+fubin1999@users.noreply.github.com>"]
 readme = "README.md"
@@ -29,8 +29,6 @@ optional = true
 
 [tool.poetry.group.streamlit.dependencies]
 streamlit = "^1.25.0"
-plotly = "^5.16.0"
-dash-bio = "^1.0.2"
 watchdog = "^4.0.0"
 
 [tool.poetry.group.dev.dependencies]
