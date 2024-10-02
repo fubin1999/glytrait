@@ -44,6 +44,20 @@ class TestExperiment:
         return file
 
     @pytest.fixture
+    def mp_file(self, clean_dir):
+        """A temporary file of a meta-property table."""
+        df = pd.DataFrame(
+            {
+                "GlycanID": ["G1", "G2", "G3"],
+                "nF": [1, 1, 0],
+                "nS": [2, 0, 1],
+            }
+        )
+        file = str(clean_dir / "meta_properties.csv")
+        df.to_csv(file, index=False)
+        return file
+
+    @pytest.fixture
     def group_file(self, clean_dir):
         """A temporary file of a group table."""
         df = pd.DataFrame(
@@ -56,14 +70,41 @@ class TestExperiment:
         df.to_csv(file, index=False)
         return file
 
-    def test_init_with_abundance_glycans(self, abundance_file, glycan_file):
+    def test_init_with_abundance_and_glycan_files(self, abundance_file, glycan_file):
         """Test initiation with an abundance file and a glycan file."""
         exp = Experiment(abundance_file, glycan_file=glycan_file)
 
         assert exp.abundance_table is not None
         assert exp.meta_property_table is not None
 
-    def test_init_with_abundance_glycans_groups(
+    def test_init_with_abundance_and_mp_files(self, abundance_file, mp_file):
+        """Test initiation with an abundance file and a meta-property file."""
+        exp = Experiment(abundance_file, meta_property_file=mp_file)
+
+        assert exp.abundance_table is not None
+        assert exp.meta_property_table is not None
+
+    def test_init_with_neither_glycan_or_mp_file(self, abundance_file):
+        """Test initiation with neither a glycan file or a meta-property file."""
+        with pytest.raises(DataInputError) as excinfo:
+            Experiment(abundance_file)
+        msg = (
+            "At least one of `glycan_file` and `meta_property_file` should be provided."
+        )
+        assert str(excinfo.value) == msg
+
+    def test_init_with_both_glycan_and_mp_file(
+        self, abundance_file, glycan_file, mp_file
+    ):
+        """Test initiation with both a glycan file and a meta-property file."""
+        with pytest.raises(DataInputError) as excinfo:
+            Experiment(
+                abundance_file, glycan_file=glycan_file, meta_property_file=mp_file
+            )
+        msg = "Only one of `glycan_file` and `meta_property_file` should be provided."
+        assert str(excinfo.value) == msg
+
+    def test_init_with_abundance_glycan_and_group_files(
         self, abundance_file, glycan_file, group_file
     ):
         """Test initiation with an abundance file, a glycan file, and a group file."""
@@ -73,7 +114,7 @@ class TestExperiment:
         assert exp.meta_property_table is not None
         assert exp.groups is not None
 
-    def test_init_missing_glycans(self, abundance_file, clean_dir):
+    def test_init_missing_glycans_in_glycan_file(self, abundance_file, clean_dir):
         """Test initiation when some glycans are missing in the glycan file."""
         glycan_df = pd.DataFrame(
             {
@@ -92,7 +133,7 @@ class TestExperiment:
         )
         assert str(excinfo.value) == msg
 
-    def test_init_extra_glycans(self, abundance_file, clean_dir):
+    def test_init_extra_glycans_in_glycan_file(self, abundance_file, clean_dir):
         """Test initiation when extra glycans exist in the glycan file."""
         glycan_df = pd.DataFrame(
             {
@@ -114,7 +155,44 @@ class TestExperiment:
         assert exp.abundance_table is not None
         assert exp.meta_property_table is not None
 
-    def test_init_missing_samples(self, abundance_file, glycan_file, clean_dir):
+    def test_init_with_missing_glycans_in_mp_file(self, abundance_file, clean_dir):
+        """Test initiation when some glycans are missing in the meta-property file."""
+        mp_df = pd.DataFrame(
+            {
+                "GlycanID": ["G1", "G3"],  # missing G2
+                "nF": [1, 0],
+                "nS": [0, 1],
+            }
+        )
+        mp_file = str(clean_dir / "meta_properties.csv")
+        mp_df.to_csv(mp_file, index=False)
+
+        with pytest.raises(DataInputError) as excinfo:
+            Experiment(abundance_file, meta_property_file=mp_file)
+        msg = "The following glycans in the abundance table do not have meta properties: G2."
+        assert str(excinfo.value) == msg
+
+    def test_init_with_extra_glycans_in_mp_file(self, abundance_file, clean_dir):
+        """Test initiation when extra glycans exist in the meta-property file."""
+        mp_df = pd.DataFrame(
+            {
+                "GlycanID": ["G1", "G2", "G3", "G4"],  # G4 is extra
+                "nF": [1, 0, 1, 0],
+                "nS": [0, 1, 0, 1],
+            }
+        )
+        mp_file = str(clean_dir / "meta_properties.csv")
+        mp_df.to_csv(mp_file, index=False)
+
+        # Extra glycans are ignored and should not raise an error
+        exp = Experiment(abundance_file, meta_property_file=mp_file)
+
+        assert exp.abundance_table is not None
+        assert exp.meta_property_table is not None
+
+    def test_init_missing_samples_in_group_file(
+        self, abundance_file, glycan_file, clean_dir
+    ):
         """Test initiation when some samples are missing in the group file."""
         group_df = pd.DataFrame({"Sample": ["S1", "S3"], "Group": ["A", "B"]})
         group_file = str(clean_dir / "groups.csv")
@@ -125,7 +203,9 @@ class TestExperiment:
         msg = "The following samples are in the abundance table but not in the groups: S2."
         assert str(excinfo.value) == msg
 
-    def test_init_extra_samples(self, abundance_file, glycan_file, clean_dir):
+    def test_init_extra_samples_in_group_file(
+        self, abundance_file, glycan_file, clean_dir
+    ):
         """Test initiation when extra samples exist in the group file."""
         group_df = pd.DataFrame(
             {

@@ -29,14 +29,16 @@ from glytrait.data_type import (
     GroupSeries,
     AbundanceTable,
 )
-from glytrait.exception import GlyTraitError
+from glytrait.exception import GlyTraitError, DataInputError
 from glytrait.formula import load_default_formulas, TraitFormula, parse_formulas
 from glytrait.data_input import (
     load_glycans,
     load_groups,
     load_abundance,
+    load_meta_property,
     check_all_glycans_have_struct_or_comp,
     check_same_samples_in_abund_and_groups,
+    check_all_glycans_have_mp,
 )
 from glytrait.meta_property import build_meta_property_table
 from glytrait.post_filtering import post_filter
@@ -107,6 +109,16 @@ class Experiment:
     class from being modified in that a copy will be returned.
     See the Examples section for more details.
 
+    Args:
+        abundance_file: The path to the abundance file.
+        glycan_file: The path to the glycan file. Optional.
+            At least one of `glycan_file` and `meta_property_file` should be provided.
+        meta_property_file: The path to the meta-property file. Optional.
+        group_file: The path to the group file. Optional.
+        mode: "structure" or "composition". Default to "structure".
+        sia_linkage: Whether to consider the linkage of sialic acid.
+            Default to False.
+
     Methods:
         preprocess: Preprocess the data.
         derive_traits: Calculate derived traits.
@@ -119,6 +131,7 @@ class Experiment:
     Attributes:
         abundance_file: The path to the abundance file.
         glycan_file: The path to the glycan file.
+        meta_property_file: The path to the meta-property file.
         group_file: The path to the group file.
         mode: "structure" or "composition".
         sia_linkage: Whether to consider the linkage of sialic acid.
@@ -164,8 +177,9 @@ class Experiment:
         False
     """
 
-    abundance_file: Optional[str] = field(repr=False)
-    glycan_file: Optional[str] = field(repr=False)
+    abundance_file: str = field(repr=False)
+    glycan_file: Optional[str] = field(default=None, kw_only=True, repr=False)
+    meta_property_file: Optional[str] = field(default=None, kw_only=True, repr=False)
     group_file: Optional[str] = field(default=None, kw_only=True, repr=False)
     mode: Literal["structure", "composition"] = field(default="structure", kw_only=True)
     sia_linkage: bool = field(default=False, kw_only=True)
@@ -181,6 +195,7 @@ class Experiment:
     _diff_results: dict[str, pd.DataFrame] = field(init=False, default=None)
 
     def __attrs_post_init__(self):
+        # Extract the abundance table
         abundance_type = defaultdict(lambda: "float64")
         abundance_type.update({"Sample": "O"})
         abund_df = load_abundance(
@@ -188,10 +203,25 @@ class Experiment:
         )
         self._abundance_table = abund_df
 
-        glycans = load_glycans(pd.read_csv(self.glycan_file), mode=self.mode)
-        check_all_glycans_have_struct_or_comp(abund_df, glycans)
-        self._meta_property_table = self._extract_meta_properties(glycans)
+        # Extract the meta-property table
+        if self.glycan_file and self.meta_property_file:
+            msg = (
+                "Only one of `glycan_file` and `meta_property_file` should be provided."
+            )
+            raise DataInputError(msg)
+        if not self.glycan_file and not self.meta_property_file:
+            msg = "At least one of `glycan_file` and `meta_property_file` should be provided."
+            raise DataInputError(msg)
+        if self.glycan_file:
+            glycans = load_glycans(pd.read_csv(self.glycan_file), mode=self.mode)
+            check_all_glycans_have_struct_or_comp(abund_df, glycans)
+            self._meta_property_table = self._extract_meta_properties(glycans)
+        else:  # meta_property_file is given
+            mp_df = load_meta_property(pd.read_csv(self.meta_property_file))
+            check_all_glycans_have_mp(abund_df, mp_df)
+            self._meta_property_table = mp_df
 
+        # Extract the group series
         if self.group_file:
             groups = load_groups(pd.read_csv(self.group_file))
             check_same_samples_in_abund_and_groups(abund_df, groups)
@@ -219,11 +249,6 @@ class Experiment:
         """The meta property table."""
         if self._meta_property_table is not None:
             return MetaPropertyTable(self._meta_property_table.copy())
-        msg = (
-            "Meta property table is not available. "
-            "Please call the `preprocess` method first."
-        )
-        raise MissingDataError(msg)
 
     @property
     def processed_abundance_table(self) -> pd.DataFrame:
