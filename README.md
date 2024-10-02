@@ -122,7 +122,7 @@ cd path/to/glytrait_example
 3. Run the following command:
 
 ```shell
-glytrait abundance.csv structures.csv
+glytrait abundance.csv --glycan-file=structures.csv
 ```
 
 That's it! 
@@ -150,6 +150,8 @@ As a glance, GlyTrait supports the following options:
 |          Option           | Description                                                                                                     |
 |:-------------------------:|:----------------------------------------------------------------------------------------------------------------|
 |          --help           | Show the help message and exit.                                                                                 |
+|       --glycan-file       | The glycan structure or composition file.                                                                       |
+|         --mp-file         | The meta-property file.                                                                                         |
 |        -m, --mode         | The mode. "S" or "structure" for structure mode, "C" or "composition" for composition mode. Default: structure. |
 |       -o, --output        | The output path. Default: the same directory with the input file.                                               |
 | -r, --filter-glycan-ratio | The proportion of missing values for a glycan to be ruled out. Default: 0.5.                                    |
@@ -190,13 +192,13 @@ Due to the ambiguities above, we recommend using the "structure" mode if possibl
 You can specify the mode by the "-m" or the "--mode" option:
 
 ```shell
-glytrait abundance.csv composition.csv -m composition
+glytrait abundance.csv --glycan-file=composition.csv -m composition
 ```
 
 Or in short:
 
 ```shell
-glytrait abundance.csv composition.csv -m C
+glytrait abundance.csv --glycan-file=composition.csv -m C
 ```
 
 The default mode is the "structure" mode, as in the quick start example. 
@@ -249,9 +251,9 @@ You could use any name you want, as long as the two files are passed in order,
 e.g.: 
 
 ```shell
-glytrait experiment_1_15.csv serum_structures.csv
-#        ~~~~~~~~~~~~~~~~~~~ ~~~~~~~~~~~~~~~~~~~~
-#        the abundance file   the structure file
+glytrait experiment_1_15.csv --glycan-file=serum_structures.csv
+#        ~~~~~~~~~~~~~~~~~~~               ~~~~~~~~~~~~~~~~~~~~
+#        the abundance file                 the structure file
 ```
 
 ### Specify the output path
@@ -261,7 +263,7 @@ as the abundance file with a "_glytrait" suffix.
 You can specify the output file path by using the "-o" or "--output-file" option:
 
 ```shell
-glytrait abundance.csv structure.csv -o output
+glytrait abundance.csv --glycan-file=structure.csv -o output
 ```
 
 ### Preprocessing
@@ -279,7 +281,7 @@ The default value is 1, which means no glycan will be removed.
 You can change this value to 0.5 by:
 
 ```shell
-glytrait abundance.csv structure.csv -r 0.5
+glytrait abundance.csv --glycan-file=structure.csv -r 0.5
 ```
 
 The imputation method could be specified by the "-i" or the "--impute-method" option.
@@ -289,7 +291,7 @@ Other supported methods are "mean", "median", "zero", "lod".
 You can change the imputation method to "min" by:
 
 ```shell
-glytrait abundance.csv structure.csv -i min
+glytrait abundance.csv --glycan-file=structure.csv -i min
 ```
 
 A full list of supported imputation methods are:
@@ -322,7 +324,7 @@ and the other is a2,3-linked.
 You can use the "-l" or "--sia-linkage" option to include sialic-acid-linkage traits:
 
 ```shell
-glytrait abundance.csv structure.csv -l
+glytrait abundance.csv --glycan-file=structure.csv -l
 ```
 
 Note that if you use this option, all glycans with sialic acids should have linkage information.
@@ -353,15 +355,22 @@ i.e., traits with perfect collinearity.
 This threshold can be changed by the "-c" or "--corr-threshold" option:
 
 ```shell
-glytrait abundance.csv structure.csv -c 0.9
+glytrait abundance.csv --glycan-file=structure.csv -c 0.9
 ```
 
 Setting the threshold to -1 will turn off the colinearity filtering. 
 To turn off postfiltering all together, use the "--no-filtering" option:
 
 ```shell
-glytrait abundance.csv structure.csv --no-filtering
+glytrait abundance.csv --glycan-file=structure.csv --no-filtering
 ```
+
+### Custom Meta-Properties
+
+Coming soon...
+
+(The functionallity has been implemented, but the documentation is not ready yet.
+After publishing the GlyTrait paper, we will update the documentation.)
 
 ### Custom Formulas
 
