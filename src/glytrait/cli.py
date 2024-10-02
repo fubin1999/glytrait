@@ -46,7 +46,7 @@ def save_builtin_formulas_callback(ctx, param, value):
 @click.option(
     "--mp-file",
     type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    help="Meta-property file."
+    help="Meta-property file.",
 )
 @click.option(
     "-g",

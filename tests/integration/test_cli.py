@@ -60,7 +60,7 @@ class TestCLI:
         args = [
             str(prepared_path / "abundance.csv"),
             "--mp-file",
-            str(prepared_path / "meta_properties.csv")
+            str(prepared_path / "meta_properties.csv"),
         ]
         result_dir = prepared_path / "abundance_glytrait"
 

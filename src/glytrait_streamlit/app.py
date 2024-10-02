@@ -249,7 +249,7 @@ if st.button("Run GlyTrait"):
             glycan_file=glycan_file,
             group_file=group_file,
             mode=mode,
-            sia_linkage=sia_linkage
+            sia_linkage=sia_linkage,
         )
         with capture_glytrait_error():
             exp.run_workflow(
