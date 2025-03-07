@@ -1,17 +1,12 @@
 [tool.poetry]
 name = "glytrait"
-version = "0.2.0"
+version = "0.2.1"
 description = "A tool for calculating derived traits for N-glycome"
 authors = ["fubin1999 <65430559+fubin1999@users.noreply.github.com>"]
 readme = "README.md"
 license = "MIT"
 repository = "https://github.com/fubin1999/glytrait"
 keywords = ["bioinformatics", "glycomics", "biology"]
-
-[[tool.poetry.source]]
-name = "aliyun"
-url = "http://mirrors.aliyun.com/pypi/simple"
-priority = "default"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.13"
