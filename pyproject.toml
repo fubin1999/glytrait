@@ -25,6 +25,7 @@ optional = true
 [tool.poetry.group.streamlit.dependencies]
 streamlit = "^1.25.0"
 watchdog = "^4.0.0"
+plotly = "^6.1.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.3.1"

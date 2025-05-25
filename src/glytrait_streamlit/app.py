@@ -7,6 +7,8 @@ from contextlib import contextmanager
 
 import pandas as pd
 import streamlit as st
+import plotly.express as px
+import plotly.graph_objects as go
 
 from glytrait.exception import GlyTraitError
 from glytrait import Experiment
@@ -234,6 +236,55 @@ def render_config_section():
     
     return glycan_filter_threshold, impute_method, post_filter_threshold, sia_linkage
 
+def render_analysis_section(exp):
+    """Render the analysis section for trait visualization."""
+    st.markdown("---")
+    st.header("Analysis")
+    
+    # Get all available traits
+    all_traits = exp.filtered_derived_trait_table.columns.tolist()
+    
+    # Let user select a trait to visualize
+    selected_trait = st.selectbox(
+        "Select a trait to visualize",
+        options=all_traits,
+        help="Select a trait to see its distribution"
+    )
+    
+    if not selected_trait:
+        st.info("Please select a trait to visualize")
+        return
+    
+    # Create visualization based on whether group information is available
+    if exp.groups is not None:
+        # Create box plot when group information is available
+        fig = px.box(
+            exp.filtered_derived_trait_table,
+            y=selected_trait,
+            color=exp.groups,
+            title=f"Distribution of {selected_trait} by Group",
+            labels={"y": selected_trait, "color": "Group"},
+        )
+    else:
+        # Create histogram when no group information is available
+        fig = px.histogram(
+            exp.filtered_derived_trait_table,
+            x=selected_trait,
+            title=f"Distribution of {selected_trait}",
+            labels={"x": selected_trait},
+            nbins=30,  # 设置直方图的箱数
+        )
+    
+    # 更新布局
+    fig.update_layout(
+        showlegend=True,
+        xaxis_title=selected_trait,
+        yaxis_title="Count" if exp.groups is None else selected_trait,
+    )
+    
+    # 显示图表
+    st.plotly_chart(fig, use_container_width=True)
+
 def render_results_section(exp):
     """Render the results section with download button."""
     st.markdown("---")
@@ -251,6 +302,9 @@ def render_results_section(exp):
             file_name="GlyTrait_results.zip",
             mime="application/zip",
         )
+    
+    # Add analysis section
+    render_analysis_section(exp)
 
 # ========== MAIN PROGRAM ==========
 def main():
