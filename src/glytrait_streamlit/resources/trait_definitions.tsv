@@ -1,0 +1,264 @@
+Trait	Definition
+Hb	Relative abundance of high-branching (N > 4) glycans within all glycans
+Lb	Relative abundance of low-branching (N <= 4) glycans within all glycans
+F	Fucosylation within all glycans
+HbF	Fucosylation within high-branching glycans
+LbF	Fucosylation within low-branching glycans
+HbSF	Fucosylation within sialylated high-branching glycans
+LbSF	Fucosylation within sialylated low-branching glycans
+HbS0F	Fucosylation within non-sialylated high-branching glycans
+LbS0F	Fucosylation within non-sialylated low-branching glycans
+HbEF	Fucosylation within high-branching glycans with a2,6-linked sialic acids
+LbEF	Fucosylation within low-branching glycans with a2,6-linked sialic acids
+HbE0F	Fucosylation within high-branching glycans without a2,6-linked sialic acids
+LbE0F	Fucosylation within low-branching glycans without a2,6-linked sialic acids
+HbLF	Fucosylation within high-branching glycans with a2,3-linked sialic acids
+LbLF	Fucosylation within low-branching glycans with a2,3-linked sialic acids
+HbL0F	Fucosylation within high-branching glycans without a2,3-linked sialic acids
+LbL0F	Fucosylation within low-branching glycans without a2,3-linked sialic acids
+TM	Relative abundance of high mannose type glycans within total spectrum
+THy	Relative abundance of hybrid type glycans within total spectrum
+MHy	The ratio of high-mannose to hybrid glycans
+MM	Average number of mannoses on high mannose type glycans
+CA1	Relative abundance of monoantennary glycans within complex type glycans
+CA2	Relative abundance of diantennary glycans within complex type glycans
+CA3	Relative abundance of triantennary glycans within complex type glycans
+CA4	Relative abundance of tetra-antennary glycans within complex type glycans
+CFc	Core fucosylation within complex type glycans
+A1Fc	Core fucosylation within monoantennary glycans
+A2Fc	Core fucosylation within diantennary glycans
+A3Fc	Core fucosylation within triantennary glycans
+A4Fc	Core fucosylation within tetra-antennary glycans
+A1SFc	Core fucosylation within sialylated monoantennary glycans
+A2SFc	Core fucosylation within sialylated diantennary glycans
+A3SFc	Core fucosylation within sialylated triantennary glycans
+A4SFc	Core fucosylation within sialylated tetra-antennary glycans
+A1S0Fc	Core fucosylation within non-sialylated monoantennary glycans
+A2S0Fc	Core fucosylation within non-sialylated diantennary glycans
+A3S0Fc	Core fucosylation within non-sialylated triantennary glycans
+A4S0Fc	Core fucosylation within non-sialylated tetra-antennary glycans
+A1EFc	Core fucosylation within monoantennary glycans with α2,6-linked sialic acid
+A2EFc	Core fucosylation within diantennary glycans with α2,6-linked sialic acid
+A3EFc	Core fucosylation within triantennary glycans with α2,6-linked sialic acid
+A4EFc	Core fucosylation within tetra-antennary glycans with α2,6-linked sialic acid
+A1E0Fc	Core fucosylation within monoantennary glycans without α2,6-linked sialic acid
+A2E0Fc	Core fucosylation within diantennary glycans without α2,6-linked sialic acid
+A3E0Fc	Core fucosylation within triantennary glycans without α2,6-linked sialic acid
+A4E0Fc	Core fucosylation within tetra-antennary glycans without α2,6-linked sialic acid
+A1LFc	Core fucosylation within monoantennary glycans with α2,3-linked sialic acid
+A2LFc	Core fucosylation within diantennary glycans with α2,3-linked sialic acid
+A3LFc	Core fucosylation within triantennary glycans with α2,3-linked sialic acid
+A4LFc	Core fucosylation within tetra-antennary glycans with α2,3-linked sialic acid
+A1L0Fc	Core fucosylation within monoantennary glycans without α2,3-linked sialic acid
+A2L0Fc	Core fucosylation within diantennary glycans without α2,3-linked sialic acid
+A3L0Fc	Core fucosylation within triantennary glycans without α2,3-linked sialic acid
+A4L0Fc	Core fucosylation within tetra-antennary glycans without α2,3-linked sialic acid
+CFa	Antennary fucosylation within complex type glycans
+A1Fa	Antennary fucosylation within monoantennary glycans
+A2Fa	Antennary fucosylation within diantennary glycans
+A3Fa	Antennary fucosylation within triantennary glycans
+A4Fa	Antennary fucosylation within tetra-antennary glycans
+A1SFa	Antennary fucosylation within sialylated monoantennary glycans
+A2SFa	Antennary fucosylation within sialylated diantennary glycans
+A3SFa	Antennary fucosylation within sialylated triantennary glycans
+A4SFa	Antennary fucosylation within sialylated tetra-antennary glycans
+A1S0Fa	Antennary fucosylation within non-sialylated monoantennary glycans
+A2S0Fa	Antennary fucosylation within non-sialylated diantennary glycans
+A3S0Fa	Antennary fucosylation within non-sialylated triantennary glycans
+A4S0Fa	Antennary fucosylation within non-sialylated tetra-antennary glycans
+A1EFa	Antennary fucosylation within monoantennary glycans with α2,6-linked sialic acid
+A2EFa	Antennary fucosylation within diantennary glycans with α2,6-linked sialic acid
+A3EFa	Antennary fucosylation within triantennary glycans with α2,6-linked sialic acid
+A4EFa	Antennary fucosylation within tetra-antennary glycans with α2,6-linked sialic acid
+A1E0Fa	Antennary fucosylation within monoantennary glycans without α2,6-linked sialic acid
+A2E0Fa	Antennary fucosylation within diantennary glycans without α2,6-linked sialic acid
+A3E0Fa	Antennary fucosylation within triantennary glycans without α2,6-linked sialic acid
+A4E0Fa	Antennary fucosylation within tetra-antennary glycans without α2,6-linked sialic acid
+A1LFa	Antennary fucosylation within monoantennary glycans with α2,3-linked sialic acid
+A2LFa	Antennary fucosylation within diantennary glycans with α2,3-linked sialic acid
+A3LFa	Antennary fucosylation within triantennary glycans with α2,3-linked sialic acid
+A4LFa	Antennary fucosylation within tetra-antennary glycans with α2,3-linked sialic acid
+A1L0Fa	Antennary fucosylation within monoantennary glycans without α2,3-linked sialic acid
+A2L0Fa	Antennary fucosylation within diantennary glycans without α2,3-linked sialic acid
+A3L0Fa	Antennary fucosylation within triantennary glycans without α2,3-linked sialic acid
+A4L0Fa	Antennary fucosylation within tetra-antennary glycans without α2,3-linked sialic acid
+CB	Relative abundance of species with a bisecting GlcNAc within all complex glycans
+A2B	Relative abundance of species with a bisecting GlcNAc within diantennary glycans
+A2FB	Relative abundance of species with a bisecting GlcNAc within fucosylated diantennary
+A2F0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated diantennary glycans
+A2SB	Relative abundance of species with a bisecting GlcNAc within sialylated diantennary glycans
+A2S0B	Relative abundance of species with a bisecting GlcNAc within non-sialylated diantennary glycans
+A2FSB	Relative abundance of species with a bisecting GlcNAc within fucosylated sialylated diantennary glycans
+A2F0SB	Relative abundance of species with a bisecting GlcNAc within non-fucosylated sialylated diantennary glycans
+A2FS0B	Relative abundance of species with a bisecting GlcNAc within fucosylated non-sialylated diantennary glycans
+A2F0S0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-sialylated diantennary glycans
+A2LB	Relative abundance of species with a bisecting GlcNAc within a2,3-sialylated diantennary glycans
+A2L0B	Relative abundance of species with a bisecting GlcNAc within non-a2,3-sialylated diantennary glycans
+A2FLB	Relative abundance of species with a bisecting GlcNAc within fucosylated a2,3-sialylated diantennary glycans
+A2F0LB	Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,3-sialylated diantennary glycans
+A2FL0B	Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,3-sialylated diantennary glycans
+A2F0L0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,3-sialylated diantennary glycans
+A2EB	Relative abundance of species with a bisecting GlcNAc within a2,6-sialylated diantennary glycans
+A2E0B	Relative abundance of species with a bisecting GlcNAc within non-a2,6-sialylated diantennary glycans
+A2FEB	Relative abundance of species with a bisecting GlcNAc within fucosylated a2,6-sialylated diantennary glycans
+A2F0EB	Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,6-sialylated diantennary glycans
+A2FE0B	Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,6-sialylated diantennary glycans
+A2F0E0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,6-sialylated diantennary glycans
+A3B	Relative abundance of species with a bisecting GlcNAc within triantennary glycans
+A3FB	Relative abundance of species with a bisecting GlcNAc within fucosylated triantennary glycans
+A3F0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated triantennary glycans
+A3SB	Relative abundance of species with a bisecting GlcNAc within sialylated triantennary glycans
+A3S0B	Relative abundance of species with a bisecting GlcNAc within non-sialylated triantennary glycans
+A3FSB	Relative abundance of species with a bisecting GlcNAc within fucosylated sialylated triantennary glycans
+A3F0SB	Relative abundance of species with a bisecting GlcNAc within non-fucosylated sialylated triantennary glycans
+A3FS0B	Relative abundance of species with a bisecting GlcNAc within fucosylated non-sialylated triantennary glycans
+A3F0S0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-sialylated triantennary glycans
+A3LB	Relative abundance of species with a bisecting GlcNAc within a2,3-sialylated triantennary glycans
+A3L0B	Relative abundance of species with a bisecting GlcNAc within non-a2,3-sialylated triantennary glycans
+A3FLB	Relative abundance of species with a bisecting GlcNAc within fucosylated a2,3-sialylated triantennary glycans
+A3F0LB	Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,3-sialylated triantennary glycans
+A3FL0B	Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,3-sialylated triantennary glycans
+A3F0L0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,3-sialylated triantennary glycans
+A3EB	Relative abundance of species with a bisecting GlcNAc within a2,6-sialylated triantennary glycans
+A3E0B	Relative abundance of species with a bisecting GlcNAc within non-a2,6-sialylated triantennary glycans
+A3FEB	Relative abundance of species with a bisecting GlcNAc within fucosylated a2,6-sialylated triantennary glycans
+A3F0EB	Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,6-sialylated triantennary glycans
+A3FE0B	Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,6-sialylated triantennary glycans
+A3F0E0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,6-sialylated triantennary glycans
+A4B	Relative abundance of species with a bisecting GlcNAc within tetra-antennary glycans
+A4FB	Relative abundance of species with a bisecting GlcNAc within fucosylated tetra-antennary glycans
+A4F0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated tetra-antennary glycans
+A4SB	Relative abundance of species with a bisecting GlcNAc within sialylated tetra-antennary glycans
+A4S0B	Relative abundance of species with a bisecting GlcNAc within non-sialylated tetra-antennary glycans
+A4FSB	Relative abundance of species with a bisecting GlcNAc within fucosylated sialylated tetra-antennary glycans
+A4F0SB	Relative abundance of species with a bisecting GlcNAc within non-fucosylated sialylated tetra-antennary glycans
+A4FS0B	Relative abundance of species with a bisecting GlcNAc within fucosylated non-sialylated tetra-antennary glycans
+A4F0S0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-sialylated tetra-antennary glycans
+A4LB	Relative abundance of species with a bisecting GlcNAc within a2,3-sialylated tetra-antennary glycans
+A4L0B	Relative abundance of species with a bisecting GlcNAc within non-a2,3-sialylated tetra-antennary glycans
+A4FLB	Relative abundance of species with a bisecting GlcNAc within fucosylated a2,3-sialylated tetra-antennary glycans
+A4F0LB	Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,3-sialylated tetra-antennary glycans
+A4FL0B	Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,3-sialylated tetra-antennary glycans
+A4F0L0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,3-sialylated tetra-antennary glycans
+A4EB	Relative abundance of species with a bisecting GlcNAc within a2,6-sialylated tetra-antennary glycans
+A4E0B	Relative abundance of species with a bisecting GlcNAc within non-a2,6-sialylated tetra-antennary glycans
+A4FEB	Relative abundance of species with a bisecting GlcNAc within fucosylated a2,6-sialylated tetra-antennary glycans
+A4F0EB	Relative abundance of species with a bisecting GlcNAc within non-fucosylated a2,6-sialylated tetra-antennary glycans
+A4FE0B	Relative abundance of species with a bisecting GlcNAc within fucosylated non-a2,6-sialylated tetra-antennary glycans
+A4F0E0B	Relative abundance of species with a bisecting GlcNAc within non-fucosylated non-a2,6-sialylated tetra-antennary glycans
+CG	Average number of galactoses on complex glycans
+CS	Average number of sialic acids on complex glycans
+CL	Average number of α2,3-linked sialic acids on complex glycans
+A1L	α2,3-sialylation per antenna within monoantennary glycans
+A2L	α2,3-sialylation per antenna within diantennary glycans
+A3L	α2,3-sialylation per antenna within triantennary glycans
+A4L	α2,3-sialylation per antenna within tetra-antennary glycans
+A1FL	α2,3-sialylation per antenna within fucosylated monoantennary glycans
+A2FL	α2,3-sialylation per antenna within fucosylated diantennary glycans
+A3FL	α2,3-sialylation per antenna within fucosylated triantennary glycans
+A4FL	α2,3-sialylation per antenna within fucosylated tetra-antennary glycans
+A1F0L	α2,3-sialylation per antenna within non-fucosylated monoantennary glycans
+A2F0L	α2,3-sialylation per antenna within non-fucosylated diantennary glycans
+A3F0L	α2,3-sialylation per antenna within non-fucosylated triantennary glycans
+A4F0L	α2,3-sialylation per antenna within non-fucosylated tetra-antennary glycans
+A1GL	α2,3-sialylation per galactose within monoantennary glycans
+A2GL	α2,3-sialylation per galactose within diantennary glycans
+A3GL	α2,3-sialylation per galactose within triantennary glycans
+A4GL	α2,3-sialylation per galactose within tetra-antennary glycans
+A1FGL	α2,3-sialylation per galactose within fucosylated monoantennary glycans
+A2FGL	α2,3-sialylation per galactose within fucosylated diantennary glycans
+A3FGL	α2,3-sialylation per galactose within fucosylated triantennary glycans
+A4FGL	α2,3-sialylation per galactose within fucosylated tetra-antennary glycans
+A1F0GL	α2,3-sialylation per galactose within non-fucosylated monoantennary glycans
+A2F0GL	α2,3-sialylation per galactose within non-fucosylated diantennary glycans
+A3F0GL	α2,3-sialylation per galactose within non-fucosylated triantennary glycans
+A4F0GL	α2,3-sialylation per galactose within non-fucosylated tetra-antennary glycans
+CE	Average number of α2,6-linked sialic acids on complex glycans
+A1E	α2,6-sialylation per antenna within monoantennary glycans
+A2E	α2,6-sialylation per antenna within diantennary glycans
+A3E	α2,6-sialylation per antenna within triantennary glycans
+A4E	α2,6-sialylation per antenna within tetra-antennary glycans
+A1FE	α2,6-sialylation per antenna within fucosylated monoantennary glycans
+A2FE	α2,6-sialylation per antenna within fucosylated diantennary glycans
+A3FE	α2,6-sialylation per antenna within fucosylated triantennary glycans
+A4FE	α2,6-sialylation per antenna within fucosylated tetra-antennary glycans
+A1F0E	α2,6-sialylation per antenna within non-fucosylated monoantennary glycans
+A2F0E	α2,6-sialylation per antenna within non-fucosylated diantennary glycans
+A3F0E	α2,6-sialylation per antenna within non-fucosylated triantennary glycans
+A4F0E	α2,6-sialylation per antenna within non-fucosylated tetra-antennary glycans
+A1GE	α2,6-sialylation per galactose within monoantennary glycans
+A2GE	α2,6-sialylation per galactose within diantennary glycans
+A3GE	α2,6-sialylation per galactose within triantennary glycans
+A4GE	α2,6-sialylation per galactose within tetra-antennary glycans
+A1FGE	α2,6-sialylation per galactose within fucosylated monoantennary glycans
+A2FGE	α2,6-sialylation per galactose within fucosylated diantennary glycans
+A3FGE	α2,6-sialylation per galactose within fucosylated triantennary glycans
+A4FGE	α2,6-sialylation per galactose within fucosylated tetra-antennary glycans
+A1F0GE	α2,6-sialylation per galactose within non-fucosylated monoantennary glycans
+A2F0GE	α2,6-sialylation per galactose within non-fucosylated diantennary glycans
+A3F0GE	α2,6-sialylation per galactose within non-fucosylated triantennary glycans
+A4F0GE	α2,6-sialylation per galactose within non-fucosylated tetra-antennary glycans
+CPl	Relative abundance of species with poly-LacNAc within all complex glycans
+A2Pl	Relative abundance of species with poly-LacNAc within diantennary glycans
+A2FPl	Relative abundance of species with poly-LacNAc within fucosylated diantennary
+A2F0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated diantennary glycans
+A2SPl	Relative abundance of species with poly-LacNAc within sialylated diantennary glycans
+A2S0Pl	Relative abundance of species with poly-LacNAc within non-sialylated diantennary glycans
+A2FSPl	Relative abundance of species with poly-LacNAc within fucosylated sialylated diantennary glycans
+A2F0SPl	Relative abundance of species with poly-LacNAc within non-fucosylated sialylated diantennary glycans
+A2FS0Pl	Relative abundance of species with poly-LacNAc within fucosylated non-sialylated diantennary glycans
+A2F0S0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated non-sialylated diantennary glycans
+A2LPl	Relative abundance of species with poly-LacNAc within a2,3-sialylated diantennary glycans
+A2L0Pl	Relative abundance of species with poly-LacNAc within non-a2,3-sialylated diantennary glycans
+A2FLPl	Relative abundance of species with poly-LacNAc within fucosylated a2,3-sialylated diantennary glycans
+A2F0LPl	Relative abundance of species with poly-LacNAc within non-fucosylated a2,3-sialylated diantennary glycans
+A2FL0Pl	Relative abundance of species with poly-LacNAc within fucosylated non-a2,3-sialylated diantennary glycans
+A2F0L0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,3-sialylated diantennary glycans
+A2EPl	Relative abundance of species with poly-LacNAc within a2,6-sialylated diantennary glycans
+A2E0Pl	Relative abundance of species with poly-LacNAc within non-a2,6-sialylated diantennary glycans
+A2FEPl	Relative abundance of species with poly-LacNAc within fucosylated a2,6-sialylated diantennary glycans
+A2F0EPl	Relative abundance of species with poly-LacNAc within non-fucosylated a2,6-sialylated diantennary glycans
+A2FE0Pl	Relative abundance of species with poly-LacNAc within fucosylated non-a2,6-sialylated diantennary glycans
+A2F0E0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,6-sialylated diantennary glycans
+A3Pl	Relative abundance of species with poly-LacNAc within triantennary glycans
+A3FPl	Relative abundance of species with poly-LacNAc within fucosylated triantennary
+A3F0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated triantennary glycans
+A3SPl	Relative abundance of species with poly-LacNAc within sialylated triantennary glycans
+A3S0Pl	Relative abundance of species with poly-LacNAc within non-sialylated triantennary glycans
+A3FSPl	Relative abundance of species with poly-LacNAc within fucosylated sialylated triantennary glycans
+A3F0SPl	Relative abundance of species with poly-LacNAc within non-fucosylated sialylated triantennary glycans
+A3FS0Pl	Relative abundance of species with poly-LacNAc within fucosylated non-sialylated triantennary glycans
+A3F0S0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated non-sialylated triantennary glycans
+A3LPl	Relative abundance of species with poly-LacNAc within a2,3-sialylated triantennary glycans
+A3L0Pl	Relative abundance of species with poly-LacNAc within non-a2,3-sialylated triantennary glycans
+A3FLPl	Relative abundance of species with poly-LacNAc within fucosylated a2,3-sialylated triantennary glycans
+A3F0LPl	Relative abundance of species with poly-LacNAc within non-fucosylated a2,3-sialylated triantennary glycans
+A3FL0Pl	Relative abundance of species with poly-LacNAc within fucosylated non-a2,3-sialylated triantennary glycans
+A3F0L0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,3-sialylated triantennary glycans
+A3EPl	Relative abundance of species with poly-LacNAc within a2,6-sialylated triantennary glycans
+A3E0Pl	Relative abundance of species with poly-LacNAc within non-a2,6-sialylated triantennary glycans
+A3FEPl	Relative abundance of species with poly-LacNAc within fucosylated a2,6-sialylated triantennary glycans
+A3F0EPl	Relative abundance of species with poly-LacNAc within non-fucosylated a2,6-sialylated triantennary glycans
+A3FE0Pl	Relative abundance of species with poly-LacNAc within fucosylated non-a2,6-sialylated triantennary glycans
+A3F0E0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,6-sialylated triantennary glycans
+A4Pl	Relative abundance of species with poly-LacNAc within tetra-antennary glycans
+A4FPl	Relative abundance of species with poly-LacNAc within fucosylated tetra-antennary
+A4F0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated tetra-antennary glycans
+A4SPl	Relative abundance of species with poly-LacNAc within sialylated tetra-antennary glycans
+A4S0Pl	Relative abundance of species with poly-LacNAc within non-sialylated tetra-antennary glycans
+A4FSPl	Relative abundance of species with poly-LacNAc within fucosylated sialylated tetra-antennary glycans
+A4F0SPl	Relative abundance of species with poly-LacNAc within non-fucosylated sialylated tetra-antennary glycans
+A4FS0Pl	Relative abundance of species with poly-LacNAc within fucosylated non-sialylated tetra-antennary glycans
+A4F0S0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated non-sialylated tetra-antennary glycans
+A4LPl	Relative abundance of species with poly-LacNAc within a2,3-sialylated tetra-antennary glycans
+A4L0Pl	Relative abundance of species with poly-LacNAc within non-a2,3-sialylated tetra-antennary glycans
+A4FLPl	Relative abundance of species with poly-LacNAc within fucosylated a2,3-sialylated tetra-antennary glycans
+A4F0LPl	Relative abundance of species with poly-LacNAc within non-fucosylated a2,3-sialylated tetra-antennary glycans
+A4FL0Pl	Relative abundance of species with poly-LacNAc within fucosylated non-a2,3-sialylated tetra-antennary glycans
+A4F0L0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,3-sialylated tetra-antennary glycans
+A4EPl	Relative abundance of species with poly-LacNAc within a2,6-sialylated tetra-antennary glycans
+A4E0Pl	Relative abundance of species with poly-LacNAc within non-a2,6-sialylated tetra-antennary glycans
+A4FEPl	Relative abundance of species with poly-LacNAc within fucosylated a2,6-sialylated tetra-antennary glycans
+A4F0EPl	Relative abundance of species with poly-LacNAc within non-fucosylated a2,6-sialylated tetra-antennary glycans
+A4FE0Pl	Relative abundance of species with poly-LacNAc within fucosylated non-a2,6-sialylated tetra-antennary glycans
+A4F0E0Pl	Relative abundance of species with poly-LacNAc within non-fucosylated non-a2,6-sialylated tetra-antennary glycans

@@ -254,7 +254,34 @@ def render_analysis_section(exp):
     if not selected_trait:
         st.info("Please select a trait to visualize")
         return
-    
+
+    # ====== 新增 trait cartoon 和定义显示 ======
+    import csv
+    import os
+    # 读取trait定义
+    trait_def_path = os.path.join(os.path.dirname(__file__), 'resources', 'trait_definitions.tsv')
+    trait_def_dict = {}
+    with open(trait_def_path, encoding='utf-8') as f:
+        reader = csv.DictReader(f, delimiter='\t')
+        for row in reader:
+            trait_def_dict[row['Trait']] = row['Definition']
+    trait_def = trait_def_dict.get(selected_trait, 'No definition found.')
+
+    # cartoon图片路径
+    cartoon_path = os.path.join(os.path.dirname(__file__), 'resources', 'trait_cartoons', f'{selected_trait}.png')
+    cartoon_exists = os.path.exists(cartoon_path)
+
+    # 布局
+    if cartoon_exists:
+        col1, col2 = st.columns([1, 8])
+        with col1:
+            st.image(cartoon_path, use_container_width=True)
+        with col2:
+            st.markdown(f"**Trait Definition**\n\n{trait_def}")
+    else:
+        st.markdown(f"**Trait Definition**\n\n{trait_def}")
+    # ====== trait cartoon 和定义显示结束 ======
+
     # Create visualization based on whether group information is available
     if exp.groups is not None:
         # Create box plot when group information is available
