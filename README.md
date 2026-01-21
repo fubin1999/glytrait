@@ -9,6 +9,9 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/e3e6a19dccb749f786264247738fa585)](https://app.codacy.com/gh/fubin1999/glytrait/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13824811.svg)](https://doi.org/10.5281/zenodo.13824811)
 
+> [!IMPORTANT]  
+> The project has been deprecated. Use our new alternative [glydet](https://github.com/glycoverse/glydet/) instead.
+
 ## Overview
 
 *Q: What is GlyTrait?*
@@ -394,3 +397,4 @@ and run GlyTrait with the same options as in the paper.
 ## License
 
 [MIT License](LICENSE)
+
